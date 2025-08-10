@@ -55,7 +55,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'mi_proyento.urls'
+ROOT_URLCONF = 'mi_proyecto.urls'
 
 # --- SECCIÓN DE TEMPLATES CORREGIDA PARA ENCONTRAR EL TEMPLATE DEL ADMIN ---
 TEMPLATES = [
