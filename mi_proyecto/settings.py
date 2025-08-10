@@ -46,6 +46,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # 👈 Para servir estáticos
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -182,3 +183,6 @@ JAZZMIN_UI_TWEAKS = {
 # --- CONFIGURACIÓN ADICIONAL PARA DESPLIEGUE ---
 # Seguridad para producción
 CSRF_TRUSTED_ORIGINS = ['https://tudominio.com', 'https://www.tudominio.com']  # Cambia por tu dominio real
+
+# Servir archivos estáticos en producción con WhiteNoise
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
