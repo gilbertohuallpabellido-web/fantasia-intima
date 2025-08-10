@@ -1,0 +1,208 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Carrito de Compras - Fantasía Íntima</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Parisienne&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Reutilizamos las variables de marca para consistencia */
+        :root {
+            --brand-primary: #f9a8d4;
+            --brand-secondary: #f472b6;
+            --brand-accent: #ec4899;
+            --brand-brown: #5C2C0C;
+            --brand-text: #4b4244;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fffbff;
+            color: var(--brand-text);
+        }
+        .font-brand {
+            font-family: 'Parisienne', cursive;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+    <!-- Encabezado consistente con el resto de la web -->
+    <header class="bg-gradient-to-r from-[--brand-primary] to-[--brand-secondary] text-white p-2 sm:p-4 shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="{% url 'catalogo_publico' %}" class="flex items-center">
+                <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" class="h-14 w-auto drop-shadow-lg">
+            </a>
+            <nav class="flex items-center space-x-4">
+                <a href="{% url 'catalogo_publico' %}" class="font-semibold hover:text-white/80 transition-colors">Catálogo</a>
+                <a href="{% url 'ver_carrito' %}" class="relative bg-white text-pink-600 p-3 rounded-full hover:bg-pink-50 flex items-center shadow-md">
+                    <i class="fas fa-shopping-cart text-xl"></i>
+                    <span id="cart-counter" style="background-color: var(--brand-accent);" class="absolute -top-2 -right-2 text-white text-xs font-semibold h-6 w-6 flex items-center justify-center rounded-full border-2 border-white">
+                        {{ cart_items|length }}
+                    </span>
+                </a>
+            </nav>
+        </div>
+    </header>
+    
+    <main class="container mx-auto p-4 md:p-8 flex-grow">
+        <h1 class="text-5xl font-brand text-gray-800 mb-8 text-center">Mi Carrito</h1>
+        
+        {% if cart_items %}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Columna principal del carrito -->
+                <div class="lg:col-span-2 bg-white p-6 md:p-8 rounded-3xl shadow-xl space-y-6">
+                    {% for item in cart_items %}
+                        <!-- Tarjeta de cada producto en el carrito -->
+                        <div class="cart-item flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 border-b border-gray-100 pb-6 last:border-b-0 last:pb-0"
+                             data-name="{{ item.name }}"
+                             data-quantity="{{ item.quantity }}"
+                             data-color-espanol="{{ item.color }}"
+                             data-price="{{ item.price }}"
+                             data-image-url="{{ item.image_url }}">
+                            <!-- Imagen del producto -->
+                            <div class="flex-shrink-0 w-32 h-32 overflow-hidden rounded-xl border border-gray-200 shadow-sm">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-full h-full object-contain">
+                            </div>
+                            
+                            <!-- Detalles y precio -->
+                            <div class="flex-1 text-center sm:text-left">
+                                <p class="font-bold text-xl mb-1" style="color: var(--brand-brown);">{{ item.name }}</p>
+                                <p class="text-sm text-gray-500">Color: <span class="font-semibold">{{ item.color }}</span></p>
+                                <p class="text-sm text-gray-500">Cantidad: <span class="font-semibold">{{ item.quantity }}</span></p>
+                                <!-- PRECIO ACTUALIZADO: Muestra el subtotal del item -->
+                                <p class="text-2xl font-bold mt-2" style="color: var(--brand-accent);">S/{{ item.subtotal|floatformat:2 }}</p>
+                            </div>
+                            
+                            <!-- Botón de eliminar -->
+                            <div class="ml-auto flex-shrink-0">
+                                <form method="post" action="{% url 'eliminar_del_carrito' item.id %}" class="flex justify-center sm:justify-end">
+                                    {% csrf_token %}
+                                    <button type="submit" class="w-10 h-10 bg-red-100 text-red-600 rounded-full flex items-center justify-center hover:bg-red-200 transition-colors duration-200" title="Eliminar del carrito">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Columna del resumen y el pago -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white p-6 md:p-8 rounded-3xl shadow-xl sticky top-28 space-y-4">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">Resumen de la Compra</h2>
+                        <div class="flex justify-between items-center font-bold text-2xl text-gray-800">
+                            <span>Total:</span>
+                            <span style="color: var(--brand-accent);" id="total-price-display">S/{{ total_price|floatformat:2 }}</span>
+                        </div>
+                        <a href="{% url 'checkout_carrito' %}" class="inline-block w-full text-center text-white font-bold text-xl py-4 px-6 rounded-full shadow-lg transition-transform duration-200 hover:scale-105" style="background-color: var(--brand-accent);">
+                            Proceder al Pago
+                        </a>
+                        <!-- BOTÓN DE WHATSAPP ACTUALIZADO -->
+                        <button id="whatsapp-btn" onclick="generateWhatsAppOrder()" class="inline-flex items-center justify-center w-full text-center bg-green-500 text-white font-bold text-xl py-4 px-6 rounded-full shadow-lg transition-transform duration-200 hover:scale-105">
+                            <i class="fab fa-whatsapp mr-3"></i>
+                            Pedir por WhatsApp
+                        </button>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <!-- Estado de carrito vacío -->
+            <div class="flex flex-col items-center justify-center text-center bg-white p-10 md:p-16 rounded-3xl shadow-xl max-w-2xl mx-auto mt-10">
+                <div class="text-pink-300 p-6 rounded-full mb-6">
+                    <i class="fas fa-shopping-bag text-6xl"></i>
+                </div>
+                <p class="text-2xl font-semibold text-gray-700 mb-4">Tu carrito está vacío</p>
+                <p class="text-lg text-gray-500 mb-6">Parece que aún no has añadido nada. ¡Explora nuestros productos!</p>
+                <a href="{% url 'catalogo_publico' %}" class="inline-block text-white px-8 py-4 rounded-full font-bold text-lg hover:opacity-90 transition-opacity duration-300 shadow-md" style="background-color: var(--brand-accent);">
+                    Volver al catálogo
+                </a>
+            </div>
+        {% endif %}
+    </main>
+    
+    <!-- Pie de página (Footer) -->
+    <footer class="bg-gradient-to-r from-[--brand-primary] to-[--brand-secondary] text-white py-10 mt-16">
+        <div class="container mx-auto px-6 text-center">
+            <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" class="h-16 w-auto mx-auto mb-4 drop-shadow-lg">
+            <p>&copy; 2025 Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        async function generateWhatsAppOrder() {
+            const whatsAppButton = document.getElementById('whatsapp-btn');
+            whatsAppButton.disabled = true;
+            whatsAppButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-3"></i> Generando...';
+
+            try {
+                // 1. Llamada a tu backend para crear el pedido y obtener el enlace
+                const response = await fetch("{% url 'crear_pedido_whatsapp' %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error al crear el pedido.');
+                }
+
+                const data = await response.json();
+                const orderUrl = data.order_url;
+                const orderCode = data.order_code;
+
+                // 2. Construir el mensaje de WhatsApp con el enlace seguro Y el resumen de texto
+                const phoneNumber = "51932187068"; // Reemplaza con tu número
+                let message = `¡Hola Fantasía Íntima! ✨\n\n`;
+                message += `He generado un pedido desde la web.\n\n`;
+                message += `*📋 Código de Pedido:* ${orderCode}\n`;
+                message += `*🔗 Ver Resumen Seguro:* ${window.location.origin}${orderUrl}\n\n`;
+                message += `-----------------------------------\n`;
+                message += `*Resumen para referencia:*\n\n`;
+
+                const cartItems = document.querySelectorAll('.cart-item');
+                cartItems.forEach(item => {
+                    const name = item.dataset.name;
+                    const quantity = item.dataset.quantity;
+                    const color = item.dataset.colorEspanol;
+                    const price = parseFloat(item.dataset.price).toFixed(2);
+                    const subtotal = (quantity * price).toFixed(2);
+                    
+                    message += `🛍️ *${name}*\n`;
+                    message += `  - 🎨 Color: ${color}\n`;
+                    message += `  - #️⃣ Cantidad: ${quantity}\n`;
+                    message += `  - 💰 Precio: S/${price} (Subtotal: S/${subtotal})\n\n`;
+                });
+
+                const totalPrice = document.getElementById('total-price-display').innerText;
+                message += `*Total del Pedido: ${totalPrice}*\n`;
+                // --- LÍNEA AÑADIDA ---
+                message += `🚚 _(Este total no incluye el costo de envío)_\n\n`;
+                message += "¡Quedo a la espera de su confirmación para coordinar el pago y envío! 😊";
+
+                const encodedMessage = encodeURIComponent(message);
+                const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+                
+                // 3. Abrir WhatsApp
+                window.open(whatsappUrl, '_blank');
+
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Hubo un problema al generar tu pedido. Por favor, inténtalo de nuevo.");
+            } finally {
+                // Reactivar el botón
+                whatsAppButton.disabled = false;
+                whatsAppButton.innerHTML = '<i class="fab fa-whatsapp mr-3"></i> Pedir por WhatsApp';
+            }
+        }
+    </script>
+</body>
+</html>

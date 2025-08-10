@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ titulo }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-8">
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-2xl">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">{{ titulo }}</h1>
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+            <div>
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Información del Producto</h2>
+                {% for field in form %}
+                <div class="mb-4">
+                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <div class="text-red-500 text-sm mt-1">{{ field.errors }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <div>
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4 mt-6">Variantes de Color</h2>
+                {{ formset.management_form }}
+                <div id="form-container" class="space-y-4">
+                {% for form in formset %}
+                    <div class="form-row p-4 border rounded-lg flex items-center space-x-4">
+                        {% for field in form %}
+                            {% if not field.is_hidden %}
+                            <div class="flex-1">
+                                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.errors %}
+                                    <div class="text-red-500 text-sm mt-1">{{ field.errors }}</div>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                                {{ field }}
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+                </div>
+                <button type="button" id="add-form" class="mt-4 bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg shadow-md hover:bg-gray-400">Añadir otra variante</button>
+            </div>
+
+            <button type="submit" class="w-full bg-gradient-to-r from-green-500 to-teal-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:from-green-600 hover:to-teal-600 transition-colors">
+                Guardar
+            </button>
+        </form>
+        <p class="mt-4 text-center">
+            <a href="{% url 'dashboard' %}" class="text-gray-500 hover:underline">Volver al Panel de Control</a>
+        </p>
+        {% if producto %}
+            <p class="mt-4 text-center">
+                <a href="{% url 'admin:mi_app_producto_change' producto.pk %}" class="text-pink-500 hover:underline font-bold">Gestionar Variantes de Color (Desde el panel de Django)</a>
+            </p>
+        {% endif %}
+    </div>
+
+    <script>
+        const formContainer = document.getElementById('form-container');
+        const addButton = document.getElementById('add-form');
+        const managementForm = document.querySelector('input[name$="TOTAL_FORMS"]');
+        let formCount = parseInt(managementForm.value);
+
+        addButton.addEventListener('click', () => {
+            const emptyForm = document.querySelector('#form-container .form-row').cloneNode(true);
+            const inputs = emptyForm.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                const newId = input.id.replace(/-\d+-/g, `-${formCount}-`);
+                const newName = input.name.replace(/-\d+-/g, `-${formCount}-`);
+                input.id = newId;
+                input.name = newName;
+                input.value = '';
+                const errorDiv = input.closest('div').querySelector('.text-red-500');
+                if (errorDiv) {
+                    errorDiv.remove();
+                }
+            });
+            formContainer.appendChild(emptyForm);
+            formCount++;
+            managementForm.value = formCount;
+        });
+    </script>
+</body>
+</html>

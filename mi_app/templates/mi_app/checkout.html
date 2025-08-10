@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout del Carrito</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-8">
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-2xl">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Confirmar Compra del Carrito</h1>
+        
+        <div class="space-y-6">
+            <div class="p-6 bg-gray-50 rounded-lg border">
+                <h2 class="text-xl font-semibold text-gray-700 mb-2">Resumen del Pedido</h2>
+                {% for item in cart_items %}
+                    <div class="flex items-center space-x-4 border-b last:border-b-0 pb-4 mb-4">
+                        <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-24 h-24 object-contain rounded-md">
+                        <div class="flex-1">
+                            <p class="font-bold text-lg text-gray-800">{{ item.name }}</p>
+                            <p class="text-sm text-gray-500">Color: <span class="font-semibold capitalize">{{ item.color }}</span></p>
+                            <p class="text-lg font-bold text-pink-600 mt-1">S/{{ item.price }} x {{ item.quantity }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+                <div class="flex justify-between items-center font-bold text-xl text-gray-800 mt-4">
+                    <span>Total:</span>
+                    <span>S/{{ total_price|floatformat:2 }}</span>
+                </div>
+            </div>
+            
+            <form method="post" action="{% url 'procesar_pago' %}" class="space-y-6">
+                {% csrf_token %}
+                
+                <h2 class="text-xl font-semibold text-gray-700">Detalles de Envío y Pago</h2>
+                
+                <div>
+                    <label for="nombre" class="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
+                    <input type="text" id="nombre" name="nombre" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500" required>
+                </div>
+                
+                <div>
+                    <label for="ciudad" class="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
+                    <select id="ciudad" name="ciudad" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500" onchange="updateDeliveryDays(this.value)">
+                        <option value="Lima">Lima</option>
+                        <option value="Provincia">Provincia</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="direccion" class="block text-sm font-medium text-gray-700 mb-1">Dirección de Envío</label>
+                    <input type="text" id="direccion" name="direccion" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500" required>
+                </div>
+
+                <div>
+                    <label for="dias_envio" class="block text-sm font-medium text-gray-700 mb-1">Días de Envío</label>
+                    <input type="text" id="dias_envio" name="dias_envio" value="Aproximadamente 1 día hábil." class="w-full px-4 py-2 border rounded-lg bg-gray-200" readonly>
+                </div>
+                
+                <div>
+                    <h3 class="text-base font-medium text-gray-700 mb-2">Método de Pago</h3>
+                    <div class="flex flex-col space-y-2">
+                        <label class="inline-flex items-center p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                            <input type="radio" name="metodo_pago" value="yape" class="form-radio text-pink-600" onchange="togglePaymentFields(this.value)" required>
+                            <span class="ml-2">Yape</span>
+                        </label>
+                        <label class="inline-flex items-center p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                            <input type="radio" name="metodo_pago" value="plin" class="form-radio text-pink-600" onchange="togglePaymentFields(this.value)" required>
+                            <span class="ml-2">Plin</span>
+                        </label>
+                        <label class="inline-flex items-center p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                            <input type="radio" name="metodo_pago" value="tarjeta" class="form-radio text-pink-600" onchange="togglePaymentFields(this.value)" required>
+                            <span class="ml-2">Tarjeta de Crédito</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div id="payment-fields" class="space-y-4"></div>
+                
+                <button type="submit" class="w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:from-pink-600 hover:to-rose-600 transition-colors">
+                    Finalizar Compra
+                </button>
+            </form>
+        </div>
+    </div>
+    <script>
+        function updateDeliveryDays(ciudad) {
+            const diasInput = document.getElementById('dias_envio');
+            if (ciudad === 'Lima') {
+                diasInput.value = 'Aproximadamente 1 día hábil.';
+            } else {
+                diasInput.value = 'Aproximadamente 3-5 días hábiles.';
+            }
+        }
+        
+        function togglePaymentFields(method) {
+            const container = document.getElementById('payment-fields');
+            container.innerHTML = '';
+            
+            if (method === 'yape' || method === 'plin') {
+                container.innerHTML = `
+                    <div>
+                        <label for="numero_celular" class="block text-sm font-medium text-gray-700 mb-1">Número de Celular</label>
+                        <input type="tel" id="numero_celular" name="numero_celular" placeholder="9xxxxxxxx" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500" required>
+                    </div>
+                `;
+            } else if (method === 'tarjeta') {
+                container.innerHTML = `
+                    <div>
+                        <label for="numero_tarjeta" class="block text-sm font-medium text-gray-700 mb-1">Número de Tarjeta</label>
+                        <input type="text" id="numero_tarjeta" name="numero_tarjeta" placeholder="xxxx-xxxx-xxxx-xxxx" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500" required>
+                    </div>
+                    <div class="flex space-x-4">
+                        <div class="flex-1">
+                            <label for="fecha_expiracion" class="block text-sm font-medium text-gray-700 mb-1">Fecha de Expiración</label>
+                            <input type="text" id="fecha_expiracion" name="fecha_expiracion" placeholder="MM/AA" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500" required>
+                        </div>
+                        <div class="flex-1">
+                            <label for="cvv" class="block text-sm font-medium text-gray-700 mb-1">CVV</label>
+                            <input type="text" id="cvv" name="cvv" placeholder="xxx" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500" required>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

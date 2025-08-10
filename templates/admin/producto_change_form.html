@@ -1,0 +1,77 @@
+{% extends "admin/change_form.html" %}
+{% load i18n static %}
+
+{% block admin_change_form_document_ready %}
+{{ block.super }}
+<script type="text/javascript">
+(function($) {
+    $(document).ready(function() {
+
+        const colorMap = JSON.parse('{{ color_map|escapejs }}');
+
+        function initColorPreview($select) {
+            if ($select.length === 0) return;
+
+            function attachPreview() {
+                const $container = $select.next('.select2');
+
+                if ($container.length === 0) {
+                    setTimeout(attachPreview, 50);
+                    return;
+                }
+
+                if ($container.next('.color-preview').length) return;
+
+                const $preview = $('<span></span>').addClass('color-preview').css({
+                    display: 'inline-block',
+                    width: '25px',
+                    height: '25px',
+                    'border-radius': '50%',
+                    'margin-left': '10px',
+                    'vertical-align': 'middle',
+                    border: '1px solid #ccc'
+                });
+
+                $container.after($preview);
+
+                function updatePreview() {
+                    const colorKey = $select.val();
+                    const colorValue = colorMap[colorKey] || '#FFFFFF';
+                    $preview.css('background', colorValue);
+                }
+
+                // Mostrar al cargar
+                updatePreview();
+
+                // Escuchar directamente al contenedor de Select2
+                $container.on('click', function() {
+                    // Mientras está abierto, escuchar cuando se seleccione algo
+                    $(document).one('mouseup', '.select2-results__option', function() {
+                        setTimeout(updatePreview, 50); // pequeño delay para que val() se actualice
+                    });
+                });
+            }
+
+            attachPreview();
+        }
+
+        // Inicializar color principal
+        initColorPreview($('#id_color_principal'));
+
+        // Inicializar variantes existentes
+        $('select[id^="id_variantes-"][id$="-color"]').each(function() {
+            initColorPreview($(this));
+        });
+
+        // Inicializar nuevas variantes
+        $(document).on('formset:added', function(event, $row) {
+            const $newSelect = $row.find('select[id$="-color"]');
+            if ($newSelect.length) {
+                initColorPreview($newSelect);
+            }
+        });
+
+    });
+})(django.jQuery);
+</script>
+{% endblock %}

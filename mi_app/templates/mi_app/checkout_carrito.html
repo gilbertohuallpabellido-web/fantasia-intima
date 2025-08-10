@@ -1,0 +1,246 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - Fantasía Íntima</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Parisienne&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Reutilizamos las variables de marca para consistencia */
+        :root {
+            --brand-primary: #f9a8d4;
+            --brand-secondary: #f472b6;
+            --brand-accent: #ec4899;
+            --brand-brown: #5C2C0C;
+            --brand-text: #4b4244;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fffbff;
+            color: var(--brand-text);
+        }
+        .font-brand {
+            font-family: 'Parisienne', cursive;
+        }
+        /* Estilos personalizados para los radios de pago como tarjetas */
+        input[type="radio"]:checked + .payment-card {
+            border-color: var(--brand-accent);
+            background-color: #fdf2f8; /* bg-pink-50 */
+            box-shadow: 0 0 0 2px var(--brand-accent);
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+    
+    <!-- Encabezado consistente con el resto de la web -->
+    <header class="bg-gradient-to-r from-[--brand-primary] to-[--brand-secondary] text-white p-2 sm:p-4 shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="{% url 'catalogo_publico' %}" class="flex items-center">
+                <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" class="h-14 w-auto drop-shadow-lg">
+            </a>
+            <nav class="flex items-center space-x-4">
+                <a href="{% url 'catalogo_publico' %}" class="font-semibold hover:text-white/80 transition-colors">Catálogo</a>
+                <a href="{% url 'ver_carrito' %}" class="relative bg-white text-pink-600 p-3 rounded-full hover:bg-pink-50 flex items-center shadow-md">
+                    <i class="fas fa-shopping-cart text-xl"></i>
+                    <span id="cart-counter" style="background-color: var(--brand-accent);" class="absolute -top-2 -right-2 text-white text-xs font-semibold h-6 w-6 flex items-center justify-center rounded-full border-2 border-white">
+                        {{ cart_items|length }}
+                    </span>
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8 flex-grow">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 w-full max-w-6xl mx-auto">
+            <!-- Columna de Resumen del Pedido -->
+            <div class="bg-white p-6 md:p-8 rounded-3xl shadow-xl flex flex-col h-full order-last lg:order-first">
+                <h1 class="text-4xl font-brand text-gray-800 mb-6">Resumen del Pedido</h1>
+                
+                <div class="flex-1 space-y-6">
+                    {% for item in cart_items %}
+                        <div class="flex items-center space-x-4 border-b last:border-b-0 pb-4 last:pb-0">
+                            <div class="flex-shrink-0 w-24 h-24 overflow-hidden rounded-xl border border-gray-200">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-full h-full object-contain">
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-bold text-lg" style="color: var(--brand-brown);">{{ item.name }}</p>
+                                <p class="text-sm text-gray-500">Color: <span class="font-semibold capitalize">{{ item.color }}</span></p>
+                                <p class="text-lg font-bold mt-1" style="color: var(--brand-accent);">S/{{ item.price }} x {{ item.quantity }}</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="space-y-2 mt-6 pt-4 border-t-2 border-gray-100">
+                    <div class="flex justify-between items-center text-lg text-gray-800">
+                        <span>Subtotal:</span>
+                        <span id="subtotal-price" data-base-price="{{ total_price|floatformat:2 }}">S/{{ total_price|floatformat:2 }}</span>
+                    </div>
+                    <div class="flex justify-between items-center text-lg text-gray-800">
+                        <span>Costo de Envío:</span>
+                        <span id="delivery-cost">S/5.00</span>
+                    </div>
+                    <div class="flex justify-between items-center font-bold text-2xl text-gray-800 mt-4 pt-2 border-t border-gray-200">
+                        <span>Total:</span>
+                        <span id="final-total" style="color: var(--brand-accent);">S/{{ total_price|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna de Detalles de Envío y Pago -->
+            <div class="bg-white p-6 md:p-8 rounded-3xl shadow-xl">
+                <h1 class="text-4xl font-brand text-gray-800 mb-6">Detalles de Envío y Pago</h1>
+
+                <form method="post" action="{% url 'procesar_pago' %}" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <!-- Sección de Envío -->
+                    <div class="space-y-4">
+                        <div>
+                            <label for="nombre" class="block text-sm font-semibold text-gray-700 mb-1">Nombre Completo</label>
+                            <input type="text" id="nombre" name="nombre" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" required>
+                        </div>
+                        
+                        <div>
+                            <label for="dni" class="block text-sm font-semibold text-gray-700 mb-1">DNI</label>
+                            <input type="text" id="dni" name="dni" placeholder="xxxxxxxx" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" required>
+                        </div>
+
+                        <div>
+                            <label for="email" class="block text-sm font-semibold text-gray-700 mb-1">Correo Electrónico</label>
+                            <input type="email" id="email" name="email" placeholder="tu_correo@ejemplo.com" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" required>
+                        </div>
+
+                        <div>
+                            <label for="celular" class="block text-sm font-semibold text-gray-700 mb-1">Número de Celular</label>
+                            <input type="tel" id="celular" name="celular" placeholder="9xxxxxxxx" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" required>
+                        </div>
+                        
+                        <div>
+                            <label for="ciudad" class="block text-sm font-semibold text-gray-700 mb-1">Ciudad</label>
+                            <select id="ciudad" name="ciudad" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all appearance-none bg-white" onchange="updateDeliveryInfo(this.value)">
+                                <option value="Lima">Lima</option>
+                                <option value="Provincia">Provincia</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="direccion" class="block text-sm font-semibold text-gray-700 mb-1">Dirección de Envío</label>
+                            <input type="text" id="direccion" name="direccion" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" required>
+                        </div>
+                        
+                        <div>
+                            <label for="dias_envio" class="block text-sm font-semibold text-gray-700 mb-1">Días de Envío</label>
+                            <input type="text" id="dias_envio" name="dias_envio" value="Aproximadamente 1 día hábil." class="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-100 cursor-not-allowed" readonly>
+                        </div>
+                    </div>
+                    
+                    <!-- Sección de Pago -->
+                    <div class="space-y-4 pt-4 border-t-2 border-gray-100">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">Método de Pago</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="metodo_pago" value="yape" class="hidden" onchange="togglePaymentFields(this.value)" required>
+                                <span class="payment-card flex items-center justify-center p-4 bg-gray-50 rounded-xl border-2 border-gray-200 transition-all duration-200">
+                                    <img src="{% static 'productos/yape.png' %}" alt="Yape" class="h-8">
+                                </span>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="metodo_pago" value="plin" class="hidden" onchange="togglePaymentFields(this.value)" required>
+                                <span class="payment-card flex items-center justify-center p-4 bg-gray-50 rounded-xl border-2 border-gray-200 transition-all duration-200">
+                                    <img src="{% static 'productos/plin.png' %}" alt="Plin" class="h-8">
+                                </span>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="metodo_pago" value="tarjeta" class="hidden" onchange="togglePaymentFields(this.value)" required>
+                                <span class="payment-card flex items-center justify-center p-4 bg-gray-50 rounded-xl border-2 border-gray-200 transition-all duration-200">
+                                    <i class="fas fa-credit-card text-3xl text-gray-600"></i>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div id="payment-fields" class="space-y-4"></div>
+                    
+                    <button type="submit" class="w-full text-white font-bold text-xl py-4 px-6 rounded-full shadow-lg transition-transform duration-200 hover:scale-105" style="background-color: var(--brand-accent);">
+                        Finalizar Compra
+                    </button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Pie de página (Footer) -->
+    <footer class="bg-gradient-to-r from-[--brand-primary] to-[--brand-secondary] text-white py-10 mt-16">
+        <div class="container mx-auto px-6 text-center">
+            <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" class="h-16 w-auto mx-auto mb-4 drop-shadow-lg">
+            <p>&copy; 2025 Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+        function updateDeliveryInfo(ciudad) {
+            const diasInput = document.getElementById('dias_envio');
+            const deliveryCostElement = document.getElementById('delivery-cost');
+            const basePrice = parseFloat(document.getElementById('subtotal-price').getAttribute('data-base-price'));
+            let deliveryCost = 0;
+
+            if (ciudad === 'Lima') {
+                diasInput.value = 'Aproximadamente 1 día hábil.';
+                deliveryCost = 5.00;
+            } else {
+                diasInput.value = 'Aproximadamente 3-5 días hábiles.';
+                deliveryCost = 15.00;
+            }
+
+            deliveryCostElement.textContent = `S/${deliveryCost.toFixed(2)}`;
+            const finalTotal = basePrice + deliveryCost;
+            document.getElementById('final-total').textContent = `S/${finalTotal.toFixed(2)}`;
+        }
+        
+        function togglePaymentFields(method) {
+            const container = document.getElementById('payment-fields');
+            container.innerHTML = '';
+            
+            if (method === 'yape' || method === 'plin') {
+                container.innerHTML = `
+                    <div class="text-center p-4 bg-gray-100 rounded-xl">
+                        <p class="text-sm font-medium text-gray-700">Por favor, realiza el pago a través de la app de ${method.charAt(0).toUpperCase() + method.slice(1)}.</p>
+                        <p class="text-lg font-bold mt-2" style="color: var(--brand-accent);">Número de Pago: 987 654 321</p>
+                    </div>
+                `;
+            } else if (method === 'tarjeta') {
+                container.innerHTML = `
+                    <div class="space-y-4">
+                        <div>
+                            <label for="numero_tarjeta" class="block text-sm font-semibold text-gray-700 mb-1">Número de Tarjeta</label>
+                            <input type="text" id="numero_tarjeta" name="numero_tarjeta" placeholder="xxxx-xxxx-xxxx-xxxx" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" required>
+                        </div>
+                        <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                            <div class="flex-1">
+                                <label for="fecha_expiracion" class="block text-sm font-semibold text-gray-700 mb-1">Fecha de Expiración</label>
+                                <input type="text" id="fecha_expiracion" name="fecha_expiracion" placeholder="MM/AA" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" required>
+                            </div>
+                            <div class="flex-1">
+                                <label for="cvv" class="block text-sm font-semibold text-gray-700 mb-1">CVV</label>
+                                <input type="text" id="cvv" name="cvv" placeholder="xxx" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all" required>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        window.onload = () => {
+            updateDeliveryInfo(document.getElementById('ciudad').value);
+        };
+    </script>
+</body>
+</html>

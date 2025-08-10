@@ -1,0 +1,403 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalles de {{ producto.nombre }} - Fantasía Íntima</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Parisienne&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Reutilizamos las variables de marca para consistencia */
+        :root {
+            --brand-primary: #f9a8d4;
+            --brand-secondary: #f472b6;
+            --brand-accent: #ec4899;
+            --brand-brown: #5C2C0C;
+            --brand-text: #4b4244;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fffbff;
+            color: var(--brand-text);
+        }
+        .font-brand {
+            font-family: 'Parisienne', cursive;
+        }
+        
+        /* Estilos para el efecto de zoom */
+        .zoom-container {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            overflow: hidden;
+            border-radius: 1.5rem; /* rounded-2xl */
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+            border: 1px solid rgb(243 244 246); /* border-gray-100 */
+        }
+
+        .zoom-image {
+            width: 100%;
+            height: 100%;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            cursor: zoom-in;
+            /* Transición suave para el efecto de zoom */
+            transition: transform 0.3s ease;
+            transform-origin: center;
+        }
+        
+        /* Estilos para los selectores de color */
+        .color-selector {
+            /* Borde más grueso y oscuro para que todos los colores sean visibles */
+            box-shadow: 0 0 0 2px #d1d5db; /* Un borde gris más oscuro y grueso */
+            transition: all 0.2s ease-in-out;
+        }
+        .color-selector.selected {
+            /* Borde de acento para el color seleccionado */
+            box-shadow: 0 0 0 3px var(--brand-accent);
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Encabezado consistente con el catálogo -->
+    <header class="bg-gradient-to-r from-[--brand-primary] to-[--brand-secondary] text-white p-2 sm:p-4 shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="{% url 'catalogo_publico' %}" class="flex items-center">
+                <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" class="h-14 w-auto drop-shadow-lg">
+            </a>
+            <nav class="flex items-center space-x-4">
+                <a href="{% url 'catalogo_publico' %}" class="font-semibold hover:text-white/80 transition-colors">Catálogo</a>
+                <a href="{% url 'ver_carrito' %}" class="relative bg-white text-pink-600 p-3 rounded-full hover:bg-pink-50 flex items-center shadow-md">
+                    <i class="fas fa-shopping-cart text-xl"></i>
+                    <span id="cart-counter" style="background-color: var(--brand-accent);" class="absolute -top-2 -right-2 text-white text-xs font-semibold h-6 w-6 flex items-center justify-center rounded-full border-2 border-white">0</span>
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8">
+        <div class="bg-white p-6 md:p-10 rounded-3xl shadow-xl grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16">
+            <!-- Columna de la imagen del producto -->
+            <div>
+                {% if producto.imagen_principal %}
+                    <div id="zoom-container-{{ producto.id }}" class="zoom-container mb-4 relative">
+                        <div id="zoom-image-{{ producto.id }}"
+                             class="zoom-image"
+                             style="background-image: url('{{ producto.imagen_principal.url }}');"
+                             role="img"
+                             aria-label="Imagen de {{ producto.nombre }}">
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-wrap justify-center gap-3 mt-4">
+                        {% for variante in producto.variantes.all %}
+                            <div 
+                                onclick="changeProductImageAndStock(event, '{{ producto.id }}', '{{ variante.imagen.url }}', '{{ variante.stock }}', '{{ variante.pk }}')"
+                                class="color-selector w-12 h-12 rounded-full cursor-pointer flex items-center justify-center {% if forloop.first %}selected{% endif %}"
+                                style="background-color: {{ variante.color | lower }};"
+                                title="{{ variante.get_color_display }}">
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="w-full aspect-square mb-4 overflow-hidden rounded-2xl shadow-xl border border-gray-200 flex items-center justify-center bg-gray-200 text-gray-500 font-bold">
+                        Imagen no disponible
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Columna de los detalles del producto -->
+            <div class="flex flex-col justify-center">
+                <h1 class="text-4xl md:text-5xl font-bold mb-2 leading-tight" style="color: var(--brand-brown);">{{ producto.nombre }}</h1>
+                <p class="text-3xl font-bold mb-6" style="color: var(--brand-accent);">S/{{ producto.precio }}</p>
+                <p class="text-gray-600 text-lg mb-6 leading-relaxed">{{ producto.descripcion }}</p>
+                
+                <div class="mb-6">
+                    <p class="text-sm text-gray-500">
+                        Stock disponible: 
+                        <span id="stock-{{ producto.id }}" class="font-bold text-gray-800">
+                            {% if producto.variantes.first %}{{ producto.variantes.first.stock }}{% else %}0{% endif %}
+                        </span> 
+                        unidades
+                    </p>
+                </div>
+                
+                <form id="form-add-to-cart-{{ producto.id }}" method="post" action="{% url 'add_to_cart' %}" onsubmit="handleAddToCart(event, {{ producto.id }})">
+                    {% csrf_token %}
+                    <input type="hidden" name="product_id" value="{{ producto.pk }}">
+                    <input type="hidden" name="variant_id" id="color_variante-{{ producto.id }}" value="{% if producto.variantes.first %}{{ producto.variantes.first.pk }}{% endif %}">
+                    
+                    <div class="flex items-center mb-6">
+                        <span class="mr-6 font-bold text-gray-700">Cantidad:</span>
+                        <div class="flex items-center border rounded-full overflow-hidden shadow-sm">
+                            <button type="button" onclick="changeQuantity({{ producto.id }}, -1)" class="bg-gray-200 text-gray-700 w-10 h-10 flex items-center justify-center hover:bg-gray-300 transition-colors duration-200">-</button>
+                            <input 
+                                type="number" 
+                                name="quantity" 
+                                id="quantity-{{ producto.id }}" 
+                                value="1" 
+                                min="1" 
+                                class="w-16 text-center bg-white text-gray-800 focus:outline-none"
+                                onchange="validateQuantity({{ producto.id }})"
+                            >
+                            <button type="button" onclick="changeQuantity({{ producto.id }}, 1)" class="bg-gray-200 text-gray-700 w-10 h-10 flex items-center justify-center hover:bg-gray-300 transition-colors duration-200">+</button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full text-white font-bold text-xl py-4 px-6 rounded-full shadow-lg transition-transform duration-200 hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed" style="background-color: var(--brand-accent);">
+                        <i class="fas fa-shopping-cart mr-3"></i>
+                        Añadir al Carrito
+                    </button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal de confirmación de carrito -->
+    <div id="add-to-cart-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50 transition-opacity duration-300 opacity-0 hidden">
+        <div class="relative w-full max-w-sm mx-auto p-8 rounded-3xl shadow-2xl bg-white text-center transform transition-transform duration-300 scale-95">
+            <h3 class="text-2xl font-bold text-gray-900 mb-4">¡Producto Añadido!</h3>
+            <p class="text-sm text-gray-600 mb-6">El producto ha sido añadido al carrito con éxito.</p>
+            <div class="flex flex-col space-y-4">
+                <a href="{% url 'ver_carrito' %}" class="px-6 py-3 text-white font-bold rounded-full transition-colors duration-300" style="background-color: var(--brand-accent);">
+                    Ir al Carrito
+                </a>
+                <a href="{% url 'catalogo_publico' %}" class="px-6 py-3 bg-gray-200 text-gray-800 font-bold rounded-full hover:bg-gray-300 transition-colors duration-300">
+                    Seguir Comprando
+                </a>
+                <button onclick="closeModal('add-to-cart-modal')" class="px-6 py-3 text-gray-600 font-bold rounded-full hover:bg-gray-100 transition-colors duration-300">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de error genérico -->
+    <div id="error-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50 transition-opacity duration-300 opacity-0 hidden">
+        <div class="relative w-full max-w-sm mx-auto p-8 rounded-3xl shadow-2xl bg-white text-center transform transition-transform duration-300 scale-95">
+            <h3 class="text-2xl font-bold text-red-600 mb-4">¡Error!</h3>
+            <p id="error-message" class="text-sm text-gray-600 mb-6">Hubo un error.</p>
+            <button onclick="closeModal('error-modal')" class="w-full px-6 py-3 bg-red-500 text-white font-bold rounded-full hover:bg-red-600 transition-colors duration-300">
+                Entendido
+            </button>
+        </div>
+    </div>
+
+    <!-- Botones de redes sociales flotantes -->
+    <div class="fixed bottom-6 left-6 flex flex-col space-y-2 z-40">
+        <a href="https://wa.me/51932187068" class="bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition-colors" target="_blank">
+            <i class="fab fa-whatsapp text-2xl"></i>
+        </a>
+        <a href="https://web.facebook.com/fantasiaintimaa/" class="bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors" target="_blank">
+            <i class="fab fa-facebook-f text-2xl"></i>
+        </a>
+        <a href="https://www.instagram.com/fantasia_intima_lenceria" class="bg-pink-600 text-white p-4 rounded-full shadow-lg hover:bg-pink-700 transition-colors" target="_blank">
+            <i class="fab fa-instagram text-2xl"></i>
+        </a>
+        <a href="https://www.tiktok.com/@fantasa.ntima" class="bg-black text-white p-4 rounded-full shadow-lg hover:bg-gray-800 transition-colors" target="_blank">
+            <i class="fab fa-tiktok text-2xl"></i>
+        </a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const initialStock = parseInt(document.getElementById('stock-{{ producto.id }}').textContent);
+            const quantityInput = document.getElementById('quantity-{{ producto.id }}');
+            
+            if (quantityInput) {
+                quantityInput.max = initialStock > 0 ? initialStock : 0;
+                if (initialStock <= 0) {
+                    quantityInput.value = 0;
+                    document.querySelector(`#form-add-to-cart-{{ producto.id }} button[type="submit"]`).disabled = true;
+                }
+            }
+
+            setupImageZoom('{{ producto.id }}');
+        });
+
+        function changeProductImageAndStock(event, productId, imageUrl, stock, variantId) {
+            const zoomImage = document.getElementById('zoom-image-' + productId);
+            const stockElement = document.getElementById('stock-' + productId);
+            const variantInput = document.getElementById('color_variante-' + productId);
+            const quantityInput = document.getElementById('quantity-' + productId);
+            const addToCartButton = document.querySelector(`#form-add-to-cart-${productId} button[type="submit"]`);
+
+            document.querySelectorAll('.color-selector').forEach(el => el.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+            
+            zoomImage.style.backgroundImage = `url('${imageUrl}')`;
+            stockElement.textContent = stock;
+            variantInput.value = variantId;
+
+            // --- LÓGICA DE ZOOM MEJORADA ---
+            // Resetea el zoom al cambiar de color para evitar que se quede "pegado"
+            if (zoomImage) {
+                zoomImage.style.transform = 'scale(1)';
+                zoomImage.style.transformOrigin = 'center';
+                zoomImage.style.cursor = 'zoom-in';
+            }
+            // --- FIN DE LA MEJORA ---
+
+            const stockNum = parseInt(stock);
+            quantityInput.max = stockNum;
+            
+            if (stockNum <= 0) {
+                quantityInput.value = 0;
+                addToCartButton.disabled = true;
+            } else {
+                quantityInput.value = 1;
+                addToCartButton.disabled = false;
+            }
+        }
+        
+        // --- FUNCIÓN DE ZOOM COMPLETAMENTE REESCRITA PARA MAYOR ESTABILIDAD ---
+        function setupImageZoom(productId) {
+            const zoomContainer = document.getElementById('zoom-container-' + productId);
+            const zoomImage = document.getElementById('zoom-image-' + productId);
+            if (!zoomContainer || !zoomImage) return;
+
+            // Lógica para escritorio (efecto lupa al pasar el mouse)
+            const handleMouseMove = (e) => {
+                const { left, top, width, height } = zoomContainer.getBoundingClientRect();
+                const x = (e.clientX - left) / width * 100;
+                const y = (e.clientY - top) / height * 100;
+                zoomImage.style.transformOrigin = `${x}% ${y}%`;
+            };
+
+            const handleMouseEnter = () => {
+                zoomImage.style.transform = 'scale(2)';
+                zoomImage.style.cursor = 'zoom-out';
+            };
+
+            const handleMouseLeave = () => {
+                zoomImage.style.transform = 'scale(1)';
+                zoomImage.style.transformOrigin = 'center';
+                zoomImage.style.cursor = 'zoom-in';
+            };
+
+            zoomContainer.addEventListener('mousemove', handleMouseMove);
+            zoomContainer.addEventListener('mouseenter', handleMouseEnter);
+            zoomContainer.addEventListener('mouseleave', handleMouseLeave);
+            
+            // Lógica para móvil (tocar para hacer/quitar zoom)
+            let isZoomed = false;
+            const handleTouch = (e) => {
+                e.preventDefault();
+                isZoomed = !isZoomed;
+                if (isZoomed) {
+                    zoomImage.style.transform = 'scale(1.8)';
+                } else {
+                    zoomImage.style.transform = 'scale(1)';
+                }
+            };
+
+            // Usamos 'click' que funciona tanto para toques en móvil como para clics en escritorio.
+            // Esto previene conflictos de eventos.
+            zoomContainer.addEventListener('click', handleTouch);
+        }
+
+        async function handleAddToCart(event, productId) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            const quantityInput = document.getElementById('quantity-' + productId);
+            if (parseInt(quantityInput.value) > parseInt(quantityInput.max) || parseInt(quantityInput.value) <= 0) {
+                showErrorModal('La cantidad seleccionada no es válida.');
+                return;
+            }
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                        'X-Requested-With': 'XMLHttpRequest' // Importante para que Django lo reconozca como AJAX
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    updateCartCount(data.cart_count);
+                    showModal('add-to-cart-modal');
+                } else {
+                    showErrorModal(data.error || 'Hubo un error al añadir el producto.');
+                }
+            } catch (error) {
+                showErrorModal('Ocurrió un problema de conexión. Por favor, inténtalo de nuevo.');
+            }
+        }
+        
+        function changeQuantity(productId, change) {
+            const quantityInput = document.getElementById('quantity-' + productId);
+            let currentValue = parseInt(quantityInput.value);
+            let newValue = currentValue + change;
+            const maxStock = parseInt(quantityInput.max);
+
+            if (newValue < 1) newValue = 1;
+            if (newValue > maxStock) newValue = maxStock;
+
+            quantityInput.value = newValue;
+        }
+
+        function validateQuantity(productId) {
+            const quantityInput = document.getElementById('quantity-' + productId);
+            let value = parseInt(quantityInput.value);
+            const maxStock = parseInt(quantityInput.max);
+
+            if (isNaN(value) || value < 1) {
+                quantityInput.value = 1;
+            } else if (value > maxStock) {
+                quantityInput.value = maxStock;
+            }
+        }
+        
+        function updateCartCount(count) {
+            const cartCountElement = document.getElementById('cart-counter');
+            if (cartCountElement) {
+                cartCountElement.textContent = count;
+            }
+        }
+        
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    modal.querySelector('div').classList.remove('scale-95');
+                }, 10);
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('opacity-0');
+                modal.querySelector('div').classList.add('scale-95');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        function showErrorModal(message) {
+            const errorMessageElement = document.getElementById('error-message');
+            if (errorMessageElement) {
+                errorMessageElement.textContent = message;
+            }
+            showModal('error-modal');
+        }
+    </script>
+</body>
+</html>

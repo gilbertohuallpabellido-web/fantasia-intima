@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmar Eliminación</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md text-center">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">¿Estás seguro de que quieres eliminar?</h1>
+        <p class="text-gray-600 mb-6">El producto "{{ producto.nombre }}" será eliminado permanentemente.</p>
+        
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <button type="submit" class="w-full bg-red-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-red-600 transition-colors">
+                Sí, estoy seguro
+            </button>
+        </form>
+        <p class="mt-4">
+            <a href="{% url 'dashboard' %}" class="text-gray-500 hover:underline">Cancelar y volver al Panel de Control</a>
+        </p>
+    </div>
+</body>
+</html>

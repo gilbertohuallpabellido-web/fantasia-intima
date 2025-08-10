@@ -1,0 +1,262 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Cuenta - Fantasía Íntima</title>
+    <link rel="icon" href="{% static 'productos/logo.png' %}" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Parisienne&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --brand-primary: #f9a8d4; /* rosa claro */
+            --brand-secondary: #f472b6; /* rosa medio */
+            --brand-accent: #ec4899; /* rosa vibrante */
+            --brand-brown: #5C2C0C; /* marrón cálido */
+            --brand-text: #4b4244; /* texto principal */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fffbff;
+            color: var(--brand-text);
+        }
+        .font-brand {
+            font-family: 'Parisienne', cursive;
+        }
+        .transition-all {
+            transition: all 0.3s ease-in-out;
+        }
+        .social-icon:hover, #chat-button:hover {
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- HEADER -->
+    <header class="bg-gradient-to-r from-[--brand-primary] to-[--brand-secondary] text-white p-2 sm:p-4 shadow-lg sticky top-0 z-30">
+        <div class="container mx-auto flex justify-between items-center flex-wrap gap-2">
+            <div class="flex items-center space-x-2">
+                <a href="{% url 'catalogo_publico' %}" class="flex items-center">
+                    <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" class="h-14 w-auto drop-shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/100x56/f9a8d4/ffffff?text=Logo';">
+                </a>
+            </div>
+            
+            <nav class="hidden md:flex space-x-1 flex-grow justify-center items-center">
+                <a href="{% url 'catalogo_publico' %}" class="hover:bg-white/20 font-semibold py-2 px-3 rounded-full transition-all">Catálogo</a>
+            </nav>
+            
+            <div class="flex items-center space-x-4">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'mi_cuenta' %}" class="font-semibold hover:bg-white/20 py-2 px-4 rounded-full transition-all">Hola, {{ user.first_name }}</a>
+                    <form action="{% url 'logout' %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="bg-white text-pink-600 font-bold py-2 px-4 rounded-full hover:bg-pink-50 transition-all">Salir</button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'login' %}" class="bg-white text-pink-600 font-bold py-2 px-4 rounded-full hover:bg-pink-50 transition-all">Ingresar</a>
+                {% endif %}
+                
+                <a href="{% url 'ver_carrito' %}" class="relative bg-white text-pink-600 p-3 rounded-full hover:bg-pink-50 flex items-center shadow-md transition-all" aria-label="Ver carrito de compras">
+                    <i class="fas fa-shopping-cart text-xl"></i>
+                    <span id="cart-counter" class="absolute -top-2 -right-2 bg-[--brand-accent] text-white text-xs font-semibold h-6 w-6 flex items-center justify-center rounded-full border-2 border-white">0</span>
+                </a>
+            </div>
+        </div>
+    </header>
+    
+    <!-- MAIN CONTENT -->
+    <div class="bg-pink-50/30 min-h-screen">
+        <main class="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
+            <div class="max-w-5xl mx-auto">
+                <div class="text-center mb-12">
+                    <h1 class="text-5xl md:text-6xl font-brand text-[--brand-text]">Mi Cuenta</h1>
+                    <p class="mt-2 text-xl text-gray-500">Bienvenida, <span class="font-semibold text-[--brand-accent]">{{ user.first_name|default:user.username }}</span>.</p>
+                </div>
+
+                <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-pink-100">
+                    <div class="grid grid-cols-1 md:grid-cols-4">
+                        <!-- Menú de Navegación de la Cuenta -->
+                        <div class="md:col-span-1 bg-white p-6 border-b md:border-b-0 md:border-r border-pink-100">
+                            <h2 class="text-lg font-semibold text-[--brand-brown] mb-4">Navegación</h2>
+                            <nav id="account-nav" class="space-y-2">
+                                <button data-tab="perfil" class="nav-tab flex items-center w-full text-left gap-3 px-4 py-2 text-pink-700 bg-pink-100 rounded-lg font-semibold transition-colors">
+                                    <i class="fas fa-user-circle w-5 text-center"></i>
+                                    <span>Perfil</span>
+                                </button>
+                                <button data-tab="pedidos" class="nav-tab flex items-center w-full text-left gap-3 px-4 py-2 text-gray-600 hover:bg-pink-100 hover:text-pink-700 rounded-lg transition-colors">
+                                    <i class="fas fa-box-open w-5 text-center"></i>
+                                    <span>Mis Pedidos</span>
+                                </button>
+                                <button data-tab="direcciones" class="nav-tab flex items-center w-full text-left gap-3 px-4 py-2 text-gray-600 hover:bg-pink-100 hover:text-pink-700 rounded-lg transition-colors">
+                                    <i class="fas fa-map-marker-alt w-5 text-center"></i>
+                                    <span>Direcciones</span>
+                                </button>
+                                <!-- Formulario de Logout -->
+                                <form action="{% url 'logout' %}" method="post" class="w-full pt-2 mt-2 border-t border-pink-200">
+                                    {% csrf_token %}
+                                    <button type="submit" class="w-full flex items-center gap-3 px-4 py-2 text-gray-600 hover:bg-pink-100 hover:text-pink-700 rounded-lg transition-colors text-left">
+                                        <i class="fas fa-sign-out-alt w-5 text-center"></i>
+                                        <span>Cerrar Sesión</span>
+                                    </button>
+                                </form>
+                            </nav>
+                        </div>
+
+                        <!-- Contenido Principal de la Cuenta -->
+                        <div class="md:col-span-3 p-8">
+                            <!-- Pestaña de Perfil -->
+                            <div id="perfil-tab" class="tab-content space-y-6">
+                                <h2 class="text-3xl font-bold text-[--brand-brown] mb-6">Información del Perfil</h2>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="text-sm font-medium text-gray-500">Nombre Completo</label>
+                                        <p class="text-lg text-gray-800">{{ user.get_full_name|default:"No especificado" }}</p>
+                                    </div>
+                                    <div>
+                                        <label class="text-sm font-medium text-gray-500">Correo Electrónico</label>
+                                        <p class="text-lg text-gray-800">{{ user.email }}</p>
+                                    </div>
+                                    <div>
+                                        <label class="text-sm font-medium text-gray-500">Nombre de Usuario</label>
+                                        <p class="text-lg text-gray-800">{{ user.username }}</p>
+                                    </div>
+                                    <div class="pt-4">
+                                        <a href="#" class="inline-block bg-[--brand-accent] text-white font-bold py-3 px-6 rounded-full hover:bg-opacity-90 transition-all shadow-md hover:shadow-lg transform hover:scale-105">
+                                            Editar Perfil
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Pestaña de Mis Pedidos (AHORA ES DINÁMICA) -->
+                            <div id="pedidos-tab" class="tab-content hidden">
+                                <h2 class="text-3xl font-bold text-[--brand-brown] mb-6">Historial de Pedidos</h2>
+                                <div class="space-y-4">
+                                    {% for pedido in pedidos %}
+                                        <div class="border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                            <div>
+                                                <p class="font-semibold text-gray-800">Pedido #{{ pedido.numero_pedido }}</p>
+                                                <p class="text-sm text-gray-500">Fecha: {{ pedido.fecha_creacion|date:"d \d\e F, Y" }}</p>
+                                                <p class="text-sm font-bold
+                                                    {% if pedido.estado == 'entregado' %}text-green-600
+                                                    {% elif pedido.estado == 'enviado' %}text-blue-600
+                                                    {% elif pedido.estado == 'pendiente' %}text-yellow-600
+                                                    {% elif pedido.estado == 'cancelado' %}text-red-600
+                                                    {% else %}text-gray-600{% endif %}">
+                                                    {{ pedido.get_estado_display }}
+                                                </p>
+                                            </div>
+                                            <div class="text-left sm:text-right">
+                                                <p class="font-bold text-lg text-[--brand-brown]">S/ {{ pedido.total|floatformat:2 }}</p>
+                                                <!-- Asegúrate de tener una URL llamada 'detalle_pedido' que acepte el ID del pedido -->
+                                                <a href="{% url 'detalle_pedido' pedido.id %}" class="text-sm text-pink-600 hover:underline">Ver detalles</a>
+                                            </div>
+                                        </div>
+                                    {% empty %}
+                                        <div class="text-center py-10 px-6 bg-gray-50 rounded-lg">
+                                            <i class="fas fa-box-open text-4xl text-gray-300 mb-4"></i>
+                                            <p class="text-lg text-gray-600 font-semibold">Aún no tienes pedidos.</p>
+                                            <p class="text-gray-500">Cuando realices tu primera compra, aparecerá aquí.</p>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Pestaña de Direcciones -->
+                            <div id="direcciones-tab" class="tab-content hidden">
+                                <h2 class="text-3xl font-bold text-[--brand-brown] mb-6">Mis Direcciones</h2>
+                                <div class="space-y-4">
+                                    <!-- Ejemplo de una dirección -->
+                                    <div class="border border-gray-200 rounded-lg p-4">
+                                        <p class="font-semibold text-gray-800">Casa</p>
+                                        <p class="text-gray-600">Av. Siempre Viva 742, Sprinfield</p>
+                                        <p class="text-gray-600">Lima, Perú</p>
+                                        <div class="mt-2">
+                                            <a href="#" class="text-sm text-pink-600 hover:underline">Editar</a> |
+                                            <a href="#" class="text-sm text-red-600 hover:underline">Eliminar</a>
+                                        </div>
+                                    </div>
+                                    <button class="mt-4 w-full bg-gray-100 text-gray-700 font-bold py-3 px-6 rounded-full hover:bg-gray-200 transition-all">
+                                        <i class="fas fa-plus mr-2"></i> Añadir Nueva Dirección
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-12">
+                    <a href="{% url 'catalogo_publico' %}" class="inline-block bg-white text-pink-600 font-semibold py-3 px-6 rounded-full hover:bg-pink-50 transition-colors shadow-md border border-pink-200">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Volver al Catálogo
+                    </a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-gradient-to-r from-[--brand-primary] to-[--brand-secondary] text-white py-10 mt-16">
+        <div class="container mx-auto px-6 text-center">
+            <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" class="h-16 w-auto mx-auto mb-4 drop-shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/100x64/f9a8d4/ffffff?text=Logo';">
+            <p>&copy; {% now "Y" %} Fantasía Íntima. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- LÓGICA PARA LAS PESTAÑAS DE LA CUENTA ---
+        const navTabs = document.querySelectorAll('.nav-tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        navTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const targetTab = tab.dataset.tab;
+
+                // Actualizar estilos de los botones de navegación
+                navTabs.forEach(t => {
+                    t.classList.remove('bg-pink-100', 'text-pink-700', 'font-semibold');
+                    t.classList.add('text-gray-600');
+                });
+                tab.classList.add('bg-pink-100', 'text-pink-700', 'font-semibold');
+                tab.classList.remove('text-gray-600');
+
+                // Mostrar el contenido de la pestaña seleccionada
+                tabContents.forEach(content => {
+                    if (content.id === targetTab + '-tab') {
+                        content.classList.remove('hidden');
+                    } else {
+                        content.classList.add('hidden');
+                    }
+                });
+            });
+        });
+
+        // --- LÓGICA DEL CARRITO (para actualizar el contador) ---
+        const updateCartCount = async () => {
+            try {
+                // Asegúrate que la URL 'cart_count' esté definida en tus urls.py
+                const response = await fetch('{% url "cart_count" %}'); 
+                if (!response.ok) return;
+                const data = await response.json();
+                const count = data.cart_count || 0;
+                
+                const cartCounter = document.getElementById('cart-counter');
+                if (cartCounter) cartCounter.textContent = count;
+            } catch (error) {
+                console.error('Error al obtener el conteo del carrito:', error);
+            }
+        };
+
+        // Inicializar contador del carrito al cargar la página
+        updateCartCount();
+    });
+    </script>
+</body>
+</html>
