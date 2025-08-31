@@ -12,9 +12,9 @@ python manage.py collectstatic --no-input
 python manage.py migrate
 ```
 
-### ¿Ahora qué? (Los 3 Pasos Finales para la Victoria)
+### 2. ¿Ahora qué? (Los 3 Pasos Finales para la Victoria)
 
-Ahora que ya tienes el "manual de instrucciones" correcto, solo sigue estos tres simples pasos para enviárselo a Render.
+Ahora que ya tienes el "manual de instrucciones" correcto y limpio, solo sigue estos tres simples pasos para enviárselo a Render.
 
 **1. Guarda y Envía la Actualización a GitHub:**
 
@@ -25,7 +25,7 @@ Ejecuta estos tres comandos en tu terminal, uno por uno:
 git add .
 
 # 2. Sella la caja con una etiqueta clara
-git commit -m "Corrige y limpia el script de construcción build.sh"
+git commit -m "Limpia el script de construcción para Render"
 
 # 3. Envía la actualización a la nube
 git push
