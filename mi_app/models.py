@@ -9,6 +9,7 @@ from datetime import timedelta
 import random
 import string
 
+# ... (El resto de tus modelos como Categoria, Producto, etc., se mantienen igual)
 class Categoria(MPTTModel):
     nombre = models.CharField(max_length=100, unique=True)
     slug = models.SlugField(max_length=100, unique=True, blank=True, help_text="Se genera automáticamente.")
@@ -163,20 +164,22 @@ class ConfiguracionSitio(SingletonModel):
     tiktok_link = models.URLField(default="https://www.tiktok.com/@fantasa.ntima")
     numero_yape_plin = models.CharField(max_length=15, default="987 654 321")
 
+    # === INICIO DE LA MEJORA: Imágenes de pago dinámicas ===
+    imagen_yape = models.ImageField(upload_to='configuracion/pagos/', blank=True, null=True, help_text="Logo de Yape que se mostrará en el checkout.")
+    imagen_plin = models.ImageField(upload_to='configuracion/pagos/', blank=True, null=True, help_text="Logo de Plin que se mostrará en el checkout.")
+    # === FIN DE LA MEJORA ===
+
     # Paleta de Colores
     color_primario = models.CharField(max_length=7, default='#f9a8d4', help_text="Color principal (rosa claro)")
+    # ... (el resto de los campos de color y fuente se mantienen igual)
     color_secundario = models.CharField(max_length=7, default='#f472b6', help_text="Color secundario (rosa medio)")
     color_acento = models.CharField(max_length=7, default='#ec4899', help_text="Color de acento para botones (rosa fuerte)")
     color_marron = models.CharField(max_length=7, default='#5C2C0C', help_text="Color marrón para títulos")
     color_texto = models.CharField(max_length=7, default='#4b4244', help_text="Color del texto general")
-
-    # Tipografía (Fuentes de Google Fonts)
     fuente_principal_url = models.URLField(max_length=500, default="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap")
     fuente_principal_nombre = models.CharField(max_length=100, default="'Inter', sans-serif")
     fuente_marca_url = models.URLField(max_length=500, default="https://fonts.googleapis.com/css2?family=Parisienne&display=swap")
     fuente_marca_nombre = models.CharField(max_length=100, default="'Parisienne', cursive")
-
-    # Botón de Reseteo
     resetear_estilos = models.BooleanField(default=False, help_text="MARCA ESTA CASILLA Y GUARDA para restaurar todos los colores y fuentes a sus valores originales.")
 
     def __str__(self):
@@ -195,6 +198,7 @@ class ConfiguracionSitio(SingletonModel):
 
 
 class Banner(models.Model):
+# ... (código existente sin cambios)
     titulo = models.CharField(max_length=100, help_text="Ej: ¡Ofertas de Fin de Semana!")
     subtitulo = models.CharField(max_length=200, blank=True, help_text="Ej: Hasta 50% en productos seleccionados")
     imagen = models.ImageField(upload_to='banners/', help_text="Imagen de fondo (1200x400px recomendado)")
@@ -217,6 +221,7 @@ class Banner(models.Model):
         verbose_name_plural = "Banners Promocionales"
 
 class Pagina(models.Model):
+# ... (código existente sin cambios)
     titulo = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, unique=True, help_text="La URL de la página (ej: 'nosotros', 'politicas-de-envio')")
     contenido = models.TextField(help_text="Escribe aquí todo el contenido de la página. Puedes usar HTML si lo necesitas.")
@@ -231,6 +236,7 @@ class Pagina(models.Model):
         ordering = ['titulo']
 
 class Direccion(models.Model):
+# ... (código existente sin cambios)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='direcciones')
     alias = models.CharField(max_length=50, help_text="Ej: Casa, Oficina, Casa de mi tía")
     destinatario = models.CharField(max_length=100, verbose_name="Nombre del destinatario")
@@ -254,6 +260,7 @@ class Direccion(models.Model):
         super().save(*args, **kwargs)
 
 class ApiKey(models.Model):
+# ... (código existente sin cambios)
     key = models.CharField(max_length=255, unique=True, verbose_name="Clave de API")
     activa = models.BooleanField(default=True, help_text="Desmarca esta casilla para desactivar la clave temporalmente.")
     notas = models.TextField(blank=True, help_text="Notas internas (ej: 'Clave de cuenta personal', 'Clave de prueba').")
@@ -266,9 +273,8 @@ class ApiKey(models.Model):
     def __str__(self):
         return f"{self.key[:8]}...{self.key[-4:]}"
 
-# --- INICIO DE LA MEJORA: Modelos para la Ruleta de la Suerte v3 ---
-
 class ConfiguracionRuleta(SingletonModel):
+# ... (código existente sin cambios)
     activa = models.BooleanField(default=False, help_text="Marca esta casilla para mostrar la ruleta en la web.")
     titulo = models.CharField(max_length=100, default="¡Gira y Gana!", help_text="El título que aparecerá en el pop-up de la ruleta (ej: 'Especial de Halloween').")
     sonido_giro = models.FileField(upload_to='sonidos_ruleta/', blank=True, null=True, help_text="Sonido (MP3) que se reproduce mientras la ruleta gira.")
@@ -281,6 +287,7 @@ class ConfiguracionRuleta(SingletonModel):
         return "Configuración de la Ruleta"
 
 class PremioRuleta(models.Model):
+# ... (código existente sin cambios)
     configuracion = models.ForeignKey(ConfiguracionRuleta, on_delete=models.CASCADE, related_name='premios')
     nombre = models.CharField(max_length=50, help_text="Texto que aparecerá en la ruleta (ej: '10% OFF', 'Envío Gratis'). Mantenlo corto.")
     activo = models.BooleanField(default=True, help_text="Desmarca para quitar este premio de la ruleta.")
@@ -296,6 +303,7 @@ def generar_codigo_cupon():
     return f"FANTY-{''.join(random.choices(string.ascii_uppercase + string.digits, k=6))}"
 
 class Cupon(models.Model):
+# ... (código existente sin cambios)
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='cupones')
     premio = models.ForeignKey(PremioRuleta, on_delete=models.CASCADE)
     codigo = models.CharField(max_length=15, default=generar_codigo_cupon, unique=True)
@@ -316,6 +324,7 @@ class Cupon(models.Model):
         return f"Cupón {self.codigo} para {self.usuario.username}"
 
 class TiradaRuleta(models.Model):
+# ... (código existente sin cambios)
     usuario = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, primary_key=True)
     ultima_tirada = models.DateTimeField()
 
@@ -328,10 +337,9 @@ class TiradaRuleta(models.Model):
 
     def __str__(self):
         return f"Última tirada de {self.usuario.username}: {self.ultima_tirada.strftime('%Y-%m-%d %H:%M')}"
-# --- FIN DE LA MEJORA ---
 
-# === INICIO DE LA MEJORA: Modelo para el Centro de Control del Chatbot ===
 class ConfiguracionChatbot(SingletonModel):
+# ... (código existente sin cambios)
     """
     Un modelo Singleton para almacenar la configuración global del chatbot.
     """
@@ -368,5 +376,3 @@ Ejemplo: "Para darte la mejor recomendación, ¿qué buscas? [BOTONES: Algo atre
 
     class Meta:
         verbose_name = "Configuración del Chatbot"
-
-# === FIN DE LA MEJORA ===

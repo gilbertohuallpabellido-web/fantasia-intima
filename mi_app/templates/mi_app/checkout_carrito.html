@@ -103,21 +103,33 @@
                 <div class="space-y-4 pt-4 border-t-2 border-gray-100">
                     <h3 class="text-xl font-semibold text-gray-900 mb-2">Método de Pago</h3>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        
+                        <!-- === INICIO DE LA MEJORA: Imágenes de Pago Dinámicas === -->
                         <label class="cursor-pointer">
                             <input type="radio" name="metodo_pago" value="yape" class="hidden" onchange="togglePaymentFields(this.value)" required>
-                            <span class="payment-card flex items-center justify-center p-4 bg-gray-50 rounded-xl border-2 border-gray-200 transition-all duration-200">
-                                <img src="{% static 'productos/yape.png' %}" alt="Yape" class="h-8">
+                            <span class="payment-card flex items-center justify-center p-4 bg-gray-50 rounded-xl border-2 border-gray-200 transition-all duration-200 h-20">
+                                {% if configuracion_sitio.imagen_yape %}
+                                    <img src="{{ configuracion_sitio.imagen_yape.url }}" alt="Yape" class="h-8 object-contain">
+                                {% else %}
+                                    <span class="font-bold">Yape</span>
+                                {% endif %}
                             </span>
                         </label>
                         <label class="cursor-pointer">
                             <input type="radio" name="metodo_pago" value="plin" class="hidden" onchange="togglePaymentFields(this.value)" required>
-                            <span class="payment-card flex items-center justify-center p-4 bg-gray-50 rounded-xl border-2 border-gray-200 transition-all duration-200">
-                                <img src="{% static 'productos/plin.png' %}" alt="Plin" class="h-8">
+                            <span class="payment-card flex items-center justify-center p-4 bg-gray-50 rounded-xl border-2 border-gray-200 transition-all duration-200 h-20">
+                                {% if configuracion_sitio.imagen_plin %}
+                                    <img src="{{ configuracion_sitio.imagen_plin.url }}" alt="Plin" class="h-8 object-contain">
+                                {% else %}
+                                    <span class="font-bold">Plin</span>
+                                {% endif %}
                             </span>
                         </label>
+                        <!-- === FIN DE LA MEJORA === -->
+
                         <label class="cursor-pointer">
                             <input type="radio" name="metodo_pago" value="tarjeta" class="hidden" onchange="togglePaymentFields(this.value)" required>
-                            <span class="payment-card flex items-center justify-center p-4 bg-gray-50 rounded-xl border-2 border-gray-200 transition-all duration-200">
+                            <span class="payment-card flex items-center justify-center p-4 bg-gray-50 rounded-xl border-2 border-gray-200 transition-all duration-200 h-20">
                                 <i class="fas fa-credit-card text-3xl text-gray-600"></i>
                             </span>
                         </label>
@@ -204,7 +216,7 @@
         container.innerHTML = '';
         
         if (method === 'yape' || method === 'plin') {
-            const paymentNumber = "{{ site_config.numero_yape_plin|default:'Número no configurado' }}";
+            const paymentNumber = "{{ configuracion_sitio.numero_yape_plin|default:'Número no configurado' }}";
             container.innerHTML = `
                 <div class="text-center p-4 bg-gray-100 rounded-xl">
                     <p class="text-sm font-medium text-gray-700">Realiza el pago a través de ${method.charAt(0).toUpperCase() + method.slice(1)} al siguiente número:</p>
@@ -266,8 +278,9 @@
             document.getElementById('referencia').value = selectedOption.dataset.referencia || '';
             const ciudadSelect = document.getElementById('ciudad');
             ciudadSelect.value = selectedOption.dataset.ciudad || 'Lima';
-            ciudadSelect.dispatchEvent(new Event('change'));
         }
+        // Disparamos el evento 'change' para que se actualice el costo de envío
+        document.getElementById('ciudad').dispatchEvent(new Event('change'));
     }
 
     document.addEventListener('DOMContentLoaded', () => {

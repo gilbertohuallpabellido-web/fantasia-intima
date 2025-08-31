@@ -183,6 +183,13 @@ class ConfiguracionSitioAdmin(SingletonModelAdmin):
         ('Redes Sociales y Contacto', {
             'fields': ('whatsapp_link', 'facebook_link', 'instagram_link', 'tiktok_link', 'numero_yape_plin')
         }),
+        # === INICIO DE LA MEJORA: Añadir sección para imágenes de pago ===
+        ('Imágenes de Métodos de Pago', {
+            'classes': ('collapse',),
+            'fields': ('imagen_yape', 'imagen_plin'),
+            'description': 'Sube aquí los logos de Yape y Plin para que se muestren en la página de pago.'
+        }),
+        # === FIN DE LA MEJORA ===
         ('🎨 Personalización de Colores', {
             'classes': ('collapse',),
             'fields': (
@@ -291,7 +298,7 @@ class ConfiguracionChatbotAdmin(SingletonModelAdmin):
                 <ul>
                     <li>El texto aquí controlará cómo responde, su personalidad y sus reglas.</li>
                     <li>La variable <code>{user_name}</code> se reemplazará por el nombre del cliente.</li>
-                    <li>Para mostrar botones, añade <code>[BOTONES: Opción 1, Opción 2]</code> al final de una pregunta.</li>
+                    <li>Para mostrar botones, usa <code>[BOTONES: Opción 1; Opción 2]</code> (separados por punto y coma).</li>
                 </ul>
             """
         }),
