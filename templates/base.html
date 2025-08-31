@@ -1,0 +1,362 @@
+{% load static theme_tags math_filters %}
+
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Fantasía Íntima{% endblock %}</title>
+    <link rel="icon" href="{% static 'productos/logo.png' %}" type="image/png">
+    
+    <!-- Bloques para SEO y Redes Sociales -->
+    <meta name="description" content="{% block meta_description %}Descubre lencería y fantasías íntimas diseñadas para despertar tus sentidos. Calidad, sensualidad y discreción en cada detalle.{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}{{ block.super }}{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Descubre lencería y fantasías íntimas diseñadas para despertar tus sentidos. Calidad, sensualidad y discreción en cada detalle.{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{% static 'productos/logo_share.png' %}{% endblock %}">
+    <meta property="og:url" content="{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Fantasía Íntima">
+    
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}{{ block.super }}{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}Descubre lencería y fantasías íntimas diseñadas para despertar tus sentidos. Calidad, sensualidad y discreción en cada detalle.{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}{% static 'productos/logo_share.png' %}{% endblock %}">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    
+    <!-- Librerías para Sonido y Animación -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    
+    {% inject_theme_styles %}
+
+    <style>
+        /* === INICIO DE LA MEJORA: Solución Anti-Parpadeo (FOUC) === */
+        [x-cloak] { display: none !important; }
+        /* === FIN DE LA MEJORA === */
+
+        .transition-all {
+            transition: all 0.3s ease-in-out;
+        }
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgb(236 72 153 / 0.1), 0 8px 10px -6px rgb(236 72 153 / 0.1);
+        }
+        .social-icon:hover, #chat-button:hover {
+            transform: scale(1.1);
+        }
+        #roulette-wheel {
+            transform-origin: center center;
+        }
+        #chat-messages::-webkit-scrollbar { width: 6px; }
+        #chat-messages::-webkit-scrollbar-track { background: #fce7f3; }
+        #chat-messages::-webkit-scrollbar-thumb { background: var(--brand-primary); border-radius: 6px; }
+        #chat-messages::-webkit-scrollbar-thumb:hover { background: var(--brand-secondary); }
+        .active-filter-btn {
+            background-color: white !important;
+            color: var(--brand-accent) !important;
+            box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+        }
+        .hero-banner {
+            background: url('https://placehold.co/1200x400/f9a8d4/4b4244?text=Nueva+Coleccion&font=parisienne') no-repeat center center;
+            background-size: cover;
+        }
+        .prize-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-origin: 0 0;
+            color: white;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            text-align: center;
+            width: 90px;
+            word-wrap: break-word;
+            pointer-events: none;
+            font-size: 0.8rem;
+            line-height: 1.2;
+        }
+        #big-win-text {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.5);
+            font-size: 4rem;
+            font-weight: 900;
+            color: #ec4899;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.4);
+            opacity: 0;
+            z-index: 1000;
+            pointer-events: none;
+            transition: transform 0.6s ease-out, opacity 0.6s ease-out;
+        }
+        #big-win-text.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.2);
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body data-cart-count-url="{% url 'cart_count' %}" class="flex flex-col min-h-screen">
+
+    <!-- Encabezado y Menú Móvil -->
+    {% include 'partials/_header.html' %}
+
+    <!-- Migas de Pan -->
+    <div class="bg-white/50 border-b border-gray-200">
+        <div class="container mx-auto px-4 sm:px-8 py-3">
+            {% block breadcrumbs %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Contenido Principal de la Página -->
+    <main class="flex-grow">
+        {% block content %}
+        {% endblock %}
+    </main>
+    
+    <!-- Pie de Página y Elementos Flotantes -->
+    {% include 'partials/_footer.html' %}
+
+    <!-- Ruleta de la Suerte -->
+    {% if configuracion_ruleta.activa %}
+    <div x-data="rouletteGame()" x-init="init()" class="relative z-50">
+        <button @click="openRoulette()" class="fixed bottom-8 right-28 bg-gradient-to-r from-pink-500 to-rose-500 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center transform hover:scale-110 transition-transform">
+            <i class="fas fa-gift text-2xl"></i>
+        </button>
+
+        <!-- Modal de la Ruleta (para usuarios logueados) -->
+        <div x-show="isOpen" x-cloak x-transition class="fixed inset-0 bg-black/60 flex items-center justify-center p-4">
+            <div @click.away="isOpen = false" class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md text-center">
+                <h2 class="text-3xl font-brand text-[--brand-brown] mb-2" x-text="config.titulo || 'Gira la Ruleta'"></h2>
+                <p class="text-gray-500 mb-6" x-text="message"></p>
+                <div class="relative w-64 h-64 mx-auto mb-6">
+                    <div id="roulette-wheel" class="absolute w-full h-full rounded-full border-8 border-pink-200" :style="{ background: wheelStyle }">
+                        <template x-for="(prize, index) in prizes" :key="index">
+                            <div class="prize-text" :style="`transform: rotate(${index * (360 / prizes.length) + ((360 / prizes.length) / 2)}deg) translate(75px, -50%) rotate(-90deg);`">
+                                <span x-text="prize.nombre"></span>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="absolute top-[-10px] left-1/2 -translate-x-1/2 text-4xl text-pink-600">▼</div>
+                </div>
+                <button @click="spin()" :disabled="isSpinning || (hasPlayed && !isAdmin)" class="w-full text-white font-bold py-3 px-6 rounded-full text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed" :style="{ backgroundColor: 'var(--brand-accent)' }">
+                    <span x-show="!isSpinning && !(hasPlayed && !isAdmin)">¡GIRAR AHORA!</span>
+                    <span x-show="isSpinning"><i class="fas fa-spinner fa-spin mr-2"></i> Girando...</span>
+                    <span x-show="hasPlayed && !isAdmin">¡Vuelve mañana!</span>
+                </button>
+                <div x-show="prizeResult" x-transition class="mt-6">
+                    <p class="text-lg">¡Felicidades! Has ganado:</p>
+                    <p class="text-2xl font-bold my-2" x-text="prizeResult ? prizeResult.name : ''" :style="{ color: 'var(--brand-accent)' }"></p>
+                    <a :href="whatsappLink" target="_blank" class="inline-flex items-center justify-center bg-green-500 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform duration-200 hover:scale-105 mt-2">
+                        <i class="fab fa-whatsapp mr-3"></i> Reclamar Premio por WhatsApp
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal "Inicia Sesión" para invitados -->
+        <div x-show="showLoginModal" x-cloak x-transition class="fixed inset-0 bg-black/60 flex items-center justify-center p-4">
+            <div @click.away="showLoginModal = false" class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md text-center">
+                <div class="text-pink-500 text-5xl mb-4">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-[--brand-brown] mb-2">¡Un Momento!</h2>
+                <p class="text-gray-600 mb-6">Para poder girar la ruleta y ganar premios exclusivos, necesitas una cuenta.</p>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="{% url 'login' %}?next={{ request.path }}" class="w-full bg-[--brand-accent] text-white font-bold py-3 px-6 rounded-full transition-transform hover:scale-105">Iniciar Sesión</a>
+                    <a href="{% url 'registro' %}?next={{ request.path }}" class="w-full bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-full transition-transform hover:scale-105">Registrarse</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div id="big-win-text">¡GANASTE!</div>
+
+    {% include 'partials/_scripts.html' %}
+    
+    {% block extra_js %}{% endblock %}
+    <script src="//unpkg.com/alpinejs" defer></script>
+    
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function rouletteGame() {
+            return {
+                isOpen: false,
+                showLoginModal: false,
+                isSpinning: false,
+                hasPlayed: false,
+                prizeResult: null,
+                whatsappLink: '',
+                message: 'Prueba tu suerte para ganar un premio especial.',
+                isAdmin: {{ request.user.is_superuser|yesno:'true,false' }},
+                
+                prizes: {{ roulette_prizes_json|safe }},
+                config: {{ roulette_config_json|safe }},
+                whatsappBaseLink: "{{ configuracion_sitio.whatsapp_link|default:'' }}",
+                
+                init() {
+                    const lastPlayDate = localStorage.getItem('fantasiaIntimaLastRoulettePlay');
+                    const today = new Date().toISOString().split('T')[0];
+                    if (lastPlayDate === today && !this.isAdmin) {
+                        this.hasPlayed = true;
+                    }
+                },
+                
+                get wheelStyle() {
+                    const colors = ['#fecdd3', '#fbcfe8', '#f9a8d4', '#f472b6', '#ec4899', '#db2777', '#be185d', '#9d174d'];
+                    if (this.prizes.length === 0) return '#fecdd3';
+                    let gradient = 'conic-gradient(';
+                    const step = 100 / this.prizes.length;
+                    this.prizes.forEach((prize, i) => {
+                        const color = colors[i % colors.length];
+                        gradient += `${color} ${i * step}% ${(i + 1) * step}%`;
+                        if (i < this.prizes.length - 1) gradient += ', ';
+                    });
+                    gradient += ')';
+                    return gradient;
+                },
+                
+                openRoulette() {
+                    if ({{ request.user.is_authenticated|yesno:'true,false' }}) {
+                        this.isOpen = true;
+                    } else {
+                        this.showLoginModal = true;
+                    }
+                },
+
+                async spin() {
+                    if (this.isSpinning || (this.hasPlayed && !this.isAdmin)) return;
+                    if (this.prizes.length === 0) {
+                        this.message = 'No hay premios disponibles.';
+                        return;
+                    }
+
+                    this.isSpinning = true;
+                    this.prizeResult = null;
+                    this.message = '¡Mucha suerte!';
+
+                    try { await Tone.start(); } catch (e) { console.warn("No se pudo iniciar AudioContext:", e); }
+
+                    const tickSynth = this.config.sonido_giro_url ? null : new Tone.MembraneSynth().toDestination();
+
+                    if (this.config.sonido_giro_url) {
+                        const player = new Tone.Player(this.config.sonido_giro_url).toDestination();
+                        await Tone.loaded();
+                        player.start();
+                    }
+                    
+                    try {
+                        const response = await fetch("{% url 'spin_roulette' %}", {
+                            method: "POST",
+                            headers: { "X-CSRFToken": getCookie('csrftoken'), "Content-Type": "application/json" },
+                            body: JSON.stringify({})
+                        });
+                        const data = await response.json();
+                        
+                        if (typeof data.winning_index !== 'number') {
+                            throw new Error('Respuesta inválida del servidor.');
+                        }
+
+                        const winningIndex = data.winning_index;
+                        const segmentAngle = 360 / this.prizes.length;
+                        const targetAngle = 270;
+                        const centerOfSegment = (winningIndex * segmentAngle) + (segmentAngle / 2);
+                        const rotationNeeded = (360 + targetAngle - centerOfSegment) % 360;
+                        const totalRotation = (360 * 5) + rotationNeeded;
+
+                        const wheel = document.getElementById('roulette-wheel');
+                        this.animateSpin(wheel, totalRotation, 5000, tickSynth, () => {
+                            this.onSpinComplete(data);
+                        });
+
+                    } catch (error) {
+                        console.error("Error al girar la ruleta:", error);
+                        this.message = 'Ocurrió un error. Inténtalo nuevamente.';
+                        this.isSpinning = false;
+                    }
+                },
+                
+                animateSpin(element, targetRotation, duration, tickSynth, onComplete) {
+                    let startTime = null;
+                    const startRotation = 0;
+                    element.style.transform = 'rotate(0deg)';
+                    let lastTickTime = 0;
+                    const minTickInterval = 80; 
+                    const maxTickInterval = 700;
+                    const animation = (currentTime) => {
+                        if (startTime === null) startTime = currentTime;
+                        const timeElapsed = currentTime - startTime;
+                        const progress = Math.min(timeElapsed / duration, 1);
+                        const easedProgress = 1 - Math.pow(1 - progress, 4); 
+                        const currentRotation = startRotation + (targetRotation * easedProgress);
+                        element.style.transform = `rotate(${currentRotation}deg)`;
+                        if (tickSynth) {
+                            const currentTickInterval = minTickInterval + (maxTickInterval - minTickInterval) * easedProgress;
+                            if (currentTime > lastTickTime + currentTickInterval) {
+                                tickSynth.triggerAttackRelease("C1", "8n", Tone.now());
+                                lastTickTime = currentTime;
+                            }
+                        }
+                        if (timeElapsed < duration) {
+                            requestAnimationFrame(animation);
+                        } else {
+                            if (onComplete) onComplete();
+                        }
+                    };
+                    requestAnimationFrame(animation);
+                },
+
+                onSpinComplete(data) {
+                    this.isSpinning = false;
+                    this.prizeResult = data.prize;
+                    if (data.prize && this.whatsappBaseLink) {
+                        const prizeName = data.prize.name || 'un premio';
+                        const couponCode = data.prize.coupon_code || 'N/A'; 
+                        const message = `¡Hola! Acabo de ganar '${prizeName}' en la ruleta. Mi código de cupón para validar es: ${couponCode}`;
+                        const encodedMessage = encodeURIComponent(message);
+                        this.whatsappLink = `${this.whatsappBaseLink}?text=${encodedMessage}`;
+                    } else {
+                        this.whatsappLink = '#'; 
+                    }
+                    if (this.config.sonido_premio_url) {
+                        const player = new Tone.Player(this.config.sonido_premio_url).toDestination();
+                        Tone.loaded().then(() => { player.start(); });
+                    } else {
+                        const winSynth = new Tone.PolySynth(Tone.Synth).toDestination();
+                        winSynth.triggerAttackRelease(["C5", "G5", "C6"], "8n", Tone.now());
+                    }
+                    confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
+                    const bigWin = document.getElementById('big-win-text');
+                    bigWin.classList.add('show');
+                    setTimeout(() => bigWin.classList.remove('show'), 2500);
+                    this.message = '¡Felicidades!';
+                    if (!this.isAdmin) {
+                        this.hasPlayed = true;
+                        const today = new Date().toISOString().split('T')[0];
+                        localStorage.setItem('fantasiaIntimaLastRoulettePlay', today);
+                    }
+                }
+            }
+        }
+    </script>
+
+</body>
+</html>

@@ -1,517 +1,265 @@
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="es" class="scroll-smooth">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catálogo Público - Fantasía Íntima</title>
-    <link rel="icon" href="{% static 'productos/logo.png' %}" type="image/png">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Parisienne&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            --brand-primary: #f9a8d4; /* rosa claro */
-            --brand-secondary: #f472b6; /* rosa medio */
-            --brand-accent: #ec4899; /* rosa vibrante */
-            --brand-brown: #5C2C0C; /* marrón cálido */
-            --brand-text: #4b4244; /* texto principal */
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #fffbff;
-            color: var(--brand-text);
-        }
-        .font-brand {
-            font-family: 'Parisienne', cursive;
-        }
-        .transition-all {
-            transition: all 0.3s ease-in-out;
-        }
-        .product-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 25px -5px rgb(236 72 153 / 0.1), 0 8px 10px -6px rgb(236 72 153 / 0.1);
-        }
-        .social-icon:hover, #chat-button:hover {
-            transform: scale(1.1);
-        }
-        /* Scrollbar personalizado para el chat */
-        #chat-messages::-webkit-scrollbar { width: 6px; }
-        #chat-messages::-webkit-scrollbar-track { background: #fce7f3; }
-        #chat-messages::-webkit-scrollbar-thumb { background: var(--brand-primary); border-radius: 6px; }
-        #chat-messages::-webkit-scrollbar-thumb:hover { background: var(--brand-secondary); }
 
-        /* Estilo para el botón de filtro activo */
-        .active-filter-btn {
-            background-color: white !important;
-            color: var(--brand-accent) !important;
-            box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
-        }
-        .hero-banner {
-            background: url('https://placehold.co/1200x400/f9a8d4/4b4244?text=Nueva+Coleccion&font=parisienne') no-repeat center center;
-            background-size: cover;
-        }
-    </style>
-</head>
-<body class="text-gray-800">
+{% block title %}Catálogo - {{ block.super }}{% endblock %}
 
-    <!-- HEADER -->
-    <header class="bg-gradient-to-r from-[--brand-primary] to-[--brand-secondary] text-white p-2 sm:p-4 shadow-lg sticky top-0 z-30">
-        <div class="container mx-auto flex justify-between items-center flex-wrap gap-2">
-            <div class="flex items-center space-x-2">
-                <button id="menu-toggle" class="md:hidden text-white text-2xl p-2" aria-label="Abrir menú">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <a href="{% url 'catalogo_publico' %}" class="flex items-center">
-                    <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" class="h-14 w-auto drop-shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/100x56/f9a8d4/ffffff?text=Logo';">
-                </a>
-            </div>
-            
-            <div class="relative w-full md:w-auto md:hidden flex-grow max-w-sm order-last mt-2">
-                <input type="text" id="mobile-search-bar" placeholder="Buscar productos..." class="w-full px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-pink-400 text-gray-800">
-                <i class="fas fa-search absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-            </div>
+{% block content %}
 
-            <nav id="category-nav" class="hidden md:flex space-x-1 flex-grow justify-center items-center">
-                <button data-category="nueva_coleccion" class="filter-btn text-yellow-300 hover:bg-white/20 font-semibold py-2 px-3 rounded-full transition-all">★ Nueva Colección</button>
-                <button data-category="all" class="filter-btn hover:bg-white/20 font-semibold py-2 px-3 rounded-full transition-all">Todos</button>
-                <button data-category="mallas_enterizas" class="filter-btn hover:bg-white/20 font-semibold py-2 px-3 rounded-full transition-all">Mallas</button>
-                <button data-category="lenceria" class="filter-btn hover:bg-white/20 font-semibold py-2 px-3 rounded-full transition-all">Lencería</button>
-                <button data-category="disfraz_sexi" class="filter-btn hover:bg-white/20 font-semibold py-2 px-3 rounded-full transition-all">Disfraces</button>
-            </nav>
-            
-            <div class="hidden md:flex items-center space-x-2">
-                <div class="relative w-full max-w-xs">
-                    <input type="text" id="search-bar" placeholder="Buscar..." class="w-full pl-4 pr-10 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-pink-400 text-gray-800">
-                    <i class="fas fa-search absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                </div>
-                {% if user.is_authenticated %}
-                    <a href="{% url 'mi_cuenta' %}" class="font-semibold hover:bg-white/20 py-2 px-4 rounded-full transition-all">Hola, {{ user.first_name }}</a>
-                    <!-- INICIO: Formulario de Logout corregido -->
-                    <form action="{% url 'logout' %}" method="post">
-                        {% csrf_token %}
-                        <button type="submit" class="bg-white text-pink-600 font-bold py-2 px-4 rounded-full hover:bg-pink-50 transition-all">Salir</button>
-                    </form>
-                    <!-- FIN: Formulario de Logout corregido -->
-                {% else %}
-                    <a href="{% url 'login' %}" class="bg-white text-pink-600 font-bold py-2 px-4 rounded-full hover:bg-pink-50 transition-all">Ingresar</a>
-                {% endif %}
-                
-                <a href="{% url 'ver_carrito' %}" class="relative bg-white text-pink-600 p-3 rounded-full hover:bg-pink-50 flex items-center shadow-md transition-all" aria-label="Ver carrito de compras">
-                    <i class="fas fa-shopping-cart text-xl"></i>
-                    <span id="cart-counter" class="absolute -top-2 -right-2 bg-[--brand-accent] text-white text-xs font-semibold h-6 w-6 flex items-center justify-center rounded-full border-2 border-white">0</span>
-                </a>
-            </div>
-        </div>
-    </header>
-    
-    <!-- MOBILE MENU -->
-    <div id="mobile-menu" class="bg-gradient-to-b from-[--brand-primary] to-[--brand-secondary] fixed top-0 left-0 w-72 h-full text-white shadow-2xl transform -translate-x-full transition-transform duration-300 z-50">
-        <div class="p-4 flex justify-between items-center border-b border-white/20">
-            <h3 class="text-3xl font-brand">Menú</h3>
-            <button id="close-menu-toggle" class="text-white text-3xl" aria-label="Cerrar menú">&times;</button>
-        </div>
-        <nav class="flex flex-col p-4 space-y-3">
-            <button data-category="nueva_coleccion" class="filter-btn text-yellow-300 hover:bg-white/20 px-4 py-3 rounded-lg text-left text-lg">★ Nueva Colección</button>
-            <button data-category="all" class="filter-btn hover:bg-white/20 px-4 py-3 rounded-lg text-left text-lg">Mostrar Todos</button>
-            <button data-category="mallas_enterizas" class="filter-btn hover:bg-white/20 px-4 py-3 rounded-lg text-left text-lg">Mallas</button>
-            <button data-category="lenceria" class="filter-btn hover:bg-white/20 px-4 py-3 rounded-lg text-left text-lg">Lencería</button>
-            <button data-category="disfraz_sexi" class="filter-btn hover:bg-white/20 px-4 py-3 rounded-lg text-left text-lg">Disfraces</button>
-            <hr class="border-white/20 my-2">
-            {% if user.is_authenticated %}
-                <a href="{% url 'mi_cuenta' %}" class="hover:bg-white/20 px-4 py-3 rounded-lg text-left text-lg">Mi Cuenta</a>
-                <!-- INICIO: Formulario de Logout corregido en menú móvil -->
-                <form action="{% url 'logout' %}" method="post" class="w-full">
-                    {% csrf_token %}
-                    <button type="submit" class="w-full text-left hover:bg-white/20 px-4 py-3 rounded-lg text-lg">Cerrar Sesión</button>
-                </form>
-                <!-- FIN: Formulario de Logout corregido en menú móvil -->
-            {% else %}
-                <a href="{% url 'login' %}" class="hover:bg-white/20 px-4 py-3 rounded-lg text-left text-lg">Iniciar Sesión</a>
+<!-- 
+ =======================================================================
+ HERO BANNER
+ =======================================================================
+-->
+{% if banner %}
+    <section 
+        class="relative w-full h-64 sm:h-80 flex items-center justify-center text-white bg-gray-400"
+        style="background-image: url('{{ banner.imagen.url }}'); background-size: cover; background-position: center;"
+        role="img"
+        aria-label="{{ banner.titulo }}">
+        
+        <div class="absolute inset-0 bg-black/40"></div>
+        
+        <div class="relative text-center p-4">
+            <h1 class="text-4xl sm:text-6xl md:text-7xl font-brand drop-shadow-lg">{{ banner.titulo }}</h1>
+            {% if banner.subtitulo %}
+                <p class="mt-2 text-lg sm:text-xl drop-shadow-md">{{ banner.subtitulo }}</p>
             {% endif %}
-            <a href="{% url 'ver_carrito' %}" class="relative hover:bg-white/20 px-4 py-3 rounded-lg text-left text-lg">
-                Carrito
-                <span id="mobile-cart-counter" class="absolute top-3 right-3 bg-[--brand-accent] text-xs font-semibold h-6 w-6 flex items-center justify-center rounded-full border-2 border-white/50">0</span>
+            <a 
+                href="{{ banner.enlace|default:'#product-list-section' }}" 
+                class="mt-6 inline-block text-white font-bold py-3 px-8 rounded-full text-lg hover:bg-opacity-90 transform hover:scale-105 transition-all"
+                style="background-color: var(--brand-accent);">
+                {{ banner.texto_boton }}
             </a>
-        </nav>
-    </div>
-
-    <!-- HERO BANNER -->
+        </div>
+    </section>
+{% else %}
     <section class="hero-banner relative w-full h-64 sm:h-80 flex items-center justify-center text-white">
         <div class="absolute inset-0 bg-black/30"></div>
         <div class="relative text-center p-4">
             <h1 class="text-4xl sm:text-6xl md:text-7xl font-brand drop-shadow-lg">Nueva Colección</h1>
             <p class="mt-2 text-lg sm:text-xl drop-shadow-md">Descubre la sensualidad en cada detalle</p>
-            <a href="#product-list-section" data-category="nueva_coleccion" class="filter-btn mt-6 inline-block bg-[--brand-accent] text-white font-bold py-3 px-8 rounded-full text-lg hover:bg-opacity-90 transform hover:scale-105 transition-all">
+            <a 
+                href="?categoria=nueva_coleccion#product-list-section" 
+                class="js-category-link mt-6 inline-block text-white font-bold py-3 px-8 rounded-full text-lg hover:bg-opacity-90 transform hover:scale-105 transition-all"
+                data-filter="categoria" data-value="nueva_coleccion" onclick="handleFilterClick(event)"
+                style="background-color: var(--brand-accent);">
                 Ver ahora
             </a>
         </div>
     </section>
-    
-    <!-- MAIN CONTENT -->
-    <main class="container mx-auto p-4 sm:p-8" id="product-list-section">
+{% endif %}
+
+
+<!-- 
+ =======================================================================
+ CONTENIDO PRINCIPAL (Sidebar y Lista de Productos)
+ =======================================================================
+-->
+<div class="container mx-auto px-4 flex flex-col lg:flex-row gap-8 mt-8">
+
+    <!-- 
+      =================================
+      SIDEBAR DE FILTROS Y CATEGORÍAS
+      =================================
+    -->
+    <aside id="filters-sidebar" class="w-full lg:w-72 bg-white shadow-lg rounded-2xl p-6 border lg:sticky top-4 h-max" style="border-color: rgba(var(--brand-primary-rgb), 0.3);">
+        <h3 class="font-extrabold text-2xl mb-6 tracking-wide flex items-center gap-2" style="color: var(--brand-accent);">
+            <i class="fas fa-list"></i> Categorías
+        </h3>
+
+        <ul class="space-y-3">
+            <li>
+                <a 
+                    href="{% url 'catalogo_publico' %}#product-list-section"
+                    class="js-category-link block px-3 py-2 rounded-lg text-lg font-bold shadow-sm transition-all hover:underline"
+                    style="color: var(--brand-accent); {% if not filtros_activos.categoria %}background-color: rgba(var(--brand-primary-rgb), 0.2); border: 1px solid var(--brand-primary);{% endif %}"
+                    data-filter="categoria" data-value="" onclick="handleFilterClick(event)">
+                    Todos
+                </a>
+            </li>
+            {% for cat in categorias_menu %}
+                <li>
+                    <a 
+                        href="?categoria={{ cat.slug }}#product-list-section"
+                        class="js-category-link block px-3 py-2 rounded-lg text-lg font-bold shadow-sm transition-all hover:underline"
+                        style="color: var(--brand-accent); {% if filtros_activos.categoria == cat.slug %}background-color: rgba(var(--brand-primary-rgb), 0.2); border: 1px solid var(--brand-primary);{% endif %}"
+                        data-filter="categoria" data-value="{{ cat.slug }}" onclick="handleFilterClick(event)">
+                        {{ cat.nombre }}
+                    </a>
+                    
+                    {% if cat.children.all %}
+                        <ul class="ml-4 mt-2 space-y-1 pl-3" style="border-left: 2px solid var(--brand-primary);">
+                            {% for subcat in cat.children.all %}
+                                <li>
+                                    <a 
+                                        href="?categoria={{ subcat.slug }}#product-list-section"
+                                        class="js-category-link block px-2 py-1 rounded text-base transition-all"
+                                        style="color: var(--brand-text); {% if filtros_activos.categoria == subcat.slug %}background-color: rgba(var(--brand-primary-rgb), 0.2); color: var(--brand-accent); font-weight: 600;{% endif %}"
+                                        data-filter="categoria" data-value="{{ subcat.slug }}" onclick="handleFilterClick(event)">
+                                        {{ subcat.nombre }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+
+        <div class="mt-10 space-y-6">
+            <div>
+                <h4 class="font-bold mb-2" style="color: var(--brand-accent);">Filtrar por precio</h4>
+                <form id="price-form" class="flex flex-col gap-2">
+                    <input type="number" name="precio_min" placeholder="Mín" value="{{ filtros_activos.precio_min|default:'' }}" class="w-full rounded border px-2 py-1">
+                    <input type="number" name="precio_max" placeholder="Máx" value="{{ filtros_activos.precio_max|default:'' }}" class="w-full rounded border px-2 py-1">
+                    <button id="price-filter-btn" type="submit" class="w-full mt-2 rounded px-4 py-1 text-white transition-all flex items-center justify-center" style="background-color: var(--brand-accent);">
+                        <span class="btn-text">Aplicar</span>
+                        <i class="fas fa-spinner fa-spin ml-2 hidden btn-loader"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 
+      =================================
+      CONTENIDO PRINCIPAL (PRODUCTOS)
+      =================================
+    -->
+    <main class="flex-1">
         <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-            <h2 class="text-4xl font-brand text-[--brand-text]">Nuestros Productos</h2>
+            <h2 id="products-heading" class="text-4xl font-brand" style="color: var(--brand-text);" tabindex="-1">Nuestros Productos</h2>
             <div class="flex items-center gap-4">
                 <label for="sort-by" class="font-semibold whitespace-nowrap">Ordenar por:</label>
-                <select id="sort-by" class="rounded-full border-gray-300 shadow-sm focus:border-pink-300 focus:ring focus:ring-pink-200 focus:ring-opacity-50">
-                    <option value="default">Relevancia</option>
-                    <option value="price-asc">Precio: Menor a Mayor</option>
-                    <option value="price-desc">Precio: Mayor a Menor</option>
+                <select id="sort-by" name="orden" class="rounded-full border-gray-300 shadow-sm" style="--tw-ring-color: var(--brand-accent);">
+                    <option value="default" {% if not filtros_activos.orden or filtros_activos.orden == 'default' %}selected{% endif %}>Relevancia</option>
+                    <option value="price-asc" {% if filtros_activos.orden == 'price-asc' %}selected{% endif %}>Precio: Menor a Mayor</option>
+                    <option value="price-desc" {% if filtros_activos.orden == 'price-desc' %}selected{% endif %}>Precio: Mayor a Menor</option>
                 </select>
             </div>
         </div>
 
-        <div id="product-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {% for producto in productos %}
-            <div class="product-card bg-white rounded-xl shadow-md overflow-hidden group transition-all" data-product-id="{{ producto.id }}" data-category="{{ producto.categoria }}" data-price="{{ producto.precio }}" data-new-collection="{{ producto.es_nueva_coleccion|yesno:'true,false' }}">
-                <a href="{% url 'producto_detalle' producto.pk %}" class="block">
-                    <div class="relative w-full h-80 bg-gray-50">
-                        {% if producto.imagen_principal %}
-                            <img src="{{ producto.imagen_principal.url }}" alt="Imagen de {{ producto.nombre }}" class="w-full h-full object-contain p-2 transition-transform duration-500 group-hover:scale-105" loading="lazy" onerror="this.onerror=null;this.src='https://placehold.co/400x400/fce7f3/ec4899?text=Imagen+no+disponible';">
-                        {% else %}
-                            <div class="w-full h-full bg-gray-200 flex items-center justify-center">
-                                <i class="fas fa-image text-gray-400 text-4xl"></i>
-                            </div>
-                        {% endif %}
-                    </div>
-                    <div class="p-5 text-center">
-                        <h3 class="product-name text-xl font-semibold truncate text-[--brand-brown]">{{ producto.nombre }}</h3>
-                        <p class="product-description text-gray-500 mt-2 h-12 overflow-hidden">{{ producto.descripcion }}</p>
-                        <div class="flex justify-center items-center mt-4 space-x-4">
-                            <p class="text-2xl font-extrabold text-[--brand-brown]">S/<span class="product-price">{{ producto.precio|floatformat:2 }}</span></p>
-                            <span class="text-white bg-[--brand-accent] px-5 py-2 rounded-full font-bold hover:opacity-90 transform group-hover:scale-105 transition-all">Ver Más</span>
-                        </div>
-                        <p class="text-sm text-gray-400 mt-3">
-                            Stock: <span class="product-stock font-semibold">{{ producto.total_stock }}</span> unidades
-                        </p>
-                    </div>
-                </a>
-            </div>
-            {% empty %}
-            <div id="no-products-initial" class="col-span-full text-center py-20">
-                <i class="fas fa-heart-crack text-5xl text-gray-300 mb-4"></i>
-                <p class="text-xl text-gray-500">Lo sentimos, aún no hay productos disponibles.</p>
-                <p class="text-gray-400">Vuelve a visitarnos pronto.</p>
-            </div>
-            {% endfor %}
-            <div id="no-products-found" class="hidden col-span-full text-center py-20">
-                    <i class="fas fa-search text-5xl text-gray-300 mb-4"></i>
-                    <p class="text-xl text-gray-500">No se encontraron productos que coincidan con tu búsqueda.</p>
-                    <p class="text-gray-400">Intenta con otros filtros o términos.</p>
-            </div>
+        <div id="product-list-section" aria-live="polite">
+            {% include 'partials/_product_list_ajax.html' %}
         </div>
     </main>
 
-    <!-- FLOATING BUTTONS -->
-    <div class="fixed bottom-6 left-6 flex flex-col space-y-3 z-40">
-        <a href="https://wa.me/51932187068" class="social-icon bg-green-500 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-green-600 transition-all" target="_blank" aria-label="WhatsApp">
-            <i class="fab fa-whatsapp text-3xl"></i>
-        </a>
-        <a href="https://web.facebook.com/fantasiaintimaa/" class="social-icon bg-blue-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition-all" target="_blank" aria-label="Facebook">
-            <i class="fab fa-facebook-f text-3xl"></i>
-        </a>
-        <a href="https://www.instagram.com/fantasia_intima_lenceria" class="social-icon bg-gradient-to-br from-purple-600 via-pink-600 to-yellow-500 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all" target="_blank" aria-label="Instagram">
-            <i class="fab fa-instagram text-3xl"></i>
-        </a>
-        <a href="https://www.tiktok.com/@fantasa.ntima" class="social-icon bg-black text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-gray-800 transition-all" target="_blank" aria-label="TikTok">
-            <i class="fab fa-tiktok text-3xl"></i>
-        </a>
-    </div>
+</div>
 
-    <!-- VIRTUAL ASSISTANT -->
-    <div class="fixed bottom-6 right-6 z-40">
-        <button id="chat-button" class="bg-blue-500 text-white w-16 h-16 rounded-full shadow-lg hover:bg-blue-600 flex items-center justify-center transition-all">
-            <i class="fas fa-comment-dots text-3xl"></i>
-        </button>
-    </div>
-    <div id="chat-container" class="fixed bottom-24 right-6 w-80 sm:w-96 h-[500px] bg-white rounded-2xl shadow-xl flex-col hidden z-50 border-2 border-pink-200 transition-all">
-        <div class="bg-gradient-to-r from-[--brand-primary] to-[--brand-secondary] text-white p-4 rounded-t-xl flex justify-between items-center">
-            <h3 class="font-bold text-lg">Asistente Virtual</h3>
-            <button id="close-chat-button" class="text-white text-2xl" aria-label="Cerrar chat">&times;</button>
-        </div>
-        <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
-            <div class="flex justify-start">
-                <div class="bg-gray-200 text-gray-800 p-3 rounded-lg rounded-bl-none max-w-[85%]">
-                    Hola, soy tu asistente virtual. ¿Buscas algo especial? ¡Pregúntame!
-                </div>
-            </div>
-        </div>
-        <div class="p-3 border-t flex space-x-2 bg-gray-50 rounded-b-2xl">
-            <input type="text" id="chat-input" placeholder="Escribe tu mensaje..." class="flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-pink-500">
-            <button id="chat-send-button" class="bg-[--brand-accent] text-white w-12 h-12 rounded-full font-bold hover:opacity-90 flex items-center justify-center transition-all" aria-label="Enviar mensaje">
-                <i class="fas fa-paper-plane"></i>
-            </button>
-        </div>
-    </div>
-    
-    <!-- FOOTER -->
-    <footer class="bg-gradient-to-r from-[--brand-primary] to-[--brand-secondary] text-white py-10 mt-16">
-        <div class="container mx-auto px-6 text-center">
-            <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" class="h-16 w-auto mx-auto mb-4 drop-shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/100x64/f9a8d4/ffffff?text=Logo';">
-            <p>&copy; {% now "Y" %} Fantasía Íntima. Todos los derechos reservados.</p>
-        </div>
-    </footer>
+{% endblock %}
 
+{% block extra_js %}
+<script>
+    let productListContainer;
+    let skeleton;
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    async function updateProducts(url, formButton = null) {
+        if (!productListContainer || !skeleton) {
+            productListContainer = document.getElementById('product-list-section');
+            skeleton = document.getElementById('list-skeleton');
+        }
         
-        // --- SELECTORES DE ELEMENTOS DEL DOM ---
-        const dom = {
-            menuToggle: document.getElementById('menu-toggle'),
-            closeMenuToggle: document.getElementById('close-menu-toggle'),
-            mobileMenu: document.getElementById('mobile-menu'),
-            filterButtons: document.querySelectorAll('.filter-btn'),
-            productCards: document.querySelectorAll('.product-card'),
-            productList: document.getElementById('product-list'),
-            noProductsFoundMsg: document.getElementById('no-products-found'),
-            noProductsInitialMsg: document.getElementById('no-products-initial'),
-            searchBar: document.getElementById('search-bar'),
-            mobileSearchBar: document.getElementById('mobile-search-bar'),
-            sortBySelect: document.getElementById('sort-by'),
-            cartCounter: document.getElementById('cart-counter'),
-            mobileCartCounter: document.getElementById('mobile-cart-counter'),
-            chat: {
-                button: document.getElementById('chat-button'),
-                container: document.getElementById('chat-container'),
-                closeButton: document.getElementById('close-chat-button'),
-                messages: document.getElementById('chat-messages'),
-                input: document.getElementById('chat-input'),
-                sendButton: document.getElementById('chat-send-button'),
-            }
-        };
+        const skeletonHTML = skeleton.outerHTML;
+        productListContainer.innerHTML = skeletonHTML;
+        productListContainer.querySelector('#list-skeleton').classList.remove('hidden');
 
-        // --- CHAT HISTORY & STATE ---
-        let chatHistory = [{
-            role: "model",
-            parts: [{ text: "Hola, soy tu asistente virtual. ¿Buscas algo especial? ¡Pregúntame!" }]
-        }];
-        let isChatOpen = false;
+        // === INICIO DE LA MEJORA: Feedback visual en el botón ===
+        if (formButton) {
+            formButton.disabled = true;
+            formButton.querySelector('.btn-text').classList.add('hidden');
+            formButton.querySelector('.btn-loader').classList.remove('hidden');
+        }
+        // === FIN DE LA MEJORA ===
 
-        // --- LÓGICA DE FILTRADO, BÚSQUEDA Y ORDENAMIENTO ---
-
-        const updateProductView = () => {
-            const searchQuery = (dom.searchBar.value || dom.mobileSearchBar.value || '').toLowerCase().trim();
-            const activeCategory = document.querySelector('.filter-btn.active-filter-btn')?.dataset.category || 'all';
-            
-            let visibleProductsCount = 0;
-            let productsToShow = [];
-
-            dom.productCards.forEach(card => {
-                const productName = (card.querySelector('.product-name')?.textContent || '').toLowerCase();
-                const productDescription = (card.querySelector('.product-description')?.textContent || '').toLowerCase();
-                const cardCategory = card.dataset.category;
-                const isNew = card.dataset.newCollection === 'true';
-
-                const matchesCategory = activeCategory === 'all' || 
-                                        (activeCategory === 'nueva_coleccion' && isNew) || 
-                                        cardCategory === activeCategory;
-
-                const matchesSearch = productName.includes(searchQuery) || productDescription.includes(searchQuery);
-
-                if (matchesCategory && matchesSearch) {
-                    card.style.display = 'block';
-                    productsToShow.push(card);
-                    visibleProductsCount++;
-                } else {
-                    card.style.display = 'none';
-                }
+        try {
+            const response = await fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
 
-            // Ordenar los productos visibles
-            const sortValue = dom.sortBySelect.value;
-            if (sortValue !== 'default') {
-                productsToShow.sort((a, b) => {
-                    const priceA = parseFloat(a.dataset.price);
-                    const priceB = parseFloat(b.dataset.price);
-                    return sortValue === 'price-asc' ? priceA - priceB : priceB - priceA;
-                });
-                productsToShow.forEach(product => dom.productList.appendChild(product));
-            }
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-            // Mostrar u ocultar mensajes
-            if (dom.noProductsFoundMsg) {
-                dom.noProductsFoundMsg.style.display = (visibleProductsCount === 0 && dom.productCards.length > 0) ? 'block' : 'none';
-            }
-            if (dom.noProductsInitialMsg) {
-                dom.noProductsInitialMsg.style.display = (dom.productCards.length === 0) ? 'block' : 'none';
-            }
-        };
+            const html = await response.text();
+            productListContainer.innerHTML = html;
 
+            const heading = document.getElementById('products-heading');
+            if (heading) heading.focus();
 
-        // --- LÓGICA DEL ASISTENTE VIRTUAL (CHAT) ---
+        } catch (error) {
+            console.error('Error al actualizar los productos:', error);
+            productListContainer.innerHTML = '<p class="text-center text-red-500">Hubo un error al cargar los productos.</p>';
+        } finally {
+            // === INICIO DE LA MEJORA: Restaurar el botón ===
+            if (formButton) {
+                formButton.disabled = false;
+                formButton.querySelector('.btn-text').classList.remove('hidden');
+                formButton.querySelector('.btn-loader').classList.add('hidden');
+            }
+            // === FIN DE LA MEJORA ===
+        }
+    }
+
+    function handleStateChange(params, formButton = null) {
+        params.set('page', '1');
+        const newUrl = `${window.location.pathname}?${params.toString()}`;
+        history.pushState({}, '', newUrl);
+        updateProducts(newUrl, formButton);
+    }
+
+    function handleFilterClick(event) {
+        event.preventDefault();
         
-        const appendMessage = (message, sender) => {
-            const messageElement = document.createElement('div');
-            messageElement.classList.add('flex', 'mb-2', sender === 'user' ? 'justify-end' : 'justify-start');
-            
-            const bubble = document.createElement('div');
-            bubble.classList.add('p-3', 'rounded-lg', 'max-w-[85%]', 'break-words');
-            if (sender === 'user') {
-                bubble.classList.add('bg-[--brand-accent]', 'text-white', 'rounded-br-none');
-            } else {
-                bubble.classList.add('bg-gray-200', 'text-gray-800', 'rounded-bl-none');
-            }
-            bubble.innerHTML = message;
-            
-            messageElement.appendChild(bubble);
-            dom.chat.messages.appendChild(messageElement);
-            dom.chat.messages.scrollTop = dom.chat.messages.scrollHeight;
-            return messageElement;
-        };
+        const link = event.currentTarget;
+        const filterType = link.dataset.filter;
+        const filterValue = link.dataset.value;
 
-        const handleSendMessage = async () => {
-            const userMessage = dom.chat.input.value.trim();
-            if (userMessage === '') return;
-
-            chatHistory.push({ role: "user", parts: [{ text: userMessage }] });
-            appendMessage(userMessage, 'user');
-            dom.chat.input.value = '';
-            
-            const loadingElement = appendMessage('<span class="animate-pulse">...</span>', 'bot');
-            
-            try {
-                const payload = { contents: chatHistory };
-                const apiKey = ""; 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-
-                let response;
-                let delay = 1000;
-                const maxRetries = 5;
-
-                for (let i = 0; i < maxRetries; i++) {
-                    try {
-                        response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        if (response.ok) {
-                            break; 
-                        } else if (response.status === 429 && i < maxRetries - 1) {
-                            await new Promise(res => setTimeout(res, delay));
-                            delay *= 2; 
-                        } else {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                    } catch (err) {
-                        if (i === maxRetries - 1) throw err;
-                        await new Promise(res => setTimeout(res, delay));
-                        delay *= 2;
-                    }
-                }
-
-                const result = await response.json();
-                let aiText = "No he podido procesar tu solicitud ahora mismo.";
-
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    aiText = result.candidates[0].content.parts[0].text;
-                    chatHistory.push({ role: "model", parts: [{ text: aiText }] });
-                }
-
-                loadingElement.querySelector('div').innerHTML = aiText;
-            } catch (error) {
-                console.error('Error fetching AI response:', error);
-                loadingElement.querySelector('div').innerHTML = "Lo siento, hubo un problema de conexión. Inténtalo de nuevo.";
-                loadingElement.querySelector('div').classList.add('bg-red-100', 'text-red-700');
-            }
-        };
-
-        // --- LÓGICA DEL CARRITO ---
-        const updateCartCount = async () => {
-            try {
-                const response = await fetch('{% url "cart_count" %}'); 
-                if (!response.ok) return;
-                const data = await response.json();
-                const count = data.cart_count || 0;
-                
-                if (dom.cartCounter) dom.cartCounter.textContent = count;
-                if (dom.mobileCartCounter) dom.mobileCartCounter.textContent = count;
-            } catch (error) {
-                console.error('Error al obtener el conteo del carrito:', error);
-            }
-        };
-
-        // --- ASIGNACIÓN DE EVENT LISTENERS ---
-
-        // Menú móvil
-        dom.menuToggle.addEventListener('click', () => dom.mobileMenu.classList.remove('-translate-x-full'));
-        dom.closeMenuToggle.addEventListener('click', () => dom.mobileMenu.classList.add('-translate-x-full'));
-
-        // Filtros
-        dom.filterButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const category = this.dataset.category;
-                
-                dom.filterButtons.forEach(btn => btn.classList.remove('active-filter-btn'));
-                document.querySelectorAll(`.filter-btn[data-category="${category}"]`).forEach(btn => btn.classList.add('active-filter-btn'));
-
-                updateProductView();
-                
-                if (!dom.mobileMenu.classList.contains('-translate-x-full')) {
-                    dom.mobileMenu.classList.add('-translate-x-full');
-                }
-            });
-        });
-
-        // Búsqueda
-        [dom.searchBar, dom.mobileSearchBar].forEach(input => {
-            input.addEventListener('keyup', () => {
-                const value = input.value;
-                if (input.id === 'search-bar') dom.mobileSearchBar.value = value;
-                if (input.id === 'mobile-search-bar') dom.searchBar.value = value;
-                updateProductView();
-            });
-        });
-
-        // Ordenamiento
-        dom.sortBySelect.addEventListener('change', updateProductView);
-
-        // Chat
-        dom.chat.button.addEventListener('click', () => {
-            isChatOpen = !isChatOpen;
-            if (isChatOpen) {
-                dom.chat.container.classList.remove('hidden');
-                dom.chat.container.classList.add('flex'); // Asegurarse de que sea flex
-            } else {
-                dom.chat.container.classList.add('hidden');
-                dom.chat.container.classList.remove('flex');
-            }
-        });
-        dom.chat.closeButton.addEventListener('click', () => {
-            dom.chat.container.classList.add('hidden');
-            dom.chat.container.classList.remove('flex');
-            isChatOpen = false;
-        });
-        dom.chat.sendButton.addEventListener('click', handleSendMessage);
-        dom.chat.input.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                handleSendMessage();
-            }
-        });
-
-        // --- INICIALIZACIÓN ---
+        const params = new URLSearchParams(window.location.search);
         
-        const initialize = () => {
-            const initialFilterButton = document.querySelector('.filter-btn[data-category="all"]');
-            if (initialFilterButton) {
-                initialFilterButton.click();
-            } else {
-                updateProductView();
-            }
-            
-            updateCartCount();
-        };
+        if (filterValue) {
+            params.set(filterType, filterValue);
+        } else {
+            params.delete(filterType);
+        }
+        
+        handleStateChange(params);
+    }
 
-        initialize();
+    document.addEventListener('DOMContentLoaded', () => {
+        productListContainer = document.getElementById('product-list-section');
+        skeleton = document.getElementById('list-skeleton');
+        
+        const sortBySelect = document.getElementById('sort-by');
+        const priceForm = document.getElementById('price-form');
+
+        sortBySelect.addEventListener('change', () => {
+            const params = new URLSearchParams(window.location.search);
+            params.set('orden', sortBySelect.value);
+            handleStateChange(params);
+        });
+
+        priceForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(priceForm);
+            const params = new URLSearchParams(window.location.search);
+            params.set('precio_min', formData.get('precio_min') || '');
+            params.set('precio_max', formData.get('precio_max') || '');
+            handleStateChange(params, e.currentTarget.querySelector('button'));
+        });
+
+        productListContainer.addEventListener('click', (e) => {
+            const pageLink = e.target.closest('nav a');
+            if (!pageLink) return;
+
+            e.preventDefault();
+            const url = pageLink.getAttribute('href');
+            if (url) {
+                history.pushState({}, '', url);
+                updateProducts(url);
+            }
+        });
+
+        window.addEventListener('popstate', () => {
+            updateProducts(window.location.href);
+        });
     });
-    </script>
-</body>
-</html>
+</script>
+{% endblock extra_js %}

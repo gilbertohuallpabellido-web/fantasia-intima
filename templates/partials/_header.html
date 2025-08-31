@@ -1,0 +1,99 @@
+{% load static %}
+
+<!-- Se usa rgba() con la nueva variable --brand-primary-rgb para aplicar transparencia -->
+<header x-data="{ mobileMenuOpen: false }" style="background-color: rgba(var(--brand-primary-rgb, 249, 168, 212), 0.8);" class="backdrop-blur-sm sticky top-0 z-50 shadow-md">
+    <div class="container mx-auto px-4">
+        <div class="flex justify-between items-center h-20">
+            <!-- Logo -->
+            <a href="{% url 'index' %}" class="flex-shrink-0">
+                <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" class="h-14 w-auto" onerror="this.onerror=null;this.src='https://placehold.co/150x50/f9a8d4/ffffff?text=Logo';">
+            </a>
+
+            <!-- Navegación Principal (para pantallas grandes) -->
+            <nav class="hidden lg:flex items-center space-x-8">
+                <a href="{% url 'index' %}" style="color: var(--brand-text);" class="hover:opacity-75 font-semibold transition-colors">Inicio</a>
+                
+                <!-- CORRECCIÓN: Se usa la variable de color de acento -->
+                <a href="{% url 'catalogo_publico' %}?categoria=nueva_coleccion#product-list-section" class="js-category-link text-white px-4 py-2 rounded-full font-bold transition-all flex items-center gap-2 shadow-lg transform hover:scale-105" style="background-color: var(--brand-accent);">
+                    <i class="fas fa-star text-sm text-yellow-300"></i>
+                    <span>Nueva Colección</span>
+                </a>
+            </nav>
+
+            <!-- Barra de Búsqueda y Acciones de Usuario -->
+            <div class="flex items-center space-x-4">
+                <!-- Barra de búsqueda -->
+                <form action="{% url 'catalogo_publico' %}" method="get" class="hidden md:block">
+                    <div class="relative">
+                        <input type="search" name="q" placeholder="Buscar productos..." value="{{ filtros_activos.q|default:'' }}" class="rounded-full py-2 pl-10 pr-4 w-64 border-gray-300 focus:ring-2 transition-all" style="--tw-ring-color: var(--brand-accent);">
+                        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                </form>
+
+                <!-- Iconos de Usuario y Carrito -->
+                <div class="hidden lg:flex items-center space-x-4">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'mi_cuenta' %}" class="flex items-center gap-2 font-semibold transition-colors" style="color: var(--brand-text);" onmouseover="this.style.color='var(--brand-accent)'" onmouseout="this.style.color='var(--brand-text)'" title="Mi Cuenta">
+                            <i class="fas fa-user-circle text-2xl"></i>
+                            <span class="hidden xl:inline">Hola, {{ user.first_name|default:user.username|truncatechars:10 }}</span>
+                        </a>
+                        <form action="{% url 'logout' %}" method="post" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="transition-colors" style="color: var(--brand-text);" onmouseover="this.style.color='var(--brand-accent)'" onmouseout="this.style.color='var(--brand-text)'" title="Salir">
+                                <i class="fas fa-sign-out-alt text-2xl"></i>
+                            </button>
+                        </form>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="flex items-center gap-2 font-semibold transition-colors" style="color: var(--brand-text);" onmouseover="this.style.color='var(--brand-accent)'" onmouseout="this.style.color='var(--brand-text)'">
+                            <i class="fas fa-user-circle text-2xl"></i>
+                            <span class="hidden xl:inline">Ingresar</span>
+                        </a>
+                    {% endif %}
+                </div>
+                
+                <a href="{% url 'ver_carrito' %}" class="relative" style="color: var(--brand-text);" onmouseover="this.style.color='var(--brand-accent)'" onmouseout="this.style.color='var(--brand-text)'">
+                    <i class="fas fa-shopping-cart text-2xl"></i>
+                    <!-- CORRECCIÓN: Se usa la variable de color de acento -->
+                    <span id="cart-count-badge" class="absolute -top-2 -right-2 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center" style="background-color: var(--brand-accent);">{{ cart_count|default:0 }}</span>
+                </a>
+
+                <!-- Botón de Menú Móvil -->
+                <button @click="mobileMenuOpen = !mobileMenuOpen" class="lg:hidden" style="color: var(--brand-text);">
+                    <i class="fas fa-bars text-2xl"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menú Móvil -->
+    <div x-show="mobileMenuOpen" @click.away="mobileMenuOpen = false" class="lg:hidden p-4 space-y-4" style="background-color: var(--brand-light-pink, #fffbff); border-top-color: var(--border-color, #fce7f3);">
+        <form action="{% url 'catalogo_publico' %}" method="get" class="md:hidden">
+            <input type="search" name="q" placeholder="Buscar..." value="{{ filtros_activos.q|default:'' }}" class="w-full rounded-full py-2 px-4 border-gray-300">
+        </form>
+        <a href="{% url 'index' %}" class="block font-semibold" style="color: var(--brand-text);">Inicio</a>
+        <a href="{% url 'catalogo_publico' %}?categoria=nueva_coleccion#product-list-section" class="js-category-link block font-bold" style="color: var(--brand-accent);">Nueva Colección</a>
+        <hr>
+        {% if user.is_authenticated %}
+            <a href="{% url 'mi_cuenta' %}" class="block font-semibold" style="color: var(--brand-text);">
+                <i class="fas fa-user-circle w-6 inline-block text-center mr-2"></i>
+                Mi Cuenta ({{ user.first_name|default:user.username|truncatechars:10 }})
+            </a>
+            <form action="{% url 'logout' %}" method="post" class="block">
+                {% csrf_token %}
+                <button type="submit" class="w-full text-left block font-bold" style="color: var(--brand-accent);">
+                    <i class="fas fa-sign-out-alt w-6 inline-block text-center mr-2"></i>
+                    Salir
+                </button>
+            </form>
+        {% else %}
+            <a href="{% url 'login' %}" class="block font-semibold" style="color: var(--brand-text);">
+                <i class="fas fa-sign-in-alt w-6 inline-block text-center mr-2"></i>
+                Ingresar
+            </a>
+            <a href="{% url 'registro' %}" class="block font-bold" style="color: var(--brand-accent);">
+                <i class="fas fa-user-plus w-6 inline-block text-center mr-2"></i>
+                Registrarse
+            </a>
+        {% endif %}
+    </div>
+</header>

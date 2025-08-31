@@ -1,0 +1,329 @@
+{% load static %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // --- FUNCIÓN DE SEGURIDAD CSRF ---
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // --- ELEMENTOS DEL DOM (COMBINADOS) ---
+    const dom = {
+        menuToggle: document.getElementById('menu-toggle'),
+        closeMenuToggle: document.getElementById('close-menu-toggle'),
+        mobileMenu: document.getElementById('mobile-menu'),
+        cartCounter: document.getElementById('cart-counter'),
+        mobileCartCounter: document.getElementById('mobile-cart-counter'),
+        chat: {
+            button: document.getElementById('chat-button'),
+            container: document.getElementById('chat-container'),
+            closeButton: document.getElementById('close-chat-button'),
+            messages: document.getElementById('chat-messages'),
+            input: document.getElementById('chat-input'),
+            sendButton: document.getElementById('chat-send-button'),
+            buttonContainer: null, 
+        },
+        filterButtons: document.querySelectorAll('.filter-btn'),
+        productList: document.getElementById('product-list'),
+        noProductsFoundMsg: document.getElementById('no-products-found'),
+        noProductsInitialMsg: document.getElementById('no-products-initial'),
+        searchBar: document.getElementById('search-bar'),
+        mobileSearchBar: document.getElementById('mobile-search-bar'),
+        sortBySelect: document.getElementById('sort-by'),
+    };
+
+    // --- LÓGICA DEL CHATBOT (AVANZADA) ---
+    const chatHistoryKey = `chatHistory_{{ user.id|default:"anonymous" }}`;
+    let chatHistory = [];
+
+    const parseAndFormatMessage = (rawText) => {
+        let cleanedText = rawText;
+        let buttons = [];
+        const buttonMatch = cleanedText.match(/\[BOTONES:\s*(.*?)\s*\]/i);
+        if (buttonMatch && buttonMatch[1]) {
+            cleanedText = cleanedText.replace(buttonMatch[0], '').trim();
+            buttons = buttonMatch[1].split(';').map(btn => btn.trim()).filter(btn => btn);
+        }
+        const linkRegex = /\[(.*?)\]\((.*?)\)/g;
+        let formattedHtml = cleanedText.replace(linkRegex, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-pink-600 font-bold underline hover:text-pink-800">$1</a>');
+        formattedHtml = formattedHtml.replace(/\n/g, '<br>');
+        return { cleanedText, formattedHtml, buttons };
+    };
+
+    const appendMessage = (htmlContent, sender) => {
+        if (!dom.chat.messages) return;
+        const messageElement = document.createElement('div');
+        messageElement.className = `flex mb-2 ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+        const bubble = document.createElement('div');
+        bubble.className = `p-3 rounded-lg max-w-[85%] break-words ${sender === 'user' ? 'bg-[--brand-accent] text-white rounded-br-none' : 'bg-gray-200 text-gray-800 rounded-bl-none'}`;
+        bubble.innerHTML = htmlContent;
+        messageElement.appendChild(bubble);
+        dom.chat.messages.appendChild(messageElement);
+        dom.chat.messages.scrollTop = dom.chat.messages.scrollHeight;
+        return messageElement;
+    };
+    
+    const appendButtons = (buttons) => {
+        if (dom.chat.buttonContainer) dom.chat.buttonContainer.remove();
+        dom.chat.buttonContainer = document.createElement('div');
+        dom.chat.buttonContainer.className = 'flex flex-wrap gap-2 p-2 justify-center';
+        buttons.forEach(text => {
+            const button = document.createElement('button');
+            button.textContent = text;
+            button.className = 'px-4 py-2 bg-pink-100 text-pink-700 rounded-full text-sm font-semibold hover:bg-pink-200 transition-colors';
+            button.addEventListener('click', () => {
+                dom.chat.input.value = text;
+                handleSendMessage();
+            });
+            dom.chat.buttonContainer.appendChild(button);
+        });
+        dom.chat.messages.appendChild(dom.chat.buttonContainer);
+        dom.chat.messages.scrollTop = dom.chat.messages.scrollHeight;
+    };
+
+    const handleSendMessage = async () => {
+        const userMessage = dom.chat.input.value.trim();
+        if (userMessage === '') return;
+        
+        if (dom.chat.buttonContainer) {
+            dom.chat.buttonContainer.remove();
+            dom.chat.buttonContainer = null;
+        }
+
+        chatHistory.push({ role: "user", parts: [{ text: userMessage }] });
+        appendMessage(userMessage, 'user');
+        dom.chat.input.value = '';
+        const loadingElement = appendMessage('<span class="animate-pulse">...</span>', 'bot');
+
+        const pageContext = {
+            products: [],
+            paymentMethods: {
+                types: ["Yape", "Plin", "Tarjeta de crédito/débito"],
+                yapePlinNumber: "{{ site_config.numero_yape_plin|default:'No especificado' }}"
+            },
+            contactInfo: { 
+                whatsapp: "{{ site_config.whatsapp_link|default:'No especificado' }}" 
+            },
+        };
+
+        const productCards = document.querySelectorAll('.product-card:not([style*="display: none"])');
+        productCards.forEach(card => {
+            pageContext.products.push({
+                name: card.querySelector('.product-name')?.textContent.trim(),
+                price: card.querySelector('.product-price')?.textContent.trim(),
+                description: card.querySelector('.product-description')?.textContent.trim(),
+            });
+        });
+
+        try {
+            // 👉 CSRF token fresco en cada envío
+            const csrftoken = getCookie('csrftoken');
+
+            const response = await fetch("{% url 'get_ai_response' %}", {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'X-CSRFToken': csrftoken 
+                },
+                body: JSON.stringify({ 
+                    message: userMessage, 
+                    history: chatHistory, 
+                    context: pageContext 
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.response || 'Error en el servidor');
+            }
+
+            const result = await response.json();
+            const rawAiText = result.response;
+
+            const { cleanedText, formattedHtml, buttons } = parseAndFormatMessage(rawAiText);
+            
+            chatHistory.push({ role: "model", parts: [{ text: cleanedText, buttons: buttons }] });
+            sessionStorage.setItem(chatHistoryKey, JSON.stringify(chatHistory));
+            
+            loadingElement.querySelector('div').innerHTML = formattedHtml;
+            
+            if (buttons.length > 0) {
+                appendButtons(buttons);
+            }
+        } catch (error) {
+            console.error('Error al contactar al asistente:', error);
+            loadingElement.querySelector('div').innerHTML = error.message || "Lo siento, hubo un problema de conexión.";
+            loadingElement.querySelector('div').classList.add('bg-red-100', 'text-red-700');
+        }
+    };
+
+    // --- LÓGICA DEL CATÁLOGO ---
+    const updateProductView = () => {
+        const currentProductCards = document.querySelectorAll('.product-card');
+        if (!currentProductCards || !dom.productList) return;
+
+        const searchQuery = (dom.searchBar?.value || dom.mobileSearchBar?.value || '').toLowerCase().trim();
+        const activeCategory = document.querySelector('.filter-btn.active-filter-btn')?.dataset.category || 'all';
+        let visibleProductsCount = 0;
+
+        currentProductCards.forEach(card => {
+            const productName = (card.querySelector('.product-name')?.textContent || '').toLowerCase();
+            const productDescription = (card.querySelector('.product-description')?.textContent || '').toLowerCase();
+            const cardCategory = card.dataset.category;
+            const isNew = card.dataset.newCollection === 'true';
+
+            const matchesCategory = activeCategory === 'all' ||
+                                    (activeCategory === 'nueva_coleccion' && isNew) ||
+                                    cardCategory === activeCategory;
+            const matchesSearch = productName.includes(searchQuery) || productDescription.includes(searchQuery);
+
+            if (matchesCategory && matchesSearch) {
+                card.style.display = 'block';
+                visibleProductsCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        if (dom.noProductsFoundMsg) {
+            dom.noProductsFoundMsg.style.display = (visibleProductsCount === 0 && currentProductCards.length > 0) ? 'block' : 'none';
+        }
+        if (dom.noProductsInitialMsg) {
+            dom.noProductsInitialMsg.style.display = (currentProductCards.length === 0) ? 'block' : 'none';
+        }
+    };
+
+    const updateCartCount = async () => {
+        try {
+            const cartCountUrl = document.body.dataset.cartCountUrl;
+            if (!cartCountUrl) return;
+            const response = await fetch(cartCountUrl); 
+            if (!response.ok) return;
+            const data = await response.json();
+            const count = data.cart_count || 0;
+            if (dom.cartCounter) dom.cartCounter.textContent = count;
+            if (dom.mobileCartCounter) dom.mobileCartCounter.textContent = count;
+        } catch (error) {
+            console.error('Error al obtener el conteo del carrito:', error);
+        }
+    };
+    
+    // --- INICIALIZACIÓN Y EVENT LISTENERS ---
+    if(dom.menuToggle) dom.menuToggle.addEventListener('click', () => dom.mobileMenu.classList.remove('-translate-x-full'));
+    if(dom.closeMenuToggle) dom.closeMenuToggle.addEventListener('click', () => dom.mobileMenu.classList.add('-translate-x-full'));
+    
+    if(dom.chat.button) dom.chat.button.addEventListener('click', () => dom.chat.container.classList.remove('hidden'));
+    if(dom.chat.closeButton) dom.chat.closeButton.addEventListener('click', () => dom.chat.container.classList.add('hidden'));
+    if(dom.chat.sendButton) dom.chat.sendButton.addEventListener('click', handleSendMessage);
+    if(dom.chat.input) dom.chat.input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            handleSendMessage();
+        }
+    });
+
+    if(dom.filterButtons) dom.filterButtons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            if (window.location.pathname.includes('/catalogo/') || window.location.pathname === '/') {
+                event.preventDefault();
+                const category = this.dataset.category;
+                dom.filterButtons.forEach(btn => btn.classList.remove('active-filter-btn'));
+                document.querySelectorAll(`.filter-btn[data-category="${category}"]`).forEach(btn => btn.classList.add('active-filter-btn'));
+                updateProductView();
+                if (dom.mobileMenu && !dom.mobileMenu.classList.contains('-translate-x-full')) {
+                    dom.mobileMenu.classList.add('-translate-x-full');
+                }
+            }
+        });
+    });
+
+    [dom.searchBar, dom.mobileSearchBar].forEach(input => {
+        if(input) input.addEventListener('keyup', () => {
+            const value = input.value;
+            if (input.id === 'search-bar' && dom.mobileSearchBar) dom.mobileSearchBar.value = value;
+            if (input.id === 'mobile-search-bar' && dom.searchBar) dom.searchBar.value = value;
+            updateProductView();
+        });
+    });
+
+    if(dom.sortBySelect) dom.sortBySelect.addEventListener('change', updateProductView);
+    
+    const initialize = () => {
+        updateCartCount();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const category = urlParams.get('categoria');
+        if (category) {
+            const filterButton = document.querySelector(`.filter-btn[data-category="${category}"]`);
+            if (filterButton) {
+                dom.filterButtons.forEach(btn => btn.classList.remove('active-filter-btn'));
+                document.querySelectorAll(`.filter-btn[data-category="${category}"]`).forEach(btn => btn.classList.add('active-filter-btn'));
+            }
+        }
+        if(dom.productList) {
+            updateProductView();
+        }
+
+        document.querySelectorAll('[role="alert"]').forEach(message => {
+            if (message.closest('main') || message.closest('.max-w-5xl')) {
+                setTimeout(() => {
+                    message.style.transition = 'opacity 0.5s ease, transform 0.5s ease, max-height 0.5s ease, padding 0.5s ease, margin 0.5s ease';
+                    message.style.opacity = '0';
+                    message.style.transform = 'scaleY(0)';
+                    message.style.maxHeight = '0px';
+                    message.style.padding = '0';
+                    message.style.margin = '0';
+                    setTimeout(() => message.remove(), 500);
+                }, 5000);
+            }
+        });
+
+        const savedHistory = sessionStorage.getItem(chatHistoryKey);
+        if (dom.chat.messages) {
+            dom.chat.messages.innerHTML = '';
+            if (savedHistory) {
+                chatHistory = JSON.parse(savedHistory);
+            } else {
+                const { cleanedText, buttons } = parseAndFormatMessage("¡Hola! Soy Fanty, tu asistente virtual. ¿Qué te apetece buscar hoy? [BOTONES: Algo atrevido, Algo elegante, Ver ofertas]");
+                chatHistory = [{ role: "model", parts: [{ text: cleanedText, buttons: buttons }] }];
+            }
+            
+            const cleanHistory = chatHistory.map(message => {
+                const { cleanedText, buttons } = parseAndFormatMessage(message.parts[0].text);
+                return {
+                    role: message.role,
+                    parts: [{ text: cleanedText, buttons: buttons }]
+                };
+            });
+            chatHistory = cleanHistory;
+            sessionStorage.setItem(chatHistoryKey, JSON.stringify(chatHistory));
+
+            chatHistory.forEach((message, index) => {
+                const { formattedHtml } = parseAndFormatMessage(message.parts[0].text);
+                appendMessage(formattedHtml, message.role === 'user' ? 'user' : 'bot');
+                
+                const lastButtons = message.parts[0].buttons || [];
+                if (lastButtons.length > 0 && index === chatHistory.length - 1) {
+                    appendButtons(lastButtons);
+                }
+            });
+        }
+    };
+
+    initialize();
+});
+</script>
+
+<script src="{% static 'js/categoria_ajax.js' %}"></script>
+<script src="{% static 'js/catalogo_ui.js' %}"></script>

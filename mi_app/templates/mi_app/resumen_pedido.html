@@ -1,4 +1,5 @@
-{% load static %}
+{% load static theme_tags %}
+
 <!DOCTYPE html>
 <html lang="es" class="scroll-smooth">
 <head>
@@ -7,26 +8,12 @@
     <title>Detalles del Pedido - Fantasía Íntima</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Parisienne&display=swap" rel="stylesheet">
     
+    <!-- Se inyectan los estilos y fuentes dinámicos -->
+    {% inject_theme_styles %}
+
     <style>
-        :root {
-            --brand-primary: #f9a8d4; /* rosa claro */
-            --brand-secondary: #f472b6; /* rosa medio */
-            --brand-accent: #ec4899; /* rosa vibrante */
-            --brand-brown: #5C2C0C; /* marrón cálido */
-            --brand-text: #4b4244; /* texto principal */
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #fffbff;
-            color: var(--brand-text);
-        }
-        .font-brand {
-            font-family: 'Parisienne', cursive;
-        }
+        /* Estilos adicionales que no dependen de las variables se mantienen */
         .transition-all {
             transition: all 0.3s ease-in-out;
         }
@@ -35,13 +22,13 @@
 <body class="antialiased min-h-screen flex flex-col bg-pink-50/30">
 
     <!-- HEADER -->
-    <header class="bg-gradient-to-r from-[--brand-primary] to-[--brand-secondary] text-white p-2 sm:p-4 shadow-lg sticky top-0 z-50">
+    <header class="text-white p-2 sm:p-4 shadow-lg sticky top-0 z-50" style="background: linear-gradient(to right, var(--brand-primary), var(--brand-secondary));">
         <div class="container mx-auto flex justify-between items-center">
             <a href="{% url 'catalogo_publico' %}" class="flex items-center">
                 <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" class="h-14 w-auto drop-shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/100x56/f9a8d4/ffffff?text=Logo';">
             </a>
             <h1 class="hidden sm:block text-2xl sm:text-3xl font-brand drop-shadow-lg">Detalles del Pedido</h1>
-            <a href="{% url 'mi_cuenta' %}" class="bg-white text-[--brand-accent] p-3 rounded-full hover:bg-pink-50 flex items-center shadow-md transition-all transform hover:scale-105" aria-label="Volver a Mi Cuenta">
+            <a href="{% url 'mi_cuenta' %}" class="bg-white p-3 rounded-full hover:bg-pink-50 flex items-center shadow-md transition-all transform hover:scale-105" style="color: var(--brand-accent);" aria-label="Volver a Mi Cuenta">
                 <i class="fas fa-user-circle text-xl"></i>
             </a>
         </div>
@@ -51,66 +38,24 @@
     <main class="container mx-auto p-4 md:p-8 flex-grow">
         <div class="max-w-4xl mx-auto">
             
-            <!-- Título y Botón de Volver -->
-            <div class="flex justify-between items-center mb-6">
-                <!-- AQUÍ ESTÁ EL CAMBIO -->
-                <a href="{% url 'mi_cuenta' %}?tab=pedidos" class="text-pink-600 hover:text-[--brand-accent] font-semibold transition-colors">
-                    <i class="fas fa-arrow-left mr-2"></i>Volver a Mis Pedidos
-                </a>
-            </div>
-
             <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl border border-pink-100">
                 <!-- Encabezado del Pedido -->
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b border-pink-100 pb-6">
-                    <div>
-                        <h2 class="text-3xl md:text-4xl font-brand text-[--brand-brown]">Pedido #{{ pedido.numero_pedido }}</h2>
-                        <p class="text-gray-500">Realizado el: {{ pedido.fecha_creacion|date:"d \d\e F, Y" }}</p>
-                    </div>
-                    <!-- Badge de Estado del Pedido -->
-                    <div class="mt-3 sm:mt-0">
-                        <span class="font-bold py-2 px-4 rounded-full text-sm
-                            {% if pedido.estado == 'entregado' %} bg-green-100 text-green-700
-                            {% elif pedido.estado == 'enviado' %} bg-blue-100 text-blue-700
-                            {% elif pedido.estado == 'pendiente' %} bg-yellow-100 text-yellow-700
-                            {% elif pedido.estado == 'cancelado' %} bg-red-100 text-red-700
-                            {% else %} bg-gray-100 text-gray-700 {% endif %}">
-                            {{ pedido.get_estado_display }}
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Detalles de Envío y Pago -->
-                <div class="grid md:grid-cols-2 gap-8 mb-8">
-                    <div class="bg-pink-50/50 p-5 rounded-xl">
-                        <h3 class="font-bold text-lg text-[--brand-brown] mb-3 flex items-center"><i class="fas fa-map-marker-alt mr-3 text-[--brand-accent]"></i>Dirección de Envío</h3>
-                        <div class="text-gray-600 space-y-1">
-                            <p>{{ pedido.direccion_envio.destinatario|default:user.get_full_name }}</p>
-                            <p>{{ pedido.direccion_envio.linea1 }}</p>
-                            {% if pedido.direccion_envio.linea2 %}<p>{{ pedido.direccion_envio.linea2 }}</p>{% endif %}
-                            <p>{{ pedido.direccion_envio.distrito }}, {{ pedido.direccion_envio.ciudad }}</p>
-                            <p>{{ pedido.direccion_envio.pais }}</p>
-                        </div>
-                    </div>
-                    <div class="bg-pink-50/50 p-5 rounded-xl">
-                        <h3 class="font-bold text-lg text-[--brand-brown] mb-3 flex items-center"><i class="fas fa-credit-card mr-3 text-[--brand-accent]"></i>Información de Pago</h3>
-                        <div class="text-gray-600 space-y-1">
-                            <p><span class="font-semibold">Método:</span> {{ pedido.metodo_pago|default:"No especificado" }}</p>
-                            <p><span class="font-semibold">Estado:</span> <span class="font-bold text-green-600">Pagado</span></p>
-                        </div>
-                    </div>
+                <div class="text-center mb-8 border-b border-pink-100 pb-6">
+                    <h2 class="text-4xl md:text-5xl font-brand" style="color: var(--brand-brown);">Pedido #{{ pedido.codigo_pedido }}</h2>
+                    <p class="text-gray-500 mt-2">Realizado el: {{ pedido.fecha_creacion|date:"d \d\e F, Y" }}</p>
                 </div>
 
                 <!-- Lista de Artículos -->
-                <h3 class="text-2xl font-bold text-[--brand-brown] mb-4">Resumen del Pedido</h3>
+                <h3 class="text-2xl font-bold mb-4" style="color: var(--brand-brown);">Resumen de tu Pedido</h3>
                 <div class="space-y-4">
                     {% for detalle in pedido.detalles.all %}
-                    <div class="flex items-center bg-white p-4 rounded-lg border border-gray-200">
+                    <div class="flex items-center bg-gray-50/50 p-4 rounded-lg border border-gray-200">
                         <div class="flex-shrink-0 w-20 h-20 md:w-24 md:h-24 bg-white rounded-md border border-pink-100 flex items-center justify-center mr-4">
                              <img src="{{ detalle.imagen_url }}" alt="{{ detalle.producto_nombre }}" class="w-full h-full object-contain p-1" onerror="this.onerror=null;this.src='https://placehold.co/96x96/fde4f2/4b4244?text=IMG';">
                         </div>
                         <div class="flex-grow">
-                            <p class="font-bold text-lg text-[--brand-text]">{{ detalle.producto_nombre }}</p>
-                            <p class="text-sm text-gray-500">Color: {{ detalle.variante_color }}</p>
+                            <p class="font-bold text-lg" style="color: var(--brand-text);">{{ detalle.producto_nombre }}</p>
+                            <p class="text-sm text-gray-500 font-mono">SKU: {{ detalle.variante_color }}</p>
                             <p class="text-sm text-gray-500">Cantidad: {{ detalle.cantidad }}</p>
                             <p class="text-sm text-gray-500 font-semibold">Precio Unitario: S/. {{ detalle.precio_unitario|floatformat:2 }}</p>
                         </div>
@@ -130,21 +75,20 @@
                         </div>
                         <div class="flex justify-between text-gray-600">
                             <span>Envío</span>
-                            <span>S/. {{ pedido.costo_envio|floatformat:2 }}</span>
+                            <span class="font-semibold">A coordinar</span>
                         </div>
-                        <div class="flex justify-between font-bold text-xl text-[--brand-accent] mt-2 pt-2 border-t border-pink-200">
+                        <div class="flex justify-between font-bold text-2xl mt-2 pt-2 border-t border-pink-200" style="color: var(--brand-accent);">
                             <span>Total</span>
                             <span>S/. {{ pedido.total|floatformat:2 }}</span>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </main>
     
     <!-- FOOTER -->
-    <footer class="bg-gradient-to-r from-[--brand-primary] to-[--brand-secondary] text-white py-8 mt-16">
+    <footer class="text-white py-8 mt-16" style="background: linear-gradient(to right, var(--brand-primary), var(--brand-secondary));">
         <div class="container mx-auto px-6 text-center">
             <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" class="h-16 w-auto mx-auto mb-4 drop-shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/100x64/f9a8d4/ffffff?text=Logo';">
             <p>&copy; {% now "Y" %} Fantasía Íntima. Todos los derechos reservados.</p>

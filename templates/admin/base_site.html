@@ -1,0 +1,35 @@
+<!-- templates/admin/base_site.html -->
+
+{% extends "admin/base.html" %}
+{% load static %}
+
+{# =================================================================== #}
+{# === INICIO: Anulación de bloques para personalizar el admin === #}
+{# =================================================================== #}
+
+{# Anulamos el título del sitio #}
+{% block title %}{% if site_title %}{{ site_title }}{% else %}Fantasía Íntima Admin{% endif %}{% endblock %}
+
+{# Anulamos la cabecera para poner nuestro logo y nombre #}
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}" style="display: flex; align-items: center; text-decoration: none;">
+        <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" style="height: 35px; width: auto; margin-right: 10px;">
+        <span style="font-weight: bold; font-size: 1.2rem;">Fantasía Íntima</span>
+    </a>
+</h1>
+{% endblock %}
+
+{# Anulamos los estilos para añadir los nuestros #}
+{% block extrastyle %}
+    {{ block.super }}
+    <!-- 
+      Aquí cargamos nuestra hoja de estilos personalizada.
+      Esto aplicará nuestros colores sobre el admin por defecto.
+    -->
+    <link rel="stylesheet" type="text/css" href="{% static 'css/admin_custom.css' %}">
+{% endblock %}
+
+{# =================================================================== #}
+{# === FIN: Anulación de bloques === #}
+{# =================================================================== #}

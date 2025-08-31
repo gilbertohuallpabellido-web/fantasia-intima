@@ -1,0 +1,504 @@
+/* static/css/admin_custom.css */
+
+/*
+ * ===================================================================
+ * === V11: REFINAMIENTO DE COLORES EN EL CONTENIDO ===
+ * ===================================================================
+ * Mejoras:
+ * - (NUEVO) Se redujo el uso del color rosa en el texto y los enlaces para una apariencia más limpia y profesional.
+ * - (NUEVO) Los enlaces ahora son oscuros por defecto y se vuelven rosas al pasar el ratón por encima.
+ * - Encabezado con gradiente de rosa para coincidir con la web.
+ * - Layout de Grid responsivo para los módulos en el Dashboard.
+ * - Diseño completamente responsive para móviles y tablets.
+ * ===================================================================
+ */
+
+:root {
+    --brand-primary: #ec4899;      /* pink-500 */
+    --brand-secondary: #f472b6;    /* pink-400 */
+    --brand-accent: #db2777;       /* pink-600 */
+    --brand-gradient-start: #ec7fbb; /* pink-300 */
+    --brand-gradient-end: #f472b6;   /* pink-400 */
+    --brand-brown: #5C2C0C;
+    --brand-text: #3f3a3c;
+    --brand-light-pink: #e995b7;
+    --admin-bg: #f8fafc;          /* slate-50 */
+    --border-color: #fce7f3;      /* pink-100 */
+    --card-bg: #ffffff;
+    --card-shadow: 0 4px 12px -4px rgba(50, 50, 93, 0.1);
+    --card-shadow-hover: 0 8px 24px -8px rgba(50, 50, 93, 0.15);
+    --focus-ring: 0 0 0 3px rgba(236, 72, 153, 0.3);
+}
+
+/* ================================== */
+/* === Reset Básico y Fuentes Globales === */
+/* ================================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Parisienne&display=swap');
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+body {
+    background: var(--admin-bg);
+    color: var(--brand-text);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ================================== */
+/* === Cabecera Principal (Header) === */
+/* ================================== */
+#header {
+    background: linear-gradient(90deg, var(--brand-gradient-start), var(--brand-gradient-end));
+    color: white;
+    box-shadow: 0 4px 10px rgba(236, 72, 153, 0.2);
+    border-bottom: none;
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+#branding h1 a {
+    font-family: 'Parisienne', cursive !important;
+    font-size: 2.2rem !important;
+    font-weight: 500 !important;
+    color: white !important;
+    text-shadow: 1px 1px 3px rgba(0,0,0, 0.2);
+}
+
+#user-tools {
+    font-weight: 500;
+    font-size: 0.9rem;
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+}
+#user-tools a {
+    color: white !important;
+    transition: color 0.2s, transform 0.2s;
+    position: relative;
+    text-decoration: none !important;
+}
+#user-tools a:hover {
+    transform: translateY(-1px);
+}
+#user-tools a::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgb(223, 86, 86);
+    transition: width 0.3s ease;
+}
+#user-tools a:hover::after {
+    width: 100%;
+}
+
+
+/* ================================== */
+/* === Layout Principal (Contenido) === */
+/* ================================== */
+#content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2.5rem;
+    padding: 2.5rem;
+}
+
+#content h1 { /* Estilo para el título principal "Sitio administrativo" */
+    width: 100%;
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 0;
+    color: var(--brand-text);
+    flex-basis: 100%;
+}
+
+#content-main {
+    flex: 3 1 600px;
+    min-width: 0; /* Previene desbordamiento en flexbox */
+}
+
+#content-related {
+    flex: 1 1 300px;
+    min-width: 0;
+}
+
+/* === Layout de Grid para el Dashboard (Página Principal) === */
+body.dashboard #content-main {
+    flex-grow: 1; /* Ocupa todo el espacio disponible */
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 2.5rem;
+    align-content: start;
+}
+
+body.dashboard #content-main .module {
+    margin-bottom: 0; /* El gap del grid se encarga del espaciado */
+}
+
+
+/* ================================== */
+/* === Módulos y Tablas (Tarjetas) === */
+/* ================================== */
+.module {
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    background: var(--card-bg);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 2.5rem;
+    overflow: hidden;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.module:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--card-shadow-hover);
+}
+
+.module caption, .module h2 {
+    background: var(--brand-light-pink);
+    color: var(--brand-brown);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 1rem;
+    letter-spacing: 0.5px;
+    padding: 16px 24px;
+    text-transform: uppercase;
+}
+
+.module table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.module th {
+    font-weight: 600 !important;
+    color: var(--brand-text);
+    background: #e7b9d0; /* pink-50 */
+    padding: 14px 24px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.module td {
+    padding: 14px 24px;
+    border-bottom: 1px solid #bacee2; /* Muy sutil */
+}
+
+.module tr:last-child td {
+    border-bottom: none;
+}
+
+.module tr a {
+    font-weight: 600;
+    color: var(--brand-text) !important; /* CAMBIO: Color oscuro por defecto */
+    transition: color 0.2s;
+    text-decoration: none;
+}
+.module tr a:hover {
+    color: var(--brand-primary) !important; /* CAMBIO: Color rosa en hover */
+    text-decoration: underline;
+}
+
+/* ================================== */
+/* === Barra Lateral (Acciones) === */
+/* ================================== */
+#content-related .module {
+    padding: 1.5rem;
+}
+
+#content-related .module h2 {
+    background: none;
+    font-size: 1.1rem;
+    border-bottom: 1px solid var(--border-color);
+    margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+    padding: 1.5rem;
+}
+
+.actionlist li {
+    margin-bottom: 0.5rem;
+}
+
+.actionlist a {
+    display: flex; /* Cambiado a flex para alinear icono y texto */
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1.25rem;
+    border-radius: 12px;
+    transition: all 0.25s ease;
+    font-weight: 500;
+    text-decoration: none !important;
+}
+
+.actionlist a:hover {
+    background: var(--brand-light-pink);
+    color: var(--brand-primary) !important;
+    transform: translateX(6px);
+}
+
+/* Iconos para la barra lateral */
+.actionlist a.addlink::before {
+    content: '+';
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+.actionlist a.changelink::before {
+    content: '✎';
+    font-weight: bold;
+}
+
+
+/* ================================== */
+/* === Botones y Acciones === */
+/* ================================== */
+.button, input[type=submit], input[type=button], .submit-row input, a.button {
+    background: var(--brand-primary) !important;
+    color: white !important;
+    border-radius: 9999px !important;
+    padding: 12px 24px !important;
+    border: none !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    transition: all 0.25s ease-in-out;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    cursor: pointer;
+    text-decoration: none !important;
+}
+
+.button:hover, input[type=submit]:hover, input[type=button]:hover, .submit-row input:hover, a.button:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+    background: var(--brand-accent) !important;
+}
+
+.button:focus-visible, input[type=submit]:focus-visible, input[type=button]:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.button.default, .submit-row .button.cancel-link {
+    background: var(--brand-secondary) !important;
+}
+.button.default:hover, .submit-row .button.cancel-link:hover {
+    background: var(--brand-primary) !important;
+}
+
+.submit-row {
+    background: #fff;
+    border-top: 1px solid var(--border-color);
+    padding: 1.5rem;
+    border-radius: 0 0 18px 18px;
+}
+
+/* ================================== */
+/* === Formularios y Campos === */
+/* ================================== */
+.form-row {
+    padding: 1.5rem 0;
+    border-bottom: 1px solid #f1f3f5;
+}
+.form-row:last-child {
+    border-bottom: none;
+}
+
+label {
+    font-weight: 600;
+    color: var(--brand-text);
+}
+
+input[type="text"], input[type="password"], input[type="email"], input[type="url"], input[type="number"], input[type="tel"], textarea, select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    background-color: #f8f9fa;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input[type="text"]:focus, input[type="password"]:focus, input[type="email"]:focus, input[type="url"]:focus, input[type="number"]:focus, input[type="tel"]:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--brand-primary);
+    background-color: #fff;
+    box-shadow: var(--focus-ring);
+}
+
+/* ================================== */
+/* === Componentes Django Específicos === */
+/* ================================== */
+
+/* --- Mensajes y Notificaciones --- */
+.messagelist {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem 0;
+}
+.messagelist li {
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 500;
+    border: 1px solid;
+    margin-bottom: 1rem;
+}
+.messagelist li.success {
+    background-color: #e6fcf5;
+    color: #0ca678;
+    border-color: #96f2d7;
+}
+.messagelist li.warning {
+    background-color: #fff9e6;
+    color: #fab005;
+    border-color: #ffec99;
+}
+.messagelist li.error {
+    background-color: #fff5f5;
+    color: #f03e3e;
+    border-color: #ffc9c9;
+}
+
+/* --- Breadcrumbs --- */
+.breadcrumbs {
+    background: #fff;
+    padding: 1rem 2.5rem;
+    border-bottom: 1px solid var(--border-color);
+    margin: -2.5rem -2.5rem 2.5rem -2.5rem;
+    font-size: 0.9rem;
+}
+.breadcrumbs a {
+    color: var(--brand-text); /* CAMBIO: Color oscuro por defecto */
+    text-decoration: none;
+    transition: color 0.2s;
+}
+.breadcrumbs a:hover {
+    color: var(--brand-primary); /* CAMBIO: Color rosa en hover */
+    text-decoration: underline;
+}
+
+/* --- Paginación --- */
+.paginator {
+    background: var(--brand-light-pink);
+    padding: 1rem;
+    border-radius: 999px;
+    display: inline-block;
+    margin-top: 1rem;
+}
+.paginator a, .paginator .this-page {
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    border-radius: 999px;
+    font-weight: 500;
+}
+.paginator .this-page {
+    background: var(--brand-primary);
+    color: white;
+}
+.paginator a:hover {
+    background: #fff;
+    color: var(--brand-primary);
+}
+
+
+/* ================================== */
+/* === Página de Login === */
+/* ================================== */
+.login #container {
+    border: none;
+    border-radius: 24px;
+    box-shadow: 0 12px 28px -6px rgba(0,0,0,0.12);
+    overflow: hidden;
+    animation: fadeIn 0.6s ease;
+    max-width: 450px;
+    margin-top: 5vh;
+}
+
+.login #header {
+    background: linear-gradient(90deg, var(--brand-gradient-start), var(--brand-gradient-end));
+    padding: 32px;
+    border-bottom: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.login #content {
+    padding: 2.5rem;
+}
+
+.login #header h1 a {
+    color: white !important;
+    font-family: 'Parisienne', cursive !important;
+    font-size: 2.5rem;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ================================== */
+/* === Diseño Responsivo === */
+/* ================================== */
+
+/* --- Tablets y pantallas pequeñas --- */
+@media (max-width: 1024px) {
+    #content {
+        padding: 1.5rem;
+    }
+    .breadcrumbs {
+        padding: 1rem 1.5rem;
+        margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+    }
+}
+
+/* --- Móviles --- */
+@media (max-width: 768px) {
+    #header {
+        padding: 0.75rem 1rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    #branding h1 a {
+        font-size: 1.8rem !important;
+    }
+
+    #content {
+        flex-direction: column;
+        gap: 1.5rem;
+        padding: 1rem;
+    }
+    .breadcrumbs {
+        margin: -1rem -1rem 1.5rem -1rem;
+        padding: 1rem;
+    }
+
+    .module caption, .module h2, .module th, .module td {
+        padding: 12px 16px;
+    }
+
+    /* Hace que las tablas se puedan desplazar horizontalmente */
+    .results {
+        overflow-x: auto;
+    }
+
+    .button, input[type=submit], input[type=button], .submit-row input, a.button {
+        padding: 10px 18px !important;
+        width: 100%;
+        text-align: center;
+    }
+    .submit-row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+}

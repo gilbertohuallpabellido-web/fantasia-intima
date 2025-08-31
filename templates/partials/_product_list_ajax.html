@@ -1,0 +1,115 @@
+{% comment %}
+Este parcial contiene la lista de productos y la paginación.
+Es incluido en 'catalogo_publico.html' y también es la respuesta para las peticiones AJAX.
+La vista 'catalogo_publico' pasa el contexto necesario ('productos', 'page_obj', 'filtros_activos').
+{% endcomment %}
+
+<!-- Contenedor de la lista de productos que el JS reemplazará -->
+<div id="product-list" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+    {% for producto in productos %}
+        <div class="product-card group relative border rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300 bg-white">
+            <a href="{% url 'producto_detalle' producto.pk %}" class="block">
+
+                <!-- Contenedor relativo para la imagen y las etiquetas superpuestas -->
+                <div class="relative">
+                    <!-- Imagen del Producto -->
+                    <div class="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-t-lg">
+                        {% if producto.imagen_principal %}
+                            <img src="{{ producto.imagen_principal.url }}" alt="{{ producto.nombre }}" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300">
+                        {% else %}
+                            <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+                                <i class="fas fa-image text-gray-400 text-4xl"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- ================================================== -->
+                    <!-- ETIQUETA "NUEVA COLECCIÓN" (Superior Izquierda)    -->
+                    <!-- ================================================== -->
+                    <div class="absolute top-2 left-2 z-10">
+                        {% if producto.es_nueva_coleccion %}
+                            <div class="bg-pink-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md">
+                                Nueva Colección
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- ================================================== -->
+                    <!-- ETIQUETA DE DESCUENTO (Inferior Derecha)           -->
+                    <!-- ================================================== -->
+                    <div class="absolute bottom-2 right-2 z-10">
+                        {% if producto.descuento_porcentaje > 0 %}
+                            <div class="bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md">
+                                -{{ producto.descuento_porcentaje|floatformat:0 }}%
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Información del Producto -->
+                <div class="p-4 text-center">
+                    <h3 class="product-name text-lg font-semibold text-gray-800 truncate">{{ producto.nombre }}</h3>
+                    
+                    <p class="product-description text-sm text-gray-500 mt-1 h-10 overflow-hidden break-words">{{ producto.descripcion|truncatechars:50 }}</p>
+                    
+                    <!-- Precio -->
+                    <div class="flex justify-center items-baseline mt-4 space-x-2">
+                        {% if producto.precio_oferta %}
+                            <p class="product-price text-2xl font-extrabold text-red-600">S/{{ producto.precio_oferta|floatformat:2 }}</p>
+                            <p class="text-lg font-medium text-gray-400 line-through">S/{{ producto.precio|floatformat:2 }}</p>
+                        {% else %}
+                            <p class="product-price text-2xl font-extrabold text-[--brand-brown]">S/{{ producto.precio|floatformat:2 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+        </div>
+    {% empty %}
+        <div id="no-products-found" class="col-span-full text-center py-16">
+            <i class="fas fa-box-open text-5xl text-gray-400 mb-4"></i>
+            <h3 class="text-2xl font-semibold text-gray-700">No se encontraron productos</h3>
+            <p class="text-gray-500 mt-2">Intenta ajustar tus filtros o busca otro término.</p>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Paginación -->
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="mt-12 flex items-center justify-between border-t border-gray-200 px-4 sm:px-0">
+    <!-- Botón Anterior -->
+    <div class="-mt-px flex w-0 flex-1">
+        {% if page_obj.has_previous %}
+            <a href="?{{ filtros_activos.urlencode }}&page={{ page_obj.previous_page_number }}#product-list-section"
+               class="js-category-link inline-flex items-center border-t-2 border-transparent pr-1 pt-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+                <i class="fas fa-arrow-left mr-3"></i>
+                Anterior
+            </a>
+        {% endif %}
+    </div>
+
+    <!-- Números de Página -->
+    <div class="hidden md:-mt-px md:flex">
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <span class="inline-flex items-center border-t-2 border-pink-500 px-4 pt-4 text-sm font-medium text-pink-600" aria-current="page">{{ num }}</span>
+            {% else %}
+                <a href="?{{ filtros_activos.urlencode }}&page={{ num }}#product-list-section"
+                   class="js-category-link inline-flex items-center border-t-2 border-transparent px-4 pt-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+                    {{ num }}
+                </a>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <!-- Botón Siguiente -->
+    <div class="-mt-px flex w-0 flex-1 justify-end">
+        {% if page_obj.has_next %}
+            <a href="?{{ filtros_activos.urlencode }}&page={{ page_obj.next_page_number }}#product-list-section"
+               class="js-category-link inline-flex items-center border-t-2 border-transparent pl-1 pt-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+                Siguiente
+                <i class="fas fa-arrow-right ml-3"></i>
+            </a>
+        {% endif %}
+    </div>
+</nav>
+{% endif %}

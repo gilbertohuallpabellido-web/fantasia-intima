@@ -1,19 +1,31 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Compra Exitosa</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md text-center">
-        <h1 class="text-3xl font-bold text-gray-800 mb-4">¡Compra Exitosa!</h1>
-        <p class="text-gray-600 mb-6">Gracias por tu compra. El producto "{{ producto.nombre }}" en color "{{ variante.color }}" ha sido procesado.</p>
-        
-        <a href="{% url 'catalogo_publico' %}" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-blue-600 transition-colors">
-            Volver al Catálogo
-        </a>
-    </div>
-</body>
-</html>
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}¡Compra Exitosa! - {{ block.super }}{% endblock %}
+
+{% block content %}
+<main class="flex items-center justify-center min-h-[70vh] px-4 py-12">
+    <div class="w-full max-w-2xl mx-auto text-center bg-white p-8 md:p-12 rounded-3xl shadow-xl">
+        <div class="text-green-500 mb-6">
+            <i class="fas fa-check-circle text-7xl"></i>
+        </div>
+        <h1 class="text-4xl font-brand text-gray-800 mb-4">¡Gracias por tu compra!</h1>
+        <p class="text-lg text-gray-600 mb-2">Hemos recibido tu pedido <strong style="color: var(--brand-accent);">#{{ pedido.codigo_pedido }}</strong>.</p>
+        
+        <div class="mt-8 p-6 bg-yellow-50 text-yellow-800 rounded-xl border border-yellow-200">
+            <h2 class="font-bold text-lg mb-2">¡Último Paso!</h2>
+            <p>Para finalizar, por favor envía la captura de tu pago de Yape/Plin a nuestro WhatsApp para coordinar el envío.</p>
+        </div>
+
+        <div class="mt-8 flex flex-col sm:flex-row justify-center gap-4">
+            <a href="{{ whatsapp_link_con_mensaje }}" target="_blank" class="inline-flex items-center justify-center bg-green-500 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform duration-200 hover:scale-105">
+                <i class="fab fa-whatsapp mr-3"></i>
+                Enviar Captura por WhatsApp
+            </a>
+            <a href="{% url 'catalogo_publico' %}" class="inline-block bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-full hover:bg-gray-300 transition-colors">
+                Ver más productos
+            </a>
+        </div>
+    </div>
+</main>
+{% endblock %}

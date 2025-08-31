@@ -1,0 +1,56 @@
+{% comment %}
+Este parcial reutilizable dibuja una única tarjeta de producto.
+Recibe una variable 'producto' desde donde se le incluye.
+{% endcomment %}
+<div class="product-card group relative border rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300 bg-white">
+    <a href="{% url 'producto_detalle' producto.pk %}" class="block">
+
+        <!-- Contenedor relativo para la imagen y las etiquetas superpuestas -->
+        <div class="relative">
+            <!-- Imagen del Producto -->
+            <div class="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-t-lg">
+                {% if producto.imagen_principal %}
+                    <img src="{{ producto.imagen_principal.url }}" alt="{{ producto.nombre }}" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300">
+                {% else %}
+                    <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+                        <i class="fas fa-image text-gray-400 text-4xl"></i>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Etiqueta "Nueva Colección" (Superior Izquierda) -->
+            <div class="absolute top-2 left-2 z-10">
+                {% if producto.es_nueva_coleccion %}
+                    <div class="bg-pink-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md">
+                        Nueva Colección
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Etiqueta de Descuento (Inferior Derecha) -->
+            <div class="absolute bottom-2 right-2 z-10">
+                {% if producto.descuento_porcentaje > 0 %}
+                    <div class="bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-md">
+                        -{{ producto.descuento_porcentaje|floatformat:0 }}%
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Información del Producto -->
+        <div class="p-4 text-center">
+            <h3 class="product-name text-lg font-semibold text-gray-800 truncate">{{ producto.nombre }}</h3>
+            <p class="product-description text-sm text-gray-500 mt-1 h-10 overflow-hidden break-words">{{ producto.descripcion|truncatechars:50 }}</p>
+            
+            <!-- Precio -->
+            <div class="flex justify-center items-baseline mt-4 space-x-2">
+                {% if producto.precio_oferta %}
+                    <p class="product-price text-2xl font-extrabold text-red-600">S/{{ producto.precio_oferta|floatformat:2 }}</p>
+                    <p class="text-lg font-medium text-gray-400 line-through">S/{{ producto.precio|floatformat:2 }}</p>
+                {% else %}
+                    <p class="product-price text-2xl font-extrabold text-[--brand-brown]">S/{{ producto.precio|floatformat:2 }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </a>
+</div>

@@ -1,5 +1,4 @@
 {% load static %}
-{% load widget_tweaks %}
 
 <!DOCTYPE html>
 <html lang="es">
@@ -36,7 +35,20 @@
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
-    <div class="flex flex-col md:flex-row w-full max-w-6xl bg-white rounded-3xl shadow-2xl overflow-hidden">
+    <div class="flex flex-col md:flex-row w-full max-w-6xl bg-white rounded-3xl shadow-2xl overflow-hidden relative">
+        
+        <div id="messages-container" class="absolute top-5 right-5 z-20 space-y-2 w-full max-w-sm">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="message-item p-4 rounded-xl text-center font-semibold 
+                        {% if message.tags == 'success' %}bg-green-100 text-green-800 shadow-lg{% else %}bg-red-100 text-red-700{% endif %}" 
+                        role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
         <!-- Contenedor de la imagen a la izquierda -->
         <div class="md:w-1/2 hidden md:block hero-image"></div>
         
@@ -53,7 +65,6 @@
             <form method="post" action="{% url 'login' %}" class="space-y-6">
                 {% csrf_token %}
 
-                <!-- Manejo de errores de login (ej. credenciales incorrectas) -->
                 {% if form.non_field_errors %}
                     <div class="p-3 rounded-lg text-sm font-semibold bg-red-100 text-red-700">
                         {% for error in form.non_field_errors %}
@@ -68,8 +79,9 @@
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3">
                             <i class="fas fa-user text-gray-400"></i>
                         </span>
-                        <!-- Campo de usuario con estilos aplicados -->
-                        {% render_field form.username class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[--brand-accent]" placeholder="Tu nombre de usuario" %}
+                        <input type="text" name="{{ form.username.name }}" id="{{ form.username.id_for_label }}"
+                               class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[--brand-accent]"
+                               placeholder="Tu nombre de usuario" required>
                     </div>
                 </div>
                 <div>
@@ -78,8 +90,14 @@
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3">
                             <i class="fas fa-lock text-gray-400"></i>
                         </span>
-                        <!-- Campo de contraseña con estilos aplicados -->
-                        {% render_field form.password class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[--brand-accent]" placeholder="Tu contraseña" %}
+                        <!-- INICIO DE LA MEJORA: Se añade pr-10 para el espacio del ícono -->
+                        <input type="password" name="{{ form.password.name }}" id="{{ form.password.id_for_label }}"
+                               class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[--brand-accent]"
+                               placeholder="Tu contraseña" required>
+                        <!-- INICIO DE LA MEJORA: Se añade el ícono del ojo -->
+                        <span class="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer" onclick="togglePasswordVisibility('{{ form.password.id_for_label }}', this)">
+                            <i class="fas fa-eye text-gray-400"></i>
+                        </span>
                     </div>
                 </div>
                 <button type="submit" class="w-full text-white font-bold py-3 px-4 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105" style="background-color: var(--brand-accent);">
@@ -97,5 +115,35 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const messagesContainer = document.getElementById('messages-container');
+            if (messagesContainer && messagesContainer.children.length > 0) {
+                setTimeout(function() {
+                    messagesContainer.style.transition = 'opacity 0.5s ease';
+                    messagesContainer.style.opacity = '0';
+                    setTimeout(() => {
+                        messagesContainer.style.display = 'none';
+                    }, 500);
+                }, 5000);
+            }
+        });
+
+        // INICIO DE LA MEJORA: Función para mostrar/ocultar contraseña
+        function togglePasswordVisibility(fieldId, iconContainer) {
+            const field = document.getElementById(fieldId);
+            const icon = iconContainer.querySelector('i');
+            if (field.type === 'password') {
+                field.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                field.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    </script>
 </body>
 </html>

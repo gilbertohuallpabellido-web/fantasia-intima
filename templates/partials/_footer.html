@@ -1,0 +1,76 @@
+{% load static %}
+
+<!-- ICONOS FLOTANTES DE REDES SOCIALES -->
+<div class="fixed bottom-6 left-6 flex flex-col space-y-3 z-40">
+    {% if configuracion_sitio and configuracion_sitio.whatsapp_link %}
+    <a href="{{ configuracion_sitio.whatsapp_link }}" class="social-icon bg-green-500 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-green-600 transition-all" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+        <i class="fab fa-whatsapp text-3xl"></i>
+    </a>
+    {% endif %}
+    
+    {% if configuracion_sitio and configuracion_sitio.facebook_link %}
+    <a href="{{ configuracion_sitio.facebook_link }}" class="social-icon bg-blue-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition-all" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+        <i class="fab fa-facebook-f text-3xl"></i>
+    </a>
+    {% endif %}
+
+    {% if configuracion_sitio and configuracion_sitio.instagram_link %}
+    <a href="{{ configuracion_sitio.instagram_link }}" class="social-icon bg-gradient-to-br from-purple-600 via-pink-600 to-yellow-500 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+        <i class="fab fa-instagram text-3xl"></i>
+    </a>
+    {% endif %}
+
+    {% if configuracion_sitio and configuracion_sitio.tiktok_link %}
+    <a href="{{ configuracion_sitio.tiktok_link }}" class="social-icon bg-black text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-gray-800 transition-all" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
+        <i class="fab fa-tiktok text-3xl"></i>
+    </a>
+    {% endif %}
+</div>
+
+<!-- CHATBOT FLOTANTE -->
+{% if chatbot_config and chatbot_config.activo %}
+<div class="fixed bottom-6 right-6 z-40">
+    <button id="chat-button" class="bg-blue-500 text-white w-16 h-16 rounded-full shadow-lg hover:bg-blue-600 flex items-center justify-center transition-all">
+        <i class="fas fa-comment-dots text-3xl"></i>
+    </button>
+</div>
+<!-- === INICIO DE LA MEJORA: Se añade 'flex' por defecto al contenedor === -->
+<div id="chat-container" class="fixed bottom-24 right-6 w-80 sm:w-96 h-[500px] bg-white rounded-2xl shadow-xl flex flex-col hidden z-50 border-2 border-pink-200 transition-all">
+<!-- === FIN DE LA MEJORA === -->
+    <div class="bg-gradient-to-r from-[--brand-primary] to-[--brand-secondary] text-white p-4 rounded-t-xl flex justify-between items-center flex-shrink-0">
+        <h3 class="font-bold text-lg">Asistente Virtual</h3>
+        <button id="close-chat-button" class="text-white text-2xl" aria-label="Cerrar chat">&times;</button>
+    </div>
+    <!-- === INICIO DE LA MEJORA: Se añade 'min-h-0' para contener el scroll === -->
+    <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+    <!-- === FIN DE LA MEJORA === -->
+        <!-- Los mensajes se añadirán aquí con JavaScript -->
+    </div>
+    <div class="p-3 border-t flex space-x-2 bg-gray-50 rounded-b-2xl flex-shrink-0">
+        <input type="text" id="chat-input" placeholder="Escribe tu mensaje..." class="flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-pink-500">
+        <button id="chat-send-button" class="bg-[--brand-accent] text-white w-12 h-12 rounded-full font-bold hover:opacity-90 flex items-center justify-center transition-all" aria-label="Enviar mensaje">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+    </div>
+</div>
+{% endif %}
+
+
+<!-- PIE DE PÁGINA -->
+<footer class="bg-gradient-to-r from-[--brand-primary] to-[--brand-secondary] text-white py-10 mt-16">
+    <div class="container mx-auto px-6 text-center">
+        {% if configuracion_sitio.logo %}
+            <img src="{{ configuracion_sitio.logo.url }}" alt="Logo de {{ configuracion_sitio.nombre_tienda }}" class="h-16 w-auto mx-auto mb-4 drop-shadow-lg">
+        {% else %}
+            <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" class="h-16 w-auto mx-auto mb-4 drop-shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/100x64/f9a8d4/ffffff?text=Logo';">
+        {% endif %}
+        
+        <div class="flex justify-center flex-wrap gap-x-6 gap-y-2 my-4">
+            {% for pagina in paginas_informativas %}
+                <a href="{% url 'pagina_informativa' pagina.slug %}" class="text-gray-200 hover:text-white transition-colors hover:underline">{{ pagina.titulo }}</a>
+            {% endfor %}
+        </div>
+        
+        <p>&copy; {% now "Y" %} {{ configuracion_sitio.nombre_tienda|default:"Fantasía Íntima" }}. Todos los derechos reservados.</p>
+    </div>
+</footer>

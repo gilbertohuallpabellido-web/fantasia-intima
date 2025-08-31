@@ -1,0 +1,372 @@
+# mi_app/views/order_views.py
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.http import require_POST
+from django.db import transaction
+from django.urls import reverse
+from django.utils import timezone
+from decimal import Decimal
+import json
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from datetime import timedelta
+from django.contrib import messages
+from urllib.parse import quote
+
+# Se añaden todos los modelos necesarios
+from ..models import Producto, ColorVariante, PedidoWhatsApp, DetallePedidoWhatsApp, ConfiguracionSitio, Direccion
+
+def _clean_expired_cart_items(request):
+    cart = request.session.get('cart', {})
+    if not cart:
+        return [], cart
+
+    now = timezone.now()
+    expiration_time = timedelta(hours=24)
+    expired_items_names = []
+    
+    for item_id in list(cart.keys()):
+        item_data = cart[item_id]
+        added_at_str = item_data.get('added_at')
+        
+        if added_at_str:
+            added_at = timezone.datetime.fromisoformat(added_at_str)
+            if now - added_at > expiration_time:
+                expired_items_names.append(item_data['name'])
+                del cart[item_id]
+
+    if expired_items_names:
+        request.session['cart'] = cart
+        request.session.modified = True
+
+    return expired_items_names, cart
+
+
+def add_to_cart(request):
+    if request.method == 'POST':
+        if request.content_type == 'application/json':
+            payload = json.loads(request.body.decode('utf-8') or '{}')
+            product_id = payload.get('product_id')
+            variant_id = payload.get('variant_id')
+            quantity = int(payload.get('quantity', 1))
+        else:
+            product_id = request.POST.get('product_id')
+            variant_id = request.POST.get('variant_id')
+            quantity = int(request.POST.get('quantity', 1))
+
+        if not product_id or not variant_id:
+            return JsonResponse({'success': False, 'error': 'Faltan datos del producto. Inténtalo de nuevo.'}, status=400)
+
+        product = get_object_or_404(Producto, pk=product_id)
+        variant = get_object_or_404(ColorVariante, pk=variant_id, producto=product)
+
+        if quantity <= 0:
+            return JsonResponse({'success': False, 'error': 'Cantidad inválida'}, status=400)
+
+        cart = request.session.get('cart', {})
+
+        effective_price = product.precio_oferta if product.precio_oferta is not None else product.precio
+        original_price = product.precio if product.precio_oferta is not None else None
+
+        current_qty = cart.get(str(variant_id), {}).get('quantity', 0)
+        new_qty = current_qty + quantity
+        
+        if new_qty > variant.stock:
+            if current_qty > 0:
+                error_message = f"No puedes añadir más. Ya tienes {current_qty} en tu carrito y solo quedan {variant.stock} en stock."
+            else:
+                error_message = f"La cantidad solicitada ({quantity}) supera el stock disponible ({variant.stock})."
+            
+            return JsonResponse({
+                'success': False,
+                'error': error_message,
+                'available': variant.stock
+            }, status=400)
+
+        image_url = variant.imagen.url if variant.imagen else ''
+
+        cart_item_data = {
+            'id': str(variant_id),
+            'product_id': product.pk,
+            'name': product.nombre,
+            'price': str(effective_price),
+            'original_price': str(original_price) if original_price else None,
+            'color': variant.codigo or variant.color,
+            'image_url': image_url,
+            'quantity': new_qty,
+            'added_at': timezone.now().isoformat()
+        }
+        cart[str(variant_id)] = cart_item_data
+
+        request.session['cart'] = cart
+        cart_count = sum(item['quantity'] for item in cart.values())
+        return JsonResponse({'success': True, 'cart_count': cart_count})
+    return JsonResponse({'success': False, 'error': 'Solicitud no válida.'}, status=400)
+
+def cart_count_view(request):
+    cart = request.session.get('cart', {})
+    cart_count = sum(item['quantity'] for item in cart.values())
+    return JsonResponse({"cart_count": cart_count})
+
+def ver_carrito(request):
+    expired_items, cart = _clean_expired_cart_items(request)
+    if expired_items:
+        messages.warning(request, f"Algunos productos han sido eliminados de tu carrito porque su reserva de 24 horas ha caducado: {', '.join(expired_items)}.")
+
+    cart_items = []
+    total_price = Decimal('0')
+    for item_id, item_data in cart.items():
+        item_data['id'] = item_id
+        price = Decimal(str(item_data['price']))
+        subtotal = price * item_data['quantity']
+        item_data['subtotal'] = float(subtotal)
+        total_price += subtotal
+        cart_items.append(item_data)
+    
+    context = {
+        'cart_items': cart_items,
+        'total_price': float(total_price),
+        'cart_count': sum(item['quantity'] for item in cart.values())
+    }
+    return render(request, 'mi_app/ver_carrito.html', context)
+
+@login_required(login_url='/login/')
+def checkout_carrito(request):
+    expired_items, cart = _clean_expired_cart_items(request)
+    if expired_items:
+        messages.warning(request, f"Algunos productos han sido eliminados de tu carrito por caducidad antes de proceder al pago: {', '.join(expired_items)}.")
+        return redirect('ver_carrito')
+
+    if not cart:
+        return redirect('ver_carrito')
+
+    cart_items = []
+    total_price = Decimal('0')
+    
+    for item_id, item_data in cart.items():
+        total_price += Decimal(str(item_data['price'])) * item_data['quantity']
+        cart_items.append(item_data)
+
+    direcciones_usuario = []
+    initial_data = {}
+
+    if request.user.is_authenticated:
+        direcciones_usuario = Direccion.objects.filter(user=request.user).order_by('-predeterminada')
+        
+        direccion_predeterminada = direcciones_usuario.first()
+        if direccion_predeterminada:
+            initial_data = {
+                'nombre': direccion_predeterminada.destinatario,
+                'direccion': direccion_predeterminada.direccion,
+                'ciudad': direccion_predeterminada.ciudad,
+                'telefono': direccion_predeterminada.telefono,
+                'referencia': direccion_predeterminada.referencia,
+            }
+        else:
+            initial_data['nombre'] = request.user.get_full_name()
+
+    site_config = ConfiguracionSitio.get_solo()
+
+    context = {
+        'cart_items': cart_items,
+        'total_price': float(total_price),
+        'site_config': site_config,
+        'direcciones_usuario': direcciones_usuario,
+        'initial_data': initial_data,
+    }
+    return render(request, 'mi_app/checkout_carrito.html', context)
+
+@transaction.atomic
+def procesar_pago(request):
+    if request.method == 'POST':
+        cart = request.session.get('cart', {})
+        if not cart:
+            return redirect('ver_carrito')
+
+        for item_id, item_data in cart.items():
+            variante = get_object_or_404(ColorVariante, pk=item_id)
+            if variante.stock < item_data['quantity']:
+                messages.error(request, f"Lo sentimos, el stock del producto '{variante.producto.nombre}' ha cambiado. Por favor, revisa tu carrito.")
+                return redirect('ver_carrito')
+        
+        now = timezone.now()
+        codigo_pedido = f"FI-{now.strftime('%d%m%y-%H%M%S')}"
+        total_pedido = sum(Decimal(str(item['price'])) * item['quantity'] for item in cart.values())
+        
+        pedido = PedidoWhatsApp.objects.create(
+            codigo_pedido=codigo_pedido,
+            total=total_pedido,
+            user=request.user if request.user.is_authenticated else None,
+            nombre_cliente=request.POST.get('nombre'),
+            dni_cliente=request.POST.get('dni'),
+            email_cliente=request.POST.get('email'),
+            celular_cliente=request.POST.get('celular'),
+            ciudad_envio=request.POST.get('ciudad'),
+            direccion_envio=request.POST.get('direccion'),
+        )
+
+        for item_id, item_data in cart.items():
+            variante = get_object_or_404(ColorVariante, pk=item_id)
+            variante.stock -= item_data['quantity']
+            variante.save()
+
+            DetallePedidoWhatsApp.objects.create(
+                pedido=pedido,
+                producto_nombre=item_data['name'],
+                variante_color=item_data['color'],
+                cantidad=item_data['quantity'],
+                precio_unitario=Decimal(str(item_data['price'])),
+                imagen_url=item_data['image_url']
+            )
+
+        request.session['cart'] = {}
+        return redirect('compra_exitosa', pedido_id=pedido.id)
+
+    return redirect('catalogo_publico')
+
+
+def compra_exitosa(request, pedido_id):
+    pedido = get_object_or_404(PedidoWhatsApp, id=pedido_id)
+    # --- CORRECCIÓN: Se define la variable 'site_config' antes de usarla ---
+    site_config = ConfiguracionSitio.get_solo()
+
+    resumen_url = request.build_absolute_uri(reverse('resumen_pedido_whatsapp', args=[pedido.id]))
+    
+    mensaje_whatsapp = (
+        f"¡Hola Fantasía Íntima! ✨\n\n"
+        f"Acabo de realizar el pago para mi pedido *#{pedido.codigo_pedido}* 🛍️.\n\n"
+        f"Te adjunto la captura del pago 📸.\n\n"
+        f"Puedes ver el resumen de mi pedido aquí: 👇\n{resumen_url}"
+    )
+    whatsapp_link_con_mensaje = f"{site_config.whatsapp_link}?text={quote(mensaje_whatsapp)}"
+
+    context = {
+        'pedido': pedido,
+        'site_config': site_config,
+        'whatsapp_link_con_mensaje': whatsapp_link_con_mensaje,
+    }
+    return render(request, 'mi_app/compra_confirmacion.html', context)
+
+def error_stock_view(request):
+    return render(request, 'mi_app/error_stock.html')
+
+@require_POST
+def crear_pedido_whatsapp(request):
+    cart = request.session.get('cart', {})
+    if not cart:
+        return JsonResponse({'error': 'El carrito está vacío'}, status=400)
+
+    now = timezone.now()
+    codigo_pedido = f"FI-{now.strftime('%d%m%y-%H%M%S')}"
+    
+    total_pedido = Decimal('0')
+    user_to_assign = request.user if request.user.is_authenticated else None
+
+    pedido = PedidoWhatsApp.objects.create(
+        codigo_pedido=codigo_pedido, 
+        total=Decimal('0'),
+        user=user_to_assign
+    )
+
+    for variant_id, item_data in cart.items():
+        price = Decimal(str(item_data['price']))
+        total_item = price * item_data['quantity']
+        total_pedido += total_item
+        
+        DetallePedidoWhatsApp.objects.create(
+            pedido=pedido,
+            producto_nombre=item_data['name'],
+            variante_color=item_data['color'],
+            cantidad=item_data['quantity'],
+            precio_unitario=price,
+            imagen_url=item_data['image_url']
+        )
+
+    pedido.total = total_pedido
+    pedido.save()
+
+    relative_url = reverse('resumen_pedido_whatsapp', args=[pedido.id])
+    order_url = f"{request.scheme}://{request.get_host()}{relative_url}"
+    
+    return JsonResponse({
+        'success': True,
+        'order_url': order_url,
+        'order_code': codigo_pedido
+    })
+
+def resumen_pedido_whatsapp(request, pedido_id):
+    pedido = get_object_or_404(PedidoWhatsApp, id=pedido_id)
+    return render(request, 'mi_app/resumen_pedido.html', {'pedido': pedido})
+
+@require_POST
+def actualizar_cantidad_carrito(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            variant_id = str(data.get('variant_id'))
+            new_quantity = int(data.get('quantity'))
+            
+            cart = request.session.get('cart', {})
+            variant = get_object_or_404(ColorVariante, pk=variant_id)
+
+            if new_quantity > variant.stock:
+                return JsonResponse({
+                    'success': False, 
+                    'error': f'Solo quedan {variant.stock} unidades en stock.',
+                    'current_stock': variant.stock
+                }, status=400)
+
+            if variant_id in cart:
+                cart[variant_id]['quantity'] = new_quantity
+                request.session['cart'] = cart
+                
+                item = cart[variant_id]
+                item_subtotal = float(item['price']) * item['quantity']
+                cart_total = sum(float(i['price']) * i['quantity'] for i in cart.values())
+                cart_item_count = sum(i['quantity'] for i in cart.values())
+
+                return JsonResponse({
+                    'success': True,
+                    'item_quantity': new_quantity,
+                    'item_subtotal': item_subtotal,
+                    'cart_total': cart_total,
+                    'cart_item_count': cart_item_count
+                })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+def eliminar_del_carrito(request, item_id):
+    cart = request.session.get('cart', {})
+    item_id_str = str(item_id)
+
+    if item_id_str in cart:
+        del cart[item_id_str]
+        request.session['cart'] = cart
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        cart_total = sum(float(i['price']) * i['quantity'] for i in cart.values())
+        cart_item_count = sum(i['quantity'] for i in cart.values())
+        return JsonResponse({
+            'success': True,
+            'cart_total': cart_total,
+            'cart_item_count': cart_item_count
+        })
+    
+    return redirect('ver_carrito')
+
+def checkout_view(request, pk, variante_pk):
+    producto = get_object_or_404(Producto, pk=pk)
+    try:
+        variante = ColorVariante.objects.get(pk=variante_pk, producto=producto)
+        if variante.stock <= 0:
+            return redirect('error_stock')
+    except ColorVariante.DoesNotExist:
+        return redirect('error_stock')
+
+    contexto = {
+        'producto': producto,
+        'variante': variante,
+        'ciudades': ['Lima', 'Provincia']
+    }
+    return render(request, 'mi_app/checkout.html', contexto)
