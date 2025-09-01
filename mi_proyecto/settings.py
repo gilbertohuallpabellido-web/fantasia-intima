@@ -85,8 +85,6 @@ if IS_PRODUCTION:
 else:
     DATABASES = { 'default': { 'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'db.sqlite3' } }
 
-# ... (El resto del archivo se mantiene igual)
-
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -98,23 +96,38 @@ TIME_ZONE = 'America/Lima'
 USE_I18N = True
 USE_TZ = True
 
-# --- Configuración de Archivos Estáticos y Medios Adaptativa ---
+# --- INICIO DE LA MEJORA: Configuración de Archivos 100% Cloud ---
+# Configuración de Archivos Estáticos (CSS, JS)
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-if IS_PRODUCTION:
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL')
-else:
-    MEDIA_URL = '/media/'
-    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# Configuración de Archivos Media (Imágenes subidas) - SIEMPRE a Cloudinary
+CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL')
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': 'dmyzbifxz',
+    'API_KEY': '791437747798959',
+    'API_SECRET': '7CGRPD9IMWehmZZS2P-bGMXcAWM',
+}
+
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+# Las variables MEDIA_URL y MEDIA_ROOT ya no son necesarias.
+# --- FIN DE LA MEJORA ---
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'index'
 LOGOUT_REDIRECT_URL = 'index'
+
 
 # === INICIO DE LA MEJORA: Se elimina toda la configuración de Jazzmin ===
 # JAZZMIN_SETTINGS = { ... }
