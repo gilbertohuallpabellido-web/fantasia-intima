@@ -15,9 +15,8 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-tu-clave-secreta-para-desarrollo')
 
 # --- Lógica de Entorno a Prueba de Fallos ---
-IS_PRODUCTION = 'RENDER' in os.environ
-DEBUG = not IS_PRODUCTION
-
+DEBUG = True   # 🚨 activado solo para pruebas
+IS_PRODUCTION = False
 # --- Configuración de Hosts para Producción y Desarrollo ---
 ALLOWED_HOSTS = []
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
