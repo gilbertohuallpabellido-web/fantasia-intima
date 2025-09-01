@@ -17,7 +17,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-tu-clave-secreta-para
 # --- Lógica de Entorno ---
 # --- Lógica de Entorno a Prueba de Fallos ---
 IS_PRODUCTION = 'RENDER' in os.environ
-not IS_PRODUCTION
+DEBUG = not IS_PRODUCTION
 
 
 # --- Configuración de Hosts ---
