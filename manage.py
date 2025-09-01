@@ -7,8 +7,10 @@ import dotenv
 def main():
     """Run administrative tasks."""
     dotenv.load_dotenv()
-    # --- ESTA ES LA CORRECCIÓN DEFINITIVA ---
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'proyento_fantasia.settings')
+    # === INICIO DE LA MEJORA: Apuntamos al cerebro correcto ===
+    # Le decimos a Django que SIEMPRE use la configuración de 'mi_proyecto'.
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mi_proyecto.settings')
+    # === FIN DE LA MEJORA ===
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
