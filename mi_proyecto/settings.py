@@ -114,11 +114,16 @@ CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL')
 # === INICIO DE LA MEJORA: Permiso especial para el DJ ===
 # Le decimos a Cloudinary que los archivos de audio y video no son imágenes.
 CLOUDINARY_STORAGE = {
+    'MEDIA_TAG': 'media', # Mantiene la carpeta media en Cloudinary
+    'INVALID_VIDEO_ERROR_CODE': 400,
+    'EXCLUDE_DIR': ('_temp',),
     'RESOURCE_TYPE': {
         'default': 'image',
-        'raw': ['mp3', 'wav', 'ogg'],
-        'video': ['mp4', 'webm', 'mov'],
-    }
+        'raw': ('mp3', 'wav', 'ogg', 'pdf'),
+        'video': ('mp4', 'webm', 'mov'),
+    },
+    'STATIC_TAG': 'static',
+    'STATICFILES_MANIFEST_ROOT': os.path.join(BASE_DIR, 'staticfiles'),
 }
 # === FIN DE LA MEJORA ===
 

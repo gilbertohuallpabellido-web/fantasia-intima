@@ -8,7 +8,9 @@ from django.utils import timezone
 from datetime import timedelta
 import random
 import string
-
+# === INICIO DE LA MEJORA: Importamos la herramienta de Cloudinary ===
+from cloudinary.models import CloudinaryField
+# === FIN DE LA MEJORA ===
 # ... (El resto de tus modelos como Categoria, Producto, etc., se mantienen igual)
 class Categoria(MPTTModel):
     nombre = models.CharField(max_length=100, unique=True)
@@ -277,8 +279,22 @@ class ConfiguracionRuleta(SingletonModel):
 # ... (código existente sin cambios)
     activa = models.BooleanField(default=False, help_text="Marca esta casilla para mostrar la ruleta en la web.")
     titulo = models.CharField(max_length=100, default="¡Gira y Gana!", help_text="El título que aparecerá en el pop-up de la ruleta (ej: 'Especial de Halloween').")
-    sonido_giro = models.FileField(upload_to='sonidos_ruleta/', blank=True, null=True, help_text="Sonido (MP3) que se reproduce mientras la ruleta gira.")
-    sonido_premio = models.FileField(upload_to='sonidos_ruleta/', blank=True, null=True, help_text="Sonido (MP3) que se reproduce al ganar un premio.")
+     # === INICIO DE LA MEJORA: Campos de archivo inteligentes para Cloudinary ===
+    sonido_giro = CloudinaryField(
+        'sonido_giro',
+        resource_type='raw', # Le decimos que es un archivo de audio/raw
+        blank=True,
+        null=True,
+        help_text="Sonido (MP3) que se reproduce mientras la ruleta gira."
+    )
+    sonido_premio = CloudinaryField(
+        'sonido_premio',
+        resource_type='raw', # Le decimos que es un archivo de audio/raw
+        blank=True,
+        null=True,
+        help_text="Sonido (MP3) que se reproduce al ganar un premio."
+    )
+    # === FIN DE LA MEJORA ===
     
     class Meta:
         verbose_name = "Configuración de la Ruleta"
