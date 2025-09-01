@@ -100,8 +100,7 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# === INICIO DE LA MEJORA: Configuración de Almacenamiento Definitiva y Segura ===
-# La nueva forma de Django para manejar esto. Es más limpia y robusta.
+# === Configuración de Almacenamiento Definitiva y Segura ===
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
@@ -111,20 +110,9 @@ STORAGES = {
     },
 }
 
-# --- Cloudinary Config: Leemos la llave maestra desde la caja fuerte de Render ---
 CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL')
-# Se eliminan las claves secretas de aquí. ¡Esto es seguridad de nivel sensei!
-# === FIN DE LA MEJORA ===
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'index'
 LOGOUT_REDIRECT_URL = 'index'
-
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = 'calderonpalaciosa123@gmail.com'
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
-EMAIL_PORT = 465
-EMAIL_USE_SSL = True
-EMAIL_USE_TLS = False
