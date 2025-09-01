@@ -111,6 +111,16 @@ STORAGES = {
 }
 
 CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL')
+# === INICIO DE LA MEJORA: Permiso especial para el DJ ===
+# Le decimos a Cloudinary que los archivos de audio y video no son imágenes.
+CLOUDINARY_STORAGE = {
+    'RESOURCE_TYPE': {
+        'default': 'image',
+        'raw': ['mp3', 'wav', 'ogg'],
+        'video': ['mp4', 'webm', 'mov'],
+    }
+}
+# === FIN DE LA MEJORA ===
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'login'
