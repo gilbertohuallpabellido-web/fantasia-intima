@@ -14,20 +14,20 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-tu-clave-secreta-para-desarrollo')
 
-# --- Lógica de Entorno ---
 # --- Lógica de Entorno a Prueba de Fallos ---
 IS_PRODUCTION = 'RENDER' in os.environ
 DEBUG = not IS_PRODUCTION
 
+# --- Configuración de Hosts y Seguridad Definitiva ---
+ALLOWED_HOSTS = []
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    CSRF_TRUSTED_ORIGINS = [f'https://{RENDER_EXTERNAL_HOSTNAME}']
 
-# --- Configuración de Hosts ---
-ALLOWED_HOSTS = ["*"]
-CSRF_TRUSTED_ORIGINS = [f'https://{os.environ.get("RENDER_EXTERNAL_HOSTNAME", "")}']
+if not IS_PRODUCTION:
+    ALLOWED_HOSTS.append('*')
 
-
-CSRF_TRUSTED_ORIGINS = [
-    "https://lenceria-fantasia-intima.onrender.com",
-]
 
 # Application definition
 INSTALLED_APPS = [
@@ -78,27 +78,18 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'mi_proyecto.wsgi.application'
 
-# --- Base de Datos ---
+# --- Base de Datos Inteligente ---
 if IS_PRODUCTION:
-    DATABASES = {
-        'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
-    }
+    DATABASES = { 'default': dj_database_url.config(conn_max_age=600, ssl_require=True) }
 else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+    DATABASES = { 'default': { 'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'db.sqlite3' } }
 
-# Validadores de contraseña
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
-
 LANGUAGE_CODE = 'es'
 TIME_ZONE = 'America/Lima'
 USE_I18N = True
@@ -108,17 +99,9 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# --- Cloudinary ---
-CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL')
-
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': 'dmyzbifxz',
-    'API_KEY': '791437747798959',
-    'API_SECRET': '7CGRPD9IMWehmZZS2P-bGMXcAWM',
-}
-
+# === INICIO DE LA MEJORA: Configuración de Almacenamiento Definitiva y Segura ===
+# La nueva forma de Django para manejar esto. Es más limpia y robusta.
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
@@ -128,14 +111,16 @@ STORAGES = {
     },
 }
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# --- Cloudinary Config: Leemos la llave maestra desde la caja fuerte de Render ---
+CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL')
+# Se eliminan las claves secretas de aquí. ¡Esto es seguridad de nivel sensei!
+# === FIN DE LA MEJORA ===
 
-# --- Login/Logout ---
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'index'
 LOGOUT_REDIRECT_URL = 'index'
 
-# --- Email ---
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_HOST_USER = 'calderonpalaciosa123@gmail.com'
