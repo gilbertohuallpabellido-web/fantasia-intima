@@ -14,23 +14,23 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-tu-clave-secreta-para-desarrollo')
 
-# --- Lógica de Entorno a Prueba de Fallos ---
-DEBUG = True   # 🚨 activado solo para pruebas
-IS_PRODUCTION = False
-# --- Configuración de Hosts para Producción y Desarrollo ---
-ALLOWED_HOSTS = []
-RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-if RENDER_EXTERNAL_HOSTNAME:
-    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
-    CSRF_TRUSTED_ORIGINS = [f'https://{RENDER_EXTERNAL_HOSTNAME}']
+# --- Lógica de Entorno ---
+IS_PRODUCTION = 'RENDER' in os.environ
+DEBUG = not IS_PRODUCTION
 
-if not IS_PRODUCTION:
-    ALLOWED_HOSTS.append('*')
+# --- Configuración de Hosts ---
+ALLOWED_HOSTS = [
+    "lenceria-fantasia-intima.onrender.com",  # dominio de Render
+    "127.0.0.1",  # por si pruebas local
+    "localhost",
+]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://lenceria-fantasia-intima.onrender.com",
+]
 
 # Application definition
 INSTALLED_APPS = [
-    # 'jazzmin', # <-- ELIMINADO
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -42,8 +42,8 @@ INSTALLED_APPS = [
     'solo',
     'widget_tweaks',
     'smart_selects',
-    'cloudinary_storage', 
-    'cloudinary',       
+    'cloudinary_storage',
+    'cloudinary',
 ]
 
 MIDDLEWARE = [
@@ -78,31 +78,39 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'mi_proyecto.wsgi.application'
 
-# --- Base de Datos Inteligente ---
+# --- Base de Datos ---
 if IS_PRODUCTION:
-    DATABASES = { 'default': dj_database_url.config(conn_max_age=600, ssl_require=True) }
+    DATABASES = {
+        'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
+    }
 else:
-    DATABASES = { 'default': { 'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'db.sqlite3' } }
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
+# Validadores de contraseña
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
+
 LANGUAGE_CODE = 'es'
 TIME_ZONE = 'America/Lima'
 USE_I18N = True
 USE_TZ = True
 
-# --- INICIO DE LA MEJORA: Configuración de Archivos 100% Cloud ---
-# Configuración de Archivos Estáticos (CSS, JS)
+# --- Archivos estáticos ---
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Configuración de Archivos Media (Imágenes subidas) - SIEMPRE a Cloudinary
+# --- Cloudinary ---
 CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL')
 
 CLOUDINARY_STORAGE = {
@@ -119,20 +127,15 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
-# Las variables MEDIA_URL y MEDIA_ROOT ya no son necesarias.
-# --- FIN DE LA MEJORA ---
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# --- Login/Logout ---
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'index'
 LOGOUT_REDIRECT_URL = 'index'
 
-
-# === INICIO DE LA MEJORA: Se elimina toda la configuración de Jazzmin ===
-# JAZZMIN_SETTINGS = { ... }
-# JAZZMIN_UI_TWEAKS = { ... }
-# === FIN DE LA MEJORA ===
-
+# --- Email ---
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_HOST_USER = 'calderonpalaciosa123@gmail.com'
