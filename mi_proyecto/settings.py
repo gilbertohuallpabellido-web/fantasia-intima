@@ -15,15 +15,15 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-tu-clave-secreta-para-desarrollo')
 
 # --- Lógica de Entorno ---
+# --- Lógica de Entorno a Prueba de Fallos ---
 IS_PRODUCTION = 'RENDER' in os.environ
-DEBUG = not IS_PRODUCTION
+DEBUG = True   # 🔴 Forzamos DEBUG para ver el error en Render
+
 
 # --- Configuración de Hosts ---
-ALLOWED_HOSTS = [
-    "lenceria-fantasia-intima.onrender.com",  # dominio de Render
-    "127.0.0.1",  # por si pruebas local
-    "localhost",
-]
+ALLOWED_HOSTS = ["*"]
+CSRF_TRUSTED_ORIGINS = [f'https://{os.environ.get("RENDER_EXTERNAL_HOSTNAME", "")}']
+
 
 CSRF_TRUSTED_ORIGINS = [
     "https://lenceria-fantasia-intima.onrender.com",
