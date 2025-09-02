@@ -4,7 +4,7 @@
 <html lang="es" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% block title %}Fantasía Íntima{% endblock %}</title>
     <link rel="icon" href="{% static 'productos/logo.png' %}" type="image/png">
     
@@ -96,6 +96,10 @@
             opacity: 1;
             transform: translate(-50%, -50%) scale(1.2);
         }
+            /* === CONTROL DE ZOOM EN IMAGEN === */
+    .zoom-container {
+        touch-action: none;
+    }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
