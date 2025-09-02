@@ -317,6 +317,9 @@ function setupImageZoom(productId) {
 
     const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
+    // Por defecto permitimos desplazamiento de la página; al hacer zoom lo bloqueamos.
+    try { zoomContainer.style.touchAction = 'manipulation'; } catch (e) { }
+
     // 👉 Inicio del toque
     const handleTouchStart = (e) => {
         const currentTime = new Date().getTime();
@@ -333,6 +336,7 @@ function setupImageZoom(productId) {
                 currentY = 0;
                 zoomImage.style.transform = `scale(${scale}) translate(0px, 0px)`;
                 document.body.classList.add("disable-scroll");
+                try { zoomContainer.style.touchAction = 'none'; } catch(e) {}
             } else {
                 // 🔄 Reset zoom
                 zoomImage.style.transition = 'transform 0.2s ease';
@@ -342,6 +346,7 @@ function setupImageZoom(productId) {
                 currentX = 0;
                 currentY = 0;
                 document.body.classList.remove("disable-scroll");
+                try { zoomContainer.style.touchAction = 'manipulation'; } catch(e) {}
             }
         }
         lastTap = currentTime;
@@ -371,11 +376,12 @@ function setupImageZoom(productId) {
 
                 zoomImage.style.transform = `scale(${newScale}) translate(${currentX}px, ${currentY}px)`;
                 scale = newScale;
-
                 if (newScale > 1) {
                     document.body.classList.add("disable-scroll");
+                    try { zoomContainer.style.touchAction = 'none'; } catch(e) {}
                 } else {
                     document.body.classList.remove("disable-scroll");
+                    try { zoomContainer.style.touchAction = 'manipulation'; } catch(e) {}
                 }
             }
         } else if (e.touches.length === 1 && scale > 1) {
@@ -409,10 +415,12 @@ function setupImageZoom(productId) {
             zoomImage.style.transition = "transform 0.3s ease";
             zoomImage.style.transform = "scale(1) translate(0, 0)";
             document.body.classList.remove("disable-scroll");
+            try { zoomContainer.style.touchAction = 'manipulation'; } catch(e) {}
         }
     };
 
-        zoomContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
+        // Necesitamos passive: false en touchstart si vamos a llamar preventDefault en touchmove
+        zoomContainer.addEventListener('touchstart', handleTouchStart, { passive: false });
         zoomContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
         zoomContainer.addEventListener('touchend', handleTouchEnd);
     }
