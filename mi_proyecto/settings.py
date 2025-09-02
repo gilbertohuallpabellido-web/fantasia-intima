@@ -30,6 +30,9 @@ if not IS_PRODUCTION:
 
 
 # Application definition
+# Lista básica de apps (sin jazzmin). Más abajo intentamos activarlo
+# condicionalmente solo si está instalado y si estamos en producción o
+# si se fuerza mediante la variable de entorno USE_JAZZMIN=1.
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -45,6 +48,24 @@ INSTALLED_APPS = [
     'cloudinary_storage',
     'cloudinary',
 ]
+
+# Permitir activar Jazzmin solo en entornos que lo soporten.
+# Comportamiento:
+# - En producción (IS_PRODUCTION==True) intentamos usar jazzmin si está instalado.
+# - En local puedes forzarlo temporalmente exportando USE_JAZZMIN=1.
+USE_JAZZMIN = os.environ.get('USE_JAZZMIN', '0') == '1'
+if IS_PRODUCTION or USE_JAZZMIN:
+    try:
+        import importlib
+        if importlib.util.find_spec('jazzmin'):
+            # Insertar al inicio para que tenga prioridad sobre el admin por defecto
+            INSTALLED_APPS.insert(0, 'jazzmin')
+        else:
+            # jazzmin no está instalado en este entorno; seguimos sin él
+            pass
+    except Exception:
+        # En caso de cualquier problema con importlib no rompemos el arranque
+        pass
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

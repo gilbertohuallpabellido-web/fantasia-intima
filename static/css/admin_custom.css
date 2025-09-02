@@ -302,6 +302,37 @@ body.dashboard #content-main .module {
     border-radius: 0 0 18px 18px;
 }
 
+/* Mostrar correctamente el enlace 'Eliminar' dentro de la submit-row */
+/* Mejor layout para la fila de botones del admin: flex para evitar recortes */
+.submit-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    position: relative;
+    overflow: visible;
+}
+
+.submit-row a.deletelink {
+    display: inline-block;
+    margin-left: auto; /* empuja a la derecha */
+    background: #dc2626; /* rojo */
+    color: white !important;
+    padding: 8px 12px;
+    border-radius: 9999px;
+    font-weight: 700;
+    text-decoration: none !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    z-index: 60;
+}
+.submit-row a.deletelink:hover {
+    background: #b91c1c;
+}
+
+/* Permitimos que la submit-row no sea recortada por el contenedor .module */
+.module .submit-row {
+    overflow: visible;
+}
+
 /* ================================== */
 /* === Formularios y Campos === */
 /* ================================== */
@@ -398,8 +429,56 @@ input[type="text"]:focus, input[type="password"]:focus, input[type="email"]:focu
 .paginator a, .paginator .this-page {
     padding: 0.5rem 1rem;
     text-decoration: none;
-    border-radius: 999px;
-    font-weight: 500;
+}
+
+/* ================================== */
+/* === Ajustes para Inlines en el Admin === */
+/* Evita que los campos de inlines se salgan del contenedor y permite scroll horizontal */
+.inline-group, .inline-related, .grp-collapse, .tabular-inline, .stacked-inline {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+}
+
+.inline-group .form-row, .tabular-inline .form-row {
+    min-width: 0; /* para respetar flex */
+}
+
+/* Limitar ancho de inputs muy anchos dentro de inlines y permitir que se ajusten */
+.inline-group input[type="text"], .inline-group select, .tabular-inline input[type="text"], .tabular-inline select {
+    max-width: 420px;
+    box-sizing: border-box;
+}
+
+/* Hacer que la tabla de inlines no fuerce layout fijo */
+.tabular-inline table {
+    width: auto !important;
+    min-width: 100%;
+}
+
+/* Mejoras visuales: borde y sombra sutil para el contenedor de inlines */
+.inline-group .module, .tabular-inline .module {
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.04);
+    box-shadow: none;
+}
+
+/* Para evitar que los inputs de archivo sobresalgan */
+.inline-group input[type="file"], .tabular-inline input[type="file"] {
+    max-width: 240px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Ajustes móviles: más espacio para scroll y menor padding */
+@media (max-width: 768px) {
+    .inline-group, .tabular-inline {
+        padding-bottom: 12px;
+    }
+    .inline-group input[type="text"], .tabular-inline input[type="text"] {
+        max-width: 260px;
+    }
 }
 .paginator .this-page {
     background: var(--brand-primary);
@@ -501,4 +580,28 @@ input[type="text"]:focus, input[type="password"]:focus, input[type="email"]:focu
         flex-direction: column;
         gap: 0.75rem;
     }
+}
+
+/* === MODO COMPACTO: reduce paddings/margins para editar rápidamente muchos registros === */
+.admin-compact .module, .admin-compact .form-row, .admin-compact .module th, .admin-compact .module td {
+    padding: 6px 10px !important;
+}
+.admin-compact .module h2, .admin-compact .module caption {
+    padding: 8px 12px !important;
+}
+.admin-compact input[type="text"], .admin-compact select, .admin-compact textarea {
+    padding: 6px 8px !important;
+    font-size: 0.88rem !important;
+}
+.admin-compact .submit-row {
+    padding: 0.6rem !important;
+}
+.admin-compact .actionbox, .admin-compact .help {
+    padding: 6px 8px !important;
+}
+.admin-compact .inline-group .form-row {
+    padding: 6px 8px !important;
+}
+.admin-compact .module {
+    border-radius: 8px !important;
 }

@@ -18,6 +18,8 @@
         <span style="font-weight: bold; font-size: 1.2rem;">Fantasía Íntima</span>
     </a>
 </h1>
+<!-- Compact mode toggle -->
+<button id="compact-toggle" title="Activar modo compacto" style="position: absolute; right: 1rem; top: 0.75rem; background: transparent; border: 2px solid rgba(255,255,255,0.18); color: white; padding: 6px 10px; border-radius: 9999px; cursor: pointer; font-weight:600">Compacto</button>
 {% endblock %}
 
 {# Anulamos los estilos para añadir los nuestros #}
@@ -29,6 +31,30 @@
     -->
     <link rel="stylesheet" type="text/css" href="{% static 'css/admin_custom.css' %}">
 {% endblock %}
+
+    {% block extrahead %}
+    {{ block.super }}
+    <script>
+    document.addEventListener('DOMContentLoaded', function(){
+        var btn = document.getElementById('compact-toggle');
+        if(!btn) return;
+        var body = document.body;
+        // Inicializar desde localStorage
+        var compact = localStorage.getItem('admin_compact_mode') === '1';
+        if(compact) body.classList.add('admin-compact');
+        function updateButton(){
+            btn.textContent = body.classList.contains('admin-compact') ? 'Compacto ✓' : 'Compacto';
+        }
+        updateButton();
+        btn.addEventListener('click', function(){
+            body.classList.toggle('admin-compact');
+            var enabled = body.classList.contains('admin-compact');
+            localStorage.setItem('admin_compact_mode', enabled ? '1' : '0');
+            updateButton();
+        });
+    });
+    </script>
+    {% endblock %}
 
 {# =================================================================== #}
 {# === FIN: Anulación de bloques === #}

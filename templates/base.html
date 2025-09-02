@@ -119,7 +119,7 @@
     </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body data-cart-count-url="{% url 'cart_count' %}" class="flex flex-col min-h-screen">
+<body data-cart-count-url="{% url 'cart_count' %}" class="flex flex-col min-h-screen {% block body_class %}{% endblock %}">
 
     <!-- Encabezado y Menú Móvil -->
     {% include 'partials/_header.html' %}
@@ -143,7 +143,7 @@
     <!-- Ruleta de la Suerte -->
     {% if configuracion_ruleta.activa %}
     <div x-data="rouletteGame()" x-init="init()" class="relative z-50">
-        <button @click="openRoulette()" class="fixed bottom-8 right-28 bg-gradient-to-r from-pink-500 to-rose-500 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center transform hover:scale-110 transition-transform">
+    <button @click="openRoulette()" class="fixed bottom-6 right-20 z-50 bg-gradient-to-r from-pink-500 to-rose-500 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center transform hover:scale-110 transition-transform">
             <i class="fas fa-gift text-2xl"></i>
         </button>
 
