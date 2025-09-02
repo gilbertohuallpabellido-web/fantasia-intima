@@ -303,49 +303,109 @@ function setupImageZoom(productId) {
 
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
+    // ================== 📱 CELULAR ==================
     if (isTouchDevice) {
-        let isZoomed = false;
-        let startX, startY, currentX = 0, currentY = 0;
+        let scale = 1;          // Nivel de zoom (1 normal, hasta 2x)
+        let startX, startY;     // Posición inicial del dedo
+        let currentX = 0, currentY = 0; // Desplazamiento actual
+        let initialDistance = null;     // Para gesto pinch
+        let lastTap = 0;        // Para detectar doble tap
 
+        const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+        // 👉 Inicio del toque
         const handleTouchStart = (e) => {
-            if (!isZoomed) {
-                const rect = zoomContainer.getBoundingClientRect();
-                const touch = e.touches[0];
-                const x = (touch.clientX - rect.left) / rect.width * 100;
-                const y = (touch.clientY - rect.top) / rect.height * 100;
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
 
-                zoomImage.style.transition = 'transform 0.2s ease';
-                zoomImage.style.transformOrigin = `${x}% ${y}%`;
-                zoomImage.style.transform = 'scale(2) translate(0px, 0px)';
+            // Doble tap detectado (dos toques rápidos en < 300ms)
+            if (e.touches.length === 1 && tapLength < 300 && tapLength > 0) {
+                if (scale === 1) {
+                    // Zoom in centrado donde tocaste
+                    const rect = zoomContainer.getBoundingClientRect();
+                    const touch = e.touches[0];
+                    const x = (touch.clientX - rect.left) / rect.width * 100;
+                    const y = (touch.clientY - rect.top) / rect.height * 100;
 
-                isZoomed = true;
-            } else {
-                zoomImage.style.transition = 'transform 0.2s ease';
-                zoomImage.style.transform = 'scale(1)';
-                zoomImage.style.transformOrigin = 'center center';
-                isZoomed = false;
-                currentX = 0;
-                currentY = 0;
+                    zoomImage.style.transition = 'transform 0.2s ease';
+                    zoomImage.style.transformOrigin = `${x}% ${y}%`;
+                    scale = 2;
+                    currentX = 0;
+                    currentY = 0;
+                    zoomImage.style.transform = `scale(${scale}) translate(0px, 0px)`;
+                } else {
+                    // Reset zoom
+                    zoomImage.style.transition = 'transform 0.2s ease';
+                    zoomImage.style.transform = 'scale(1)';
+                    zoomImage.style.transformOrigin = 'center center';
+                    scale = 1;
+                    currentX = 0;
+                    currentY = 0;
+                }
             }
+            lastTap = currentTime;
 
-            if (isZoomed) {
+            // 📌 Pinch zoom inicio
+            if (e.touches.length === 2) {
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                initialDistance = Math.sqrt(dx * dx + dy * dy);
+            } else if (e.touches.length === 1) {
+                // Preparar arrastre
                 const touch = e.touches[0];
                 startX = touch.clientX - currentX;
                 startY = touch.clientY - currentY;
             }
         };
 
+        // 👉 Movimiento
         const handleTouchMove = (e) => {
-            if (!isZoomed) return;
-            const touch = e.touches[0];
-            currentX = touch.clientX - startX;
-            currentY = touch.clientY - startY;
-            zoomImage.style.transition = 'none';
-            zoomImage.style.transform = `scale(2) translate(${currentX}px, ${currentY}px)`;
+            if (e.touches.length === 2) {
+                // 🔍 Pinch zoom
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (initialDistance) {
+                    let newScale = scale * (distance / initialDistance);
+                    newScale = clamp(newScale, 1, 2); // limitar entre 1 y 2
+                    zoomImage.style.transform = `scale(${newScale}) translate(${currentX}px, ${currentY}px)`;
+                    scale = newScale;
+                }
+            } else if (e.touches.length === 1 && scale > 1) {
+                // 👉 Arrastre cuando hay zoom
+                const touch = e.touches[0];
+                currentX = touch.clientX - startX;
+                currentY = touch.clientY - startY;
+
+                // 📌 Limitar el movimiento dentro del contenedor
+                const rect = zoomContainer.getBoundingClientRect();
+                const maxX = (zoomImage.offsetWidth * scale - rect.width) / (2 * scale);
+                const maxY = (zoomImage.offsetHeight * scale - rect.height) / (2 * scale);
+
+                currentX = clamp(currentX, -maxX, maxX);
+                currentY = clamp(currentY, -maxY, maxY);
+
+                zoomImage.style.transition = 'none';
+                zoomImage.style.transform = `scale(${scale}) translate(${currentX}px, ${currentY}px)`;
+            }
+        };
+
+        // 👉 Fin del gesto
+        const handleTouchEnd = () => {
+            initialDistance = null;
+            if (scale === 1) {
+                currentX = 0;
+                currentY = 0;
+                zoomImage.style.transform = 'scale(1)';
+            }
         };
 
         zoomContainer.addEventListener('touchstart', handleTouchStart);
         zoomContainer.addEventListener('touchmove', handleTouchMove);
+        zoomContainer.addEventListener('touchend', handleTouchEnd);
+
+    // ================== 💻 LAPTOP / PC ==================
     } else {
         const handleMouseMove = (e) => {
             const { left, top, width, height } = zoomContainer.getBoundingClientRect();
