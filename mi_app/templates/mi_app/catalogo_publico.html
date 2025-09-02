@@ -12,28 +12,31 @@
  HERO BANNER
  =======================================================================
 -->
-{% if banner %}
+{# Usamos banners_activos provistos por el context_processor. Si hay al menos
+   uno, mostramos el primero (puedes cambiar a carousel más adelante). Si no,
+   dejamos el hero por defecto intacto. #}
+{% if banners_activos and banners_activos|length > 0 %}
+    {% with b=banners_activos.0 %}
     <section 
         class="relative w-full h-64 sm:h-80 flex items-center justify-center text-white bg-gray-400"
-        style="background-image: url('{{ banner.imagen.url }}'); background-size: cover; background-position: center;"
+        style="background-image: url('{{ b.imagen_url }}'); background-size: cover; background-position: center;"
         role="img"
-        aria-label="{{ banner.titulo }}">
-        
+        aria-label="{{ b.titulo }}">
         <div class="absolute inset-0 bg-black/40"></div>
-        
         <div class="relative text-center p-4">
-            <h1 class="text-4xl sm:text-6xl md:text-7xl font-brand drop-shadow-lg">{{ banner.titulo }}</h1>
-            {% if banner.subtitulo %}
-                <p class="mt-2 text-lg sm:text-xl drop-shadow-md">{{ banner.subtitulo }}</p>
+            <h1 class="text-4xl sm:text-6xl md:text-7xl font-brand drop-shadow-lg">{{ b.titulo }}</h1>
+            {% if b.subtitulo %}
+                <p class="mt-2 text-lg sm:text-xl drop-shadow-md">{{ b.subtitulo }}</p>
             {% endif %}
             <a 
-                href="{{ banner.enlace|default:'#product-list-section' }}" 
+                href="{{ b.destino_url|default:'#product-list-section' }}" 
                 class="mt-6 inline-block text-white font-bold py-3 px-8 rounded-full text-lg hover:bg-opacity-90 transform hover:scale-105 transition-all"
                 style="background-color: var(--brand-accent);">
-                {{ banner.texto_boton }}
+                {{ b.texto_boton }}
             </a>
         </div>
     </section>
+    {% endwith %}
 {% else %}
     <section class="hero-banner relative w-full h-64 sm:h-80 flex items-center justify-center text-white">
         <div class="absolute inset-0 bg-black/30"></div>

@@ -78,7 +78,7 @@ def catalogo_publico(request):
         "productos": page_obj,
         "page_obj": page_obj,
         "categorias_menu": Categoria.objects.filter(parent__isnull=True).prefetch_related('children'),
-        "banner": Banner.objects.filter(activo=True).first(),
+    # banners_activos ahora se provee globalmente por el context_processor `banners_context`
         "filtros_activos": request.GET,
     }
     

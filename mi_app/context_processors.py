@@ -1,6 +1,8 @@
 # mi_app/context_processors.py
 import json
-from .models import Categoria, ConfiguracionSitio, Pagina, ConfiguracionRuleta, ConfiguracionChatbot
+from .models import Categoria, ConfiguracionSitio, Pagina, ConfiguracionRuleta, ConfiguracionChatbot, Banner
+from django.urls import reverse
+from django.utils import timezone
 
 def common_context(request):
     """
@@ -58,3 +60,45 @@ def common_context(request):
         })
 
     return context
+
+
+def banners_context(request):
+    """Devuelve una lista de banners activos ya resueltos a una URL destino.
+
+    Prioridad de destino por cada banner:
+      1) Primer producto en `productos_destacados` con stock (usa la vista `producto_detalle`)
+      2) Si no hay producto disponible, usa `banner.enlace` si está presente
+      3) Si no hay destino válido, se omite el banner
+    """
+    banners_out = []
+    # No usamos fechas en el modelo actual; solo consideramos `activo=True`
+    for b in Banner.objects.filter(activo=True).order_by('id'):
+        destino = None
+        # Prioridad: producto con stock
+        try:
+            productos = list(b.productos_destacados.all())
+        except Exception:
+            productos = []
+
+        for p in productos:
+            try:
+                if getattr(p, 'total_stock', 0) > 0:
+                    destino = reverse('producto_detalle', args=[p.pk])
+                    break
+            except Exception:
+                continue
+
+        # Siguiente prioridad: enlace directo
+        if not destino and getattr(b, 'enlace', None):
+            destino = b.enlace
+
+        if destino:
+            banners_out.append({
+                'titulo': getattr(b, 'titulo', ''),
+                'subtitulo': getattr(b, 'subtitulo', ''),
+                'imagen_url': b.imagen.url if getattr(b, 'imagen', None) else None,
+                'destino_url': destino,
+                'texto_boton': getattr(b, 'texto_boton', 'Ver ahora'),
+            })
+
+    return {'banners_activos': banners_out}
