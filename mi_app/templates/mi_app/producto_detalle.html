@@ -366,7 +366,13 @@ function setupImageZoom(productId) {
                     newScale = clamp(newScale, 1, 2);
                     zoomImage.style.transform = `scale(${newScale}) translate(${currentX}px, ${currentY}px)`;
                     scale = newScale;
-                }
+                    // 👉 Aquí agregas:
+                 if (newScale > 1) {
+                 zoomImage.parentElement.classList.add("disable-scroll");
+                } else {
+               zoomImage.parentElement.classList.remove("disable-scroll");
+             }
+             }
             } else if (e.touches.length === 1 && scale > 1) {
                 // 🚫 Bloquear scroll de página
                 e.preventDefault();

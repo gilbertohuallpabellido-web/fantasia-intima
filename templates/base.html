@@ -96,10 +96,17 @@
             opacity: 1;
             transform: translate(-50%, -50%) scale(1.2);
         }
-            /* === CONTROL DE ZOOM EN IMAGEN === */
-    .zoom-container {
-        touch-action: none;
-    }
+      /* === CONTROL DE ZOOM EN IMAGEN === */
+        .zoom-container {
+           touch-action: none;
+           }
+
+       /* 🚫 Bloquear scroll cuando hay zoom */
+       .disable-scroll {
+         overflow: hidden;
+         touch-action: none;
+            }
+
     </style>
     {% block extra_css %}{% endblock %}
 </head>
