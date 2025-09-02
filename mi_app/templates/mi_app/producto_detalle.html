@@ -296,59 +296,80 @@
         }
     }
     
-    function setupImageZoom(productId) {
-        const zoomContainer = document.getElementById('zoom-container-' + productId);
-        const zoomImage = document.getElementById('zoom-image-' + productId);
-        if (!zoomContainer || !zoomImage) return;
+function setupImageZoom(productId) {
+    const zoomContainer = document.getElementById('zoom-container-' + productId);
+    const zoomImage = document.getElementById('zoom-image-' + productId);
+    if (!zoomContainer || !zoomImage) return;
 
-        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-        if (isTouchDevice) {
-            let isZoomed = false;
-            const handleTouch = (e) => {
-                e.preventDefault();
+    if (isTouchDevice) {
+        let isZoomed = false;
+        let startX, startY, currentX = 0, currentY = 0;
+
+        const handleTouchStart = (e) => {
+            if (!isZoomed) {
                 const rect = zoomContainer.getBoundingClientRect();
                 const touch = e.touches[0];
                 const x = (touch.clientX - rect.left) / rect.width * 100;
                 const y = (touch.clientY - rect.top) / rect.height * 100;
 
-                if (!isZoomed) {
-                    zoomImage.style.transition = 'transform 0.2s ease';
-                    zoomImage.style.transformOrigin = `${x}% ${y}%`;
-                    zoomImage.style.transform = 'scale(2)';
-                    isZoomed = true;
-                } else {
-                    zoomImage.style.transition = 'transform 0.2s ease';
-                    zoomImage.style.transform = 'scale(1)';
-                    zoomImage.style.transformOrigin = 'center center';
-                    isZoomed = false;
-                }
-            };
-            zoomContainer.addEventListener('touchstart', handleTouch);
-        } else {
-            const handleMouseMove = (e) => {
-                const { left, top, width, height } = zoomContainer.getBoundingClientRect();
-                const x = (e.clientX - left) / width * 100;
-                const y = (e.clientY - top) / height * 100;
+                zoomImage.style.transition = 'transform 0.2s ease';
                 zoomImage.style.transformOrigin = `${x}% ${y}%`;
-            };
+                zoomImage.style.transform = 'scale(2) translate(0px, 0px)';
 
-            const handleMouseEnter = () => {
-                zoomImage.style.transform = 'scale(2)';
-                zoomImage.style.cursor = 'zoom-out';
-            };
-
-            const handleMouseLeave = () => {
+                isZoomed = true;
+            } else {
+                zoomImage.style.transition = 'transform 0.2s ease';
                 zoomImage.style.transform = 'scale(1)';
-                zoomImage.style.transformOrigin = 'center';
-                zoomImage.style.cursor = 'zoom-in';
-            };
+                zoomImage.style.transformOrigin = 'center center';
+                isZoomed = false;
+                currentX = 0;
+                currentY = 0;
+            }
 
-            zoomContainer.addEventListener('mousemove', handleMouseMove);
-            zoomContainer.addEventListener('mouseenter', handleMouseEnter);
-            zoomContainer.addEventListener('mouseleave', handleMouseLeave);
-        }
+            if (isZoomed) {
+                const touch = e.touches[0];
+                startX = touch.clientX - currentX;
+                startY = touch.clientY - currentY;
+            }
+        };
+
+        const handleTouchMove = (e) => {
+            if (!isZoomed) return;
+            const touch = e.touches[0];
+            currentX = touch.clientX - startX;
+            currentY = touch.clientY - startY;
+            zoomImage.style.transition = 'none';
+            zoomImage.style.transform = `scale(2) translate(${currentX}px, ${currentY}px)`;
+        };
+
+        zoomContainer.addEventListener('touchstart', handleTouchStart);
+        zoomContainer.addEventListener('touchmove', handleTouchMove);
+    } else {
+        const handleMouseMove = (e) => {
+            const { left, top, width, height } = zoomContainer.getBoundingClientRect();
+            const x = (e.clientX - left) / width * 100;
+            const y = (e.clientY - top) / height * 100;
+            zoomImage.style.transformOrigin = `${x}% ${y}%`;
+        };
+
+        const handleMouseEnter = () => {
+            zoomImage.style.transform = 'scale(2)';
+            zoomImage.style.cursor = 'zoom-out';
+        };
+
+        const handleMouseLeave = () => {
+            zoomImage.style.transform = 'scale(1)';
+            zoomImage.style.transformOrigin = 'center';
+            zoomImage.style.cursor = 'zoom-in';
+        };
+
+        zoomContainer.addEventListener('mousemove', handleMouseMove);
+        zoomContainer.addEventListener('mouseenter', handleMouseEnter);
+        zoomContainer.addEventListener('mouseleave', handleMouseLeave);
     }
+}
 
     async function handleAddToCart(event, productId) {
         event.preventDefault();
