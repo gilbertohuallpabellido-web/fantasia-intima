@@ -97,15 +97,21 @@
             transform: translate(-50%, -50%) scale(1.2);
         }
       /* === CONTROL DE ZOOM EN IMAGEN === */
-        .zoom-container {
-           touch-action: none;
-           }
+.zoom-container {
+  /* Permite manejar gestos (pinch, arrastre) solo dentro del contenedor */
+  touch-action: none;
+  overflow: hidden;
+  position: relative;
+}
 
-       /* 🚫 Bloquear scroll cuando hay zoom */
-       .disable-scroll {
-         overflow: hidden;
-         touch-action: none;
-            }
+/* 🚫 Bloquear scroll de toda la página cuando hay zoom */
+.disable-scroll {
+  overflow: hidden !important;
+  height: 100%;
+  touch-action: none;
+  position: fixed;
+  width: 100%;
+}
 
     </style>
     {% block extra_css %}{% endblock %}
