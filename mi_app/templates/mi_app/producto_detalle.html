@@ -318,10 +318,10 @@ function setupImageZoom(productId) {
             const currentTime = new Date().getTime();
             const tapLength = currentTime - lastTap;
 
-            // 📌 Doble tap detectado (dos toques rápidos en < 300ms)
+            // 📌 Doble tap detectado
             if (e.touches.length === 1 && tapLength < 300 && tapLength > 0) {
                 if (scale === 1) {
-                    // 🔍 Zoom in centrado SIEMPRE en el medio
+                    // 🔍 Zoom in centrado
                     zoomImage.style.transition = 'transform 0.2s ease';
                     zoomImage.style.transformOrigin = 'center center';
                     scale = 2;
@@ -353,43 +353,30 @@ function setupImageZoom(productId) {
             }
         };
 
-// 👉 Movimiento
-const handleTouchMove = (e) => {
-    if (e.touches.length === 2) {
-        // 🔍 Pinch zoom
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
+        // 👉 Movimiento
+        const handleTouchMove = (e) => {
+            if (e.touches.length === 2) {
+                // 🔍 Pinch zoom
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
 
-        if (initialDistance) {
-            let newScale = scale * (distance / initialDistance);
-            newScale = clamp(newScale, 1, 2); // limitar entre 1 y 2
-            zoomImage.style.transform = `scale(${newScale}) translate(${currentX}px, ${currentY}px)`;
-            scale = newScale;
-        }
-    } else if (e.touches.length === 1 && scale > 1) {
-        // 🚫 Bloquear scroll de la página mientras arrastras la foto con zoom
-        e.preventDefault();
+                if (initialDistance) {
+                    let newScale = scale * (distance / initialDistance);
+                    newScale = clamp(newScale, 1, 2);
+                    zoomImage.style.transform = `scale(${newScale}) translate(${currentX}px, ${currentY}px)`;
+                    scale = newScale;
+                }
+            } else if (e.touches.length === 1 && scale > 1) {
+                // 🚫 Bloquear scroll de página
+                e.preventDefault();
 
-        // 👉 Arrastre cuando hay zoom
-        const touch = e.touches[0];
-        currentX = touch.clientX - startX;
-        currentY = touch.clientY - startY;
+                // 👉 Arrastre
+                const touch = e.touches[0];
+                currentX = touch.clientX - startX;
+                currentY = touch.clientY - startY;
 
-        // 📌 Limitar el movimiento dentro del contenedor
-        const rect = zoomContainer.getBoundingClientRect();
-        const maxX = (zoomImage.offsetWidth * scale - rect.width) / (2 * scale);
-        const maxY = (zoomImage.offsetHeight * scale - rect.height) / (2 * scale);
-
-        currentX = clamp(currentX, -maxX, maxX);
-        currentY = clamp(currentY, -maxY, maxY);
-
-        zoomImage.style.transition = 'none';
-        zoomImage.style.transform = `scale(${scale}) translate(${currentX}px, ${currentY}px)`;
-    }
-};
-
-                // 📌 Limitar el movimiento dentro del contenedor
+                // 📌 Limitar movimiento dentro del contenedor
                 const rect = zoomContainer.getBoundingClientRect();
                 const maxX = (zoomImage.offsetWidth * scale - rect.width) / (2 * scale);
                 const maxY = (zoomImage.offsetHeight * scale - rect.height) / (2 * scale);
@@ -413,7 +400,7 @@ const handleTouchMove = (e) => {
         };
 
         zoomContainer.addEventListener('touchstart', handleTouchStart);
-        zoomContainer.addEventListener('touchmove', handleTouchMove);
+        zoomContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
         zoomContainer.addEventListener('touchend', handleTouchEnd);
 
     // ================== 💻 LAPTOP / PC ==================
@@ -441,6 +428,7 @@ const handleTouchMove = (e) => {
         zoomContainer.addEventListener('mouseleave', handleMouseLeave);
     }
 }
+
 
     async function handleAddToCart(event, productId) {
         event.preventDefault();
