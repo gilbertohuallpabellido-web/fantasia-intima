@@ -157,6 +157,8 @@
                     {% with stock_inicial=producto.variantes.first.stock|default:0 %}
                         {% if stock_inicial <= 0 %}
                             <span class="font-bold text-red-600">Agotado</span>
+                        {% elif stock_inicial == 1 %}
+                            <span class="font-bold text-orange-600">¡Última unidad en stock!</span>
                         {% elif stock_inicial < 5 %}
                             <span class="font-bold text-orange-500">¡Últimas <span id="stock-{{ producto.id }}">{{ stock_inicial }}</span> unidades!</span>
                         {% else %}
