@@ -297,14 +297,18 @@
     }
     
 function setupImageZoom(productId) {
+    console.debug('setupImageZoom()', productId);
     const zoomContainer = document.getElementById('zoom-container-' + productId);
     const zoomImage = document.getElementById('zoom-image-' + productId);
-    if (!zoomContainer || !zoomImage) return;
+    if (!zoomContainer || !zoomImage) {
+        console.debug('setupImageZoom: elementos no encontrados', { zoomContainer, zoomImage });
+        return;
+    }
 
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
     // ================== 📱 CELULAR ==================
-if (isTouchDevice) {
+    if (isTouchDevice) {
     let scale = 1;          // Nivel de zoom (1 normal, hasta 2x)
     let startX, startY;     // Posición inicial del dedo
     let currentX = 0, currentY = 0; // Desplazamiento actual
@@ -408,12 +412,12 @@ if (isTouchDevice) {
         }
     };
 
-    zoomContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
-    zoomContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
-    zoomContainer.addEventListener('touchend', handleTouchEnd);
-}
+        zoomContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
+        zoomContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
+        zoomContainer.addEventListener('touchend', handleTouchEnd);
+    }
     // ================== 💻 LAPTOP / PC ==================
-    } else {
+    else {
         const handleMouseMove = (e) => {
             const { left, top, width, height } = zoomContainer.getBoundingClientRect();
             const x = (e.clientX - left) / width * 100;
@@ -435,6 +439,8 @@ if (isTouchDevice) {
         zoomContainer.addEventListener('mousemove', handleMouseMove);
         zoomContainer.addEventListener('mouseenter', handleMouseEnter);
         zoomContainer.addEventListener('mouseleave', handleMouseLeave);
+    }
+
     }
 
 
