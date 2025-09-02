@@ -52,7 +52,10 @@ class ColorVarianteInline(admin.TabularInline):
     model = ColorVariante
     form = ColorVarianteForm
     extra = 1
-    fields = ('codigo', 'color', 'imagen', 'stock') 
+    # === INICIO DE LA MEJORA: Añadimos el nuevo campo al formulario ===
+    fields = ('codigo', 'color', 'imagen_textura', 'imagen', 'stock') 
+    # === FIN DE LA MEJORA ===
+
 
 # --- Formulario Personalizado para Producto ---
 class ProductoAdminForm(forms.ModelForm):

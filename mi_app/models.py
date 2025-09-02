@@ -106,6 +106,16 @@ class ColorVariante(models.Model):
     )
     
     color = models.CharField(max_length=7, default='#FFFFFF', help_text='Haz clic para seleccionar un color exacto.')
+    
+        # === INICIO DE LA MEJORA: Campo para la "Muestra de Tela" ===
+    imagen_textura = models.ImageField(
+        upload_to='productos/texturas/', 
+        blank=True, 
+        null=True,
+        help_text="Opcional: Sube aquí una imagen pequeña (ej: 50x50px) del estampado o textura si el color es complejo."
+    )
+    # === FIN DE LA MEJORA ===
+    
     imagen = models.ImageField(upload_to='productos/variantes/')
     stock = models.IntegerField(default=0)
 

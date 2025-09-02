@@ -117,12 +117,18 @@
             
             <div class="flex flex-wrap justify-center gap-3 mt-4">
                 {% for variante in producto.variantes.all %}
+                      <!-- === INICIO DE LA MEJORA: Lógica de Textura vs. Color Sólido === -->
                     <div 
                         onclick="changeProductImageAndStock(event, '{{ producto.id }}', '{{ variante.imagen.url }}', '{{ variante.stock }}', '{{ variante.pk }}', '{{ variante.codigo|default:"N/A" }}')"
-                        class="color-selector w-12 h-12 rounded-full cursor-pointer flex items-center justify-center {% if forloop.first %}selected{% endif %}"
-                        style="background-color: {{ variante.color | lower }};"
+                        class="color-selector w-12 h-12 rounded-full cursor-pointer bg-cover bg-center {% if forloop.first %}selected{% endif %}"
+                        {% if variante.imagen_textura %}
+                            style="background-image: url('{{ variante.imagen_textura.url }}');"
+                        {% else %}
+                            style="background-color: {{ variante.color | lower }};"
+                        {% endif %}
                         title="{{ variante.codigo|default:'Sin código' }}">
                     </div>
+                    <!-- === FIN DE LA MEJORA === -->
                 {% endfor %}
             </div>
         </div>
