@@ -216,13 +216,18 @@ class ConfiguracionSitioAdmin(SingletonModelAdmin):
 @admin.register(Banner)
 class BannerAdmin(admin.ModelAdmin):
     list_display = ('titulo', 'activo')
-    list_filter = ('activo',)
+    list_filter = ('activo','fecha_inicio','fecha_fin')
     list_editable = ('activo',)
     filter_horizontal = ('productos_destacados',)
     fieldsets = (
         (None, {'fields': ('titulo', 'subtitulo', 'imagen', 'activo')}),
         ('Acción del Banner', {'fields': ('texto_boton', 'enlace')}),
         ('Colección Destacada (Opcional)', {'fields': ('productos_destacados',)}),
+        ('Rango de Fechas (Opcional)', {
+            'fields': ('fecha_inicio', 'fecha_fin'),
+            'classes': ('collapse',),
+            'description': 'Si se rellenan, el banner sólo estará activo dentro del rango especificado.'
+        }),
     )
 
 # --- Admin de Páginas Informativas ---

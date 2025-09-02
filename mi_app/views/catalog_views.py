@@ -22,6 +22,14 @@ def catalogo_publico(request):
     )
 
     categoria_slug = request.GET.get("categoria")
+    # Soporte para lista de productos desde banner: ?productos=1,2,3
+    productos_param = request.GET.get('productos')
+    if productos_param:
+        try:
+            ids = [int(x) for x in productos_param.split(',') if x.strip().isdigit()]
+            productos_list = productos_list.filter(pk__in=ids)
+        except Exception:
+            pass
     if categoria_slug:
         if categoria_slug == "nueva_coleccion":
             productos_list = productos_list.filter(es_nueva_coleccion=True)

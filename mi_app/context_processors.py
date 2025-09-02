@@ -72,7 +72,13 @@ def banners_context(request):
     """
     banners_out = []
     # No usamos fechas en el modelo actual; solo consideramos `activo=True`
+    now = timezone.now()
     for b in Banner.objects.filter(activo=True).order_by('id'):
+        # respetar rango de fechas si están definidos
+        if getattr(b, 'fecha_inicio', None) and b.fecha_inicio and b.fecha_inicio > now:
+            continue
+        if getattr(b, 'fecha_fin', None) and b.fecha_fin and b.fecha_fin < now:
+            continue
         destino = None
         # Prioridad: producto con stock
         try:
@@ -80,13 +86,13 @@ def banners_context(request):
         except Exception:
             productos = []
 
-        for p in productos:
-            try:
-                if getattr(p, 'total_stock', 0) > 0:
-                    destino = reverse('producto_detalle', args=[p.pk])
-                    break
-            except Exception:
-                continue
+        # Si hay varios productos destacados válidos, construimos una URL al catálogo
+        valid_product_ids = [str(p.pk) for p in productos if getattr(p, 'total_stock', 0) > 0]
+        if len(valid_product_ids) == 1:
+            destino = reverse('producto_detalle', args=[int(valid_product_ids[0])])
+        elif len(valid_product_ids) > 1:
+            # redirige al catálogo con filtro por lista de productos
+            destino = f"{reverse('catalogo_publico')}?productos={','.join(valid_product_ids)}"
 
         # Siguiente prioridad: enlace directo
         if not destino and getattr(b, 'enlace', None):
@@ -99,6 +105,7 @@ def banners_context(request):
                 'imagen_url': b.imagen.url if getattr(b, 'imagen', None) else None,
                 'destino_url': destino,
                 'texto_boton': getattr(b, 'texto_boton', 'Ver ahora'),
+                'fecha_fin': getattr(b, 'fecha_fin', None),
             })
 
     return {'banners_activos': banners_out}

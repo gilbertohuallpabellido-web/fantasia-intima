@@ -219,6 +219,9 @@ class Banner(models.Model):
     enlace = models.URLField(blank=True, help_text="URL a la que dirigirá el botón si NO hay productos destacados.")
     texto_boton = models.CharField(max_length=50, default="Ver ahora")
     activo = models.BooleanField(default=False, help_text="Marca esta casilla para que este banner se muestre en la página principal.")
+    # Opcional: activar banner por rango de fechas (si se usan, el banner solo aparece dentro del rango)
+    fecha_inicio = models.DateTimeField(blank=True, null=True, help_text="Opcional: fecha/hora de inicio para mostrar el banner")
+    fecha_fin = models.DateTimeField(blank=True, null=True, help_text="Opcional: fecha/hora de fin para mostrar el banner")
 
     def __str__(self):
         return self.titulo

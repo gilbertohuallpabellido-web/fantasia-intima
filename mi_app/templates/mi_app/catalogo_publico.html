@@ -34,6 +34,11 @@
                 style="background-color: var(--brand-accent);">
                 {{ b.texto_boton }}
             </a>
+            {% if b.fecha_fin %}
+                <div class="mt-4">
+                    <div class="countdown text-sm font-semibold" data-fecha-fin="{{ b.fecha_fin|date:'c' }}"></div>
+                </div>
+            {% endif %}
         </div>
     </section>
     {% endwith %}
@@ -155,6 +160,23 @@
 
 {% block extra_js %}
 <script>
+// Countdown simple para banners
+document.addEventListener('DOMContentLoaded', function(){
+    document.querySelectorAll('.countdown[data-fecha-fin]').forEach(function(el){
+        const end = new Date(el.getAttribute('data-fecha-fin'));
+        function tick(){
+            const diff = end - new Date();
+            if(diff <= 0){ el.textContent = '¡Oferta terminada!'; return; }
+            const days = Math.floor(diff / (1000*60*60*24));
+            const hours = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
+            const minutes = Math.floor((diff % (1000*60*60)) / (1000*60));
+            el.textContent = `${days}d ${hours}h ${minutes}m`;
+            setTimeout(tick, 1000*30);
+        }
+        tick();
+    });
+});
+
     let productListContainer;
     let skeleton;
 
