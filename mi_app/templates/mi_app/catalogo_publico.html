@@ -238,29 +238,16 @@ document.addEventListener('click', function(e){
         </div>
 
         {# Header contextual simplificado #}
-        {% if banner and not producto_unico and mostrar_titulo_banner %}
-            <div class="w-full mb-6 -mt-4" id="banner-context-header">
-                <div class="rounded-2xl px-6 py-4 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" style="background-color: rgba(var(--brand-primary-rgb,249,168,212),0.25); border:1px solid rgba(var(--brand-primary-rgb,249,168,212),0.5);">
-                    <div>
-                        <h3 class="text-xl font-extrabold font-brand" style="color: var(--brand-accent);">{{ banner.titulo }}</h3>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="text-sm font-semibold px-3 py-1 rounded-full bg-white shadow" style="color: var(--brand-accent);">Productos: {{ matched_count }}</span>
-                    </div>
+        <div class="w-full mb-6 -mt-4" id="banner-context-header">
+            <div class="rounded-2xl px-6 py-4 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" style="background-color: rgba(var(--brand-primary-rgb,249,168,212),0.25); border:1px solid rgba(var(--brand-primary-rgb,249,168,212),0.5);">
+                <div class="flex-1">
+                    {% if banner and not producto_unico and mostrar_titulo_banner %}
+                        <h3 class="text-xl font-extrabold font-brand mb-1" style="color: var(--brand-accent);">{{ banner.titulo }}</h3>
+                    {% endif %}
+                    <span id="matched-counter-pill" class="text-sm font-semibold px-3 py-1 rounded-full bg-white shadow inline-block" style="color: var(--brand-accent);" data-matched-count="{{ matched_count }}">Productos: {{ matched_count }}</span>
                 </div>
             </div>
-        {% elif filtros_activos.categoria == 'nueva_coleccion' %}
-            <div class="w-full mb-6 -mt-4" id="banner-context-header">
-                <div class="rounded-2xl px-6 py-4 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" style="background-color: rgba(var(--brand-primary-rgb,249,168,212),0.25); border:1px solid rgba(var(--brand-primary-rgb,249,168,212),0.5);">
-                    <div>
-                        <h3 class="text-xl font-extrabold font-brand" style="color: var(--brand-accent);">Nueva Colección</h3>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="text-sm font-semibold px-3 py-1 rounded-full bg-white shadow" style="color: var(--brand-accent);">Productos: {{ matched_count }}</span>
-                    </div>
-                </div>
-            </div>
-        {% endif %}
+        </div>
 
         <div id="product-list-section" aria-live="polite">
             {% include 'partials/_product_list_ajax.html' %}
@@ -387,6 +374,14 @@ document.addEventListener('DOMContentLoaded', function(){
 
             const heading = document.getElementById('products-heading');
             if (heading) heading.focus();
+            // Actualizar contador unificado (independiente del origen del filtro)
+            (function(){
+                const pill = document.getElementById('matched-counter-pill');
+                if(!pill) return;
+                const count = productListContainer.querySelectorAll('.product-card').length;
+                pill.textContent = 'Productos: ' + count;
+                pill.setAttribute('data-matched-count', count);
+            })();
             // Scroll suave a la lista (solo móvil)
             if(window.innerWidth < 640){
                 setTimeout(()=>{
@@ -419,6 +414,7 @@ document.addEventListener('DOMContentLoaded', function(){
     // Actualizar resaltado de categorías
     const catSlug = params.get('categoria') || '';
     setActiveCategory(catSlug);
+    setMobileCounterLoading();
     }
 
     function handleFilterClick(event) {
@@ -507,11 +503,13 @@ document.addEventListener('DOMContentLoaded', function(){
             if (window.buildFilterChips) { window.buildFilterChips(); }
             const params = new URLSearchParams(window.location.search);
             setActiveCategory(params.get('categoria')||'');
+            setMobileCounterLoading();
         });
 
         // Estado inicial de categoría activa
         const initParams = new URLSearchParams(window.location.search);
         setActiveCategory(initParams.get('categoria')||'');
+    updateMobileProductsCounter();
     });
 </script>
         <script>
@@ -648,13 +646,40 @@ function setActiveCategory(slug){
     applyInline(document.querySelectorAll('aside#filters-sidebar a.js-category-link'));
     applyInline(document.querySelectorAll('#mobile-filters-content a.js-category-link'));
 
-    // Chips móviles (solo clases utilitarias)
-    document.querySelectorAll('#mobile-category-chips a.js-category-link, #mobile-category-chips a[data-filter="categoria"]').forEach(a=>{
+    // Chips móviles: aplicar clase unificada para estado activo y limpiar estilos previos
+    const chipLinks = document.querySelectorAll('#mobile-category-chips a.js-category-link, #mobile-category-chips a[data-filter="categoria"]');
+    const ACTIVE_CLASSES = ['bg-[rgba(var(--brand-primary-rgb),0.15)]','border-[var(--brand-accent)]','text-[var(--brand-accent)]','chip-active'];
+    const INACTIVE_CLASSES = ['text-[var(--brand-text)]','border-gray-300'];
+    chipLinks.forEach(a=>{
+        // limpiar clases de estado
+        ACTIVE_CLASSES.concat(INACTIVE_CLASSES).forEach(c=>a.classList.remove(c));
+        if(a.hasAttribute('style')) a.removeAttribute('style');
         const isAll = !slug && !a.dataset.value;
         const match = (a.dataset.value===slug) || isAll;
-        a.classList.toggle('ring-2', match);
-        a.classList.toggle('ring-pink-400', match);
+        if(match){
+            ACTIVE_CLASSES.forEach(c=>a.classList.add(c));
+        } else {
+            INACTIVE_CLASSES.forEach(c=>a.classList.add(c));
+        }
     });
 }
+// ---- Contador móvil de productos ----
+function setMobileCounterLoading(){ const c=document.getElementById('mobile-products-count-number'); if(c) c.textContent='...'; }
+function countCurrentProducts(){
+    const cards=document.querySelectorAll('#product-list-section .product-card');
+    if(cards.length) return cards.length;
+    const badge=[...document.querySelectorAll('#product-list-section span')].find(s=>/Productos:\s*\d+/.test(s.textContent));
+    if(badge){ const m=badge.textContent.match(/(\d+)/); if(m) return parseInt(m[1]); }
+    return 0;
+}
+function updateMobileProductsCounter(){ const c=document.getElementById('mobile-products-count-number'); if(!c) return; c.textContent=countCurrentProducts(); }
 </script>
+<style>
+/* Estado visual consistente para chip activo (corrige que se quede resaltado al cambiar a "Todos") */
+#mobile-category-chips a.chip-active{
+    background-color: rgba(var(--brand-primary-rgb),0.15) !important;
+    border:1px solid var(--brand-accent) !important;
+    color: var(--brand-accent) !important;
+}
+</style>
 {% endblock extra_js %}

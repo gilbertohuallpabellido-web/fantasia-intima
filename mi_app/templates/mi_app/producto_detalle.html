@@ -81,16 +81,38 @@
         box-shadow: 0 0 0 2px #d1d5db;
         transition: all 0.2s ease-in-out;
     }
-    .color-selector.selected {
-        box-shadow: 0 0 0 3px var(--brand-accent, #e91e63);
-        transform: scale(1.1);
+    .color-selector.selected { box-shadow: 0 0 0 3px var(--brand-accent, #e91e63); transform: scale(1.07); }
+    /* ======= Mejoras Mobile ======= */
+    @media (max-width: 640px) {
+        .product-detail-card { padding: 1rem .95rem 2rem; }
+        .product-detail-wrapper { padding-bottom: 10rem; }
+        .mobile-title { font-size: 1.55rem; line-height: 1.18; margin-bottom:.2rem; letter-spacing:.4px; }
+        #product-code-{{ producto.id }} { margin-bottom:.55rem; font-size:.67rem; letter-spacing:.5px; }
+        .product-detail-card p.text-4xl { font-size:2.05rem; line-height:1.15; margin-bottom:.1rem; }
+        .product-detail-card p.text-2xl { font-size:1.05rem; }
+        .product-detail-card p.text-gray-600 { font-size:.92rem; line-height:1.42; margin-top:.4rem; margin-bottom:.85rem; }
+        .quantity-row { margin-bottom:.85rem; }
+        .variant-scroll { -webkit-overflow-scrolling: touch; padding:.2rem .3rem .55rem; scroll-snap-type:x mandatory; gap:.55rem; }
+        .variant-scroll::-webkit-scrollbar { display:none; }
+        .variant-scroll .color-selector { scroll-snap-align:center; }
+        .color-selector { width:1.6rem; height:1.6rem; border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.09); }
+        .color-selector.selected { transform: scale(1.15); box-shadow:0 0 0 2px var(--brand-accent, #e91e63),0 0 0 1px #fff inset; }
+        .price-pill { backdrop-filter:blur(4px); }
+        .add-to-cart-main { position: fixed; left: 1rem; right: 1rem; bottom: calc(1.2rem + env(safe-area-inset-bottom)); z-index: 40; box-shadow: 0 8px 24px -6px rgba(var(--brand-primary-rgb, 233,30,99), .45); border-radius: 9999px; }
+        .add-to-cart-main:active { transform: scale(.97); }
+        [data-stock-message] span { display:inline-block; padding:.35rem .75rem; border-radius:9999px; font-size:.65rem; letter-spacing:.5px; }
+        [data-stock-message] .text-gray-500 { background:#f3f4f6; }
+    }
+    @media (min-width: 641px) {
+        .variant-scroll { flex-wrap:wrap; overflow:visible; padding: .25rem .5rem .25rem; }
+    .variant-scroll .color-selector { width:3.25rem; height:3.25rem; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<main class="container mx-auto p-4 md:p-8">
-    <div class="bg-white p-6 md:p-10 rounded-3xl shadow-xl grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16">
+<main class="container mx-auto p-4 md:p-8 product-detail-wrapper">
+    <div class="bg-white p-6 md:p-10 rounded-3xl shadow-xl grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 product-detail-card">
         
         <!-- Columna de la imagen del producto -->
         <div>
@@ -119,18 +141,22 @@
                 </div>
             </div>
             
-            <div class="flex flex-wrap justify-center gap-3 mt-4">
+            <div class="flex flex-nowrap md:flex-wrap justify-start md:justify-center gap-3 mt-4 overflow-x-auto variant-scroll px-1 -mx-1" style="scrollbar-width: none;">
                 {% for variante in producto.variantes.all %}
                       <!-- === INICIO DE LA MEJORA: Lógica de Textura vs. Color Sólido === -->
                     <div 
-                        onclick="changeProductImageAndStock(event, '{{ producto.id }}', '{{ variante.imagen.url }}', '{{ variante.stock }}', '{{ variante.pk }}', '{{ variante.codigo|default:"N/A" }}')"
-                        class="color-selector w-12 h-12 rounded-full cursor-pointer bg-cover bg-center {% if forloop.first %}selected{% endif %}"
+                        class="color-selector rounded-full cursor-pointer bg-cover bg-center shrink-0 variante-trigger {% if forloop.first %}selected{% endif %}"
+                        data-product-id="{{ producto.id }}"
+                        data-image-url="{{ variante.imagen.url }}"
+                        data-stock="{{ variante.stock }}"
+                        data-variant-id="{{ variante.pk }}"
+                        data-code="{{ variante.codigo|default:'N/A' }}"
                         {% if variante.imagen_textura %}
                             style="background-image: url('{{ variante.imagen_textura.url }}');"
                         {% else %}
                             style="background-color: {{ variante.color | lower }};"
                         {% endif %}
-                        title="{{ variante.codigo|default:'Sin código' }}">
+                        title="{{ variante.codigo|default:'Sin código' }}" aria-label="Variante {{ variante.codigo|default:'Sin código' }}">
                     </div>
                     <!-- === FIN DE LA MEJORA === -->
                 {% endfor %}
@@ -139,7 +165,7 @@
         
         <!-- Columna de los detalles del producto -->
         <div class="flex flex-col justify-center">
-            <h1 class="text-4xl md:text-5xl font-bold mb-2 leading-tight" style="color: var(--brand-brown);">{{ producto.nombre }}</h1>
+            <h1 class="text-3xl md:text-5xl font-bold mb-2 leading-tight mobile-title" style="color: var(--brand-brown);">{{ producto.nombre }}</h1>
             
             <p id="product-code-{{ producto.id }}" class="text-sm text-gray-400 mb-4 font-mono">
                 SKU: {% if producto.variantes.first.codigo %}{{ producto.variantes.first.codigo }}{% else %}N/A{% endif %}
@@ -157,7 +183,7 @@
             <p class="text-gray-600 text-lg mb-6 leading-relaxed break-words">{{ producto.descripcion }}</p>
             
             <div class="mb-6">
-                <p id="stock-message-{{ producto.id }}" class="text-sm">
+                <p id="stock-message-{{ producto.id }}" class="text-sm" data-stock-message>
                     {% with stock_inicial=producto.variantes.first.stock|default:0 %}
                         {% if stock_inicial <= 0 %}
                             <span class="font-bold text-red-600">Agotado</span>
@@ -182,7 +208,7 @@
                 <input type="hidden" name="variant_id" id="variant_id-{{ producto.id }}" value="{% if producto.variantes.first %}{{ producto.variantes.first.pk }}{% endif %}">
                 
                 {% with stock_inicial=producto.variantes.first.stock|default:0 %}
-                <div class="flex items-center mb-6">
+                <div class="flex items-center mb-6 quantity-row">
                     <span class="mr-6 font-bold text-gray-700">Cantidad:</span>
                     <div class="flex items-center border rounded-full overflow-hidden shadow-sm">
                         <button type="button" onclick="changeQuantity({{ producto.id }}, -1)" class="bg-gray-200 text-gray-700 w-10 h-10 flex items-center justify-center hover:bg-gray-300 transition-colors duration-200" {% if stock_inicial <= 0 %}disabled{% endif %}>-</button>
@@ -201,7 +227,7 @@
                     </div>
                 </div>
 
-                <button type="submit" class="w-full text-white font-bold text-xl py-4 px-6 rounded-full shadow-lg transition-transform duration-200 hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed" style="background-color: var(--brand-accent);" {% if stock_inicial <= 0 %}disabled{% endif %}>
+                <button type="submit" class="w-full text-white font-bold text-xl py-4 px-6 rounded-full shadow-lg transition-transform duration-200 hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed add-to-cart-main" style="background-color: var(--brand-accent);" {% if stock_inicial <= 0 %}disabled{% endif %}>
                     <i class="fas fa-shopping-cart mr-3"></i>
                     Añadir al Carrito
                 </button>
@@ -253,6 +279,20 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         setupImageZoom('{{ producto.id }}');
+        // Delegación de eventos para variantes (evita inline JS y mejora rendimiento)
+        document.querySelectorAll('.variante-trigger').forEach(el => {
+            el.addEventListener('click', (e) => {
+                const t = e.currentTarget;
+                changeProductImageAndStock(
+                    e,
+                    t.dataset.productId,
+                    t.dataset.imageUrl,
+                    t.dataset.stock,
+                    t.dataset.variantId,
+                    t.dataset.code
+                );
+            });
+        });
     });
 
     function changeProductImageAndStock(event, productId, imageUrl, stock, variantId, productCode) {

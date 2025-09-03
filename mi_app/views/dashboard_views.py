@@ -180,6 +180,7 @@ def catalogo_publico(request):
         "page_obj": page_obj,
         "banner": banner_obj,
         "filtros_activos": request.GET,
+    "categorias_menu": Categoria.objects.filter(parent__isnull=True).prefetch_related('children'),
         "solo_ofertas": request.GET.get('solo_ofertas') == '1',
         "producto_unico": bool(producto_unico_id) and not productos_multi,
         "productos_multi": productos_multi,

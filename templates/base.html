@@ -149,8 +149,12 @@
     /* Ajustes flotantes SOLO en móvil (para no tapar la barra inferior) */
     @media (max-width: 639.98px){
         body.catalog-page #social-wrapper { bottom: 88px; }
-        body.catalog-page #chat-button { bottom: 88px; }
-        body.catalog-page #chat-container { bottom: 168px; }
+    /* Reubicar chat aún más arriba para despegarlo totalmente de la barra inferior */
+    /* Elevar todo el wrapper del chat (botón + panel) */
+    /* Altura intermedia para el chat (no tan alto, sin cubrir barra inferior) */
+    body.catalog-page #chat-wrapper { bottom: 70px !important; right: 1rem !important; left: auto; }
+    body.catalog-page #chat-button { bottom: auto !important; }
+    body.catalog-page #chat-container { bottom: 220px !important; right: 1rem !important; }
         /* Se elimina ubicación inferior de la ruleta para usar posición superior */
     }
 
