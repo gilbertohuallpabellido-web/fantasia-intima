@@ -10,7 +10,7 @@ Recibe una variable 'producto' desde donde se le incluye.
             <!-- Imagen del Producto -->
             <div class="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-t-lg">
                 {% if producto.imagen_principal %}
-                    <img src="{{ producto.imagen_principal.url }}" alt="{{ producto.nombre }}" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300">
+                    <img src="{{ producto.imagen_principal.url }}" alt="{{ producto.nombre }}" loading="lazy" decoding="async" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300">
                 {% else %}
                     <div class="w-full h-full bg-gray-200 flex items-center justify-center">
                         <i class="fas fa-image text-gray-400 text-4xl"></i>

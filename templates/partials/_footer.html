@@ -2,11 +2,11 @@
 
 <!-- ICONOS FLOTANTES DE REDES SOCIALES -->
 <!-- Wrapper que contiene la lista y el botón toggle. Hacemos la lista absoluta para que no empuje el botón. -->
-<div id="social-wrapper" class="fixed bottom-6 left-6 z-40 flex items-end">
+<div id="social-wrapper" class="fixed bottom-0 left-0 z-40 flex items-end px-1 pb-1 sm:bottom-6 sm:left-6">
     <div class="relative">
     <!-- Lista de iconos (vertical) - absoluta respecto al contenedor -->
     <!-- Ajustes: bottom offset para no quedar bajo la barra del sistema, max-height y overflow para que haga scroll si es necesario -->
-    <div id="social-list" class="absolute left-0 flex flex-col space-y-3 transition-transform transform origin-bottom-right bg-transparent" style="bottom: 90px; max-height: calc(100vh - 160px); overflow-y: auto;">
+    <div id="social-list" class="absolute left-0 flex flex-col space-y-3 transition-transform transform origin-bottom-right bg-transparent glass-panel p-0 rounded-3xl" style="bottom: 90px; max-height: calc(100vh - 160px); overflow-y: auto;">
         {% if configuracion_sitio and configuracion_sitio.whatsapp_link %}
         <a href="{{ configuracion_sitio.whatsapp_link }}" class="social-icon bg-green-500 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-green-600 transition-all" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
             <i class="fab fa-whatsapp text-3xl"></i>
@@ -33,24 +33,79 @@
         </div>
     </div>
     <!-- Botón toggle: ahora fuera del contenedor absoluto y alineado con la base de la lista -->
-    <button id="social-toggle" class="ml-3 bg-[--brand-accent] text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:opacity-90 transition-all" aria-expanded="false" aria-controls="social-list" aria-label="Mostrar redes sociales">
-        <i class="fas fa-share-alt text-2xl"></i>
+    <button id="social-toggle" class="ml-2 sm:ml-3 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all will-change-transform fancy-share fancy-share-modern relative overflow-visible" aria-expanded="false" aria-controls="social-list" aria-label="Mostrar redes sociales">
+        <span class="icon-wrap relative flex items-center justify-center w-11 h-11 rounded-full bg-gradient-to-br from-[--brand-primary] via-[--brand-accent] to-[--brand-secondary] text-white">
+            <i class="fas fa-share-nodes text-xl drop-shadow"></i>
+        </span>
+        <span class="sr-only">Redes</span>
     </button>
 </div>
     
 
 <style>
     /* Animación slide + fade para el social-list (duración aumentada) */
+    /* Animación más elegante: ligera traslación + escala + fade */
     #social-list {
-        transition: transform .35s cubic-bezier(.22,.9,.3,1), opacity .28s ease;
-        transform: translateX(-10px);
+        transition: transform .38s cubic-bezier(.19,.8,.25,1), opacity .30s ease;
+        transform: translateY(8px) scale(.94);
         opacity: 0;
         pointer-events: none;
+        will-change: transform, opacity;
     }
     #social-list.show {
-        transform: translateX(0);
+        transform: translateY(0) scale(1);
         opacity: 1;
         pointer-events: auto;
+    }
+    /* Efecto sutil de aparición escalonada */
+    #social-list.show a.social-icon { animation: social-pop .45s cubic-bezier(.18,.89,.32,1.28); }
+    @keyframes social-pop { 0%{transform:scale(.6);opacity:0} 60%{transform:scale(1.05);opacity:1} 100%{transform:scale(1);} }
+    /* Ajuste de posición adicional en móviles para no tapar barra inferior */
+    @media (max-width: 639.98px){
+        /* Pegar a los bordes usando safe-area para iOS notch */
+        #social-wrapper{left:env(safe-area-inset-left,0);bottom:env(safe-area-inset-bottom,0);padding-left:4px;padding-bottom:4px;}
+        #social-toggle{width:56px;height:56px;}
+        #social-list{bottom:76px!important;}
+    }
+    /* Rotación elegante del ícono (+ a X) */
+    /* Se elimina rotación + y se incorpora diseño moderno */
+    /* Base glass + anillo degradado suave */
+    .fancy-share-modern{background:rgba(255,255,255,.08);backdrop-filter:blur(10px) saturate(160%) contrast(110%);-webkit-backdrop-filter:blur(10px) saturate(160%) contrast(110%);}
+    .fancy-share-modern:before{content:"";position:absolute;inset:-4px;border-radius:inherit;padding:2px;background:conic-gradient(from 0deg, var(--brand-primary,#ff2d55), var(--brand-accent,#ff5fa3), var(--brand-secondary,#ff2d55) 340deg);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite: xor;mask-composite: exclude;opacity:.55;transition:opacity .5s ease,filter .6s ease;filter:blur(4px);}    
+    .fancy-share-modern.open:before{opacity:1;filter:blur(2.2px) brightness(1.15);}
+    .fancy-share-modern:after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:0 4px 18px -6px rgba(0,0,0,.55),0 2px 8px -2px rgba(0,0,0,.35);} 
+    .fancy-share-modern .icon-wrap{box-shadow:0 6px 20px -6px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.25);transition:transform .4s cubic-bezier(.19,.8,.25,1), box-shadow .5s ease;}
+    .fancy-share-modern.open .icon-wrap{transform:scale(1.07);box-shadow:0 0 0 3px rgba(255,255,255,.18),0 10px 26px -6px rgba(0,0,0,.65);}
+    /* Punto orbital decorativo */
+    .fancy-share-modern .icon-wrap:after{content:"";position:absolute;width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,#fff,#ffe2f1);top:4px;right:6px;box-shadow:0 0 0 2px rgba(255,255,255,.35),0 0 12px 3px rgba(255,120,170,.7);animation:orbit 3.8s linear infinite;transform-origin:-10px 14px;}
+    .fancy-share-modern.open .icon-wrap:after{animation-play-state:running;}
+    @keyframes orbit{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+    /* Pulso sutil al abrir */
+    .fancy-share-modern.open .icon-wrap i{animation:icon-pop .55s cubic-bezier(.18,.89,.32,1.28);} 
+    @keyframes icon-pop{0%{transform:scale(.6);opacity:.4}55%{transform:scale(1.15);opacity:1}100%{transform:scale(1);} }
+    /* Accesible en hover/focus */
+    .fancy-share-modern:focus-visible{outline:3px solid rgba(255,255,255,.55);outline-offset:3px;}
+    /* Hover tonal */
+    .fancy-share-modern:hover:not(.open){background:rgba(255,255,255,.14);}   
+    /* Glassmorphism panel (aparece sólo cuando abierto) */
+    .glass-panel.glass-active{ 
+        background: rgba(255,255,255,0.14); 
+        backdrop-filter: blur(14px) saturate(170%) contrast(95%);
+        -webkit-backdrop-filter: blur(14px) saturate(170%) contrast(95%);
+        border: 1px solid rgba(255,255,255,0.28);
+        padding: 14px 14px 18px 14px !important;
+        box-shadow: 0 8px 28px -6px rgba(0,0,0,.35), 0 2px 6px -1px rgba(0,0,0,.25);
+    }
+    .glass-panel.glass-active a.social-icon{box-shadow:0 4px 16px -4px rgba(0,0,0,.4);}
+    /* Toggle con anillo multicolor elegante */
+    .fancy-share{position:relative;}
+    .fancy-share:before{content:"";position:absolute;inset:-3px;z-index:-1;border-radius:inherit;background:conic-gradient(from 0deg,var(--brand-primary,#ff2d55),#ff7abf,#ff2d55 310deg);filter:blur(6px) saturate(140%);opacity:.65;transition:opacity .4s ease;}
+    .fancy-share.open:before{opacity:1;}
+    .fancy-share:after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(135deg,rgba(255,255,255,.35),rgba(255,255,255,.05));mix-blend-mode:overlay;pointer-events:none;}
+    .fancy-share.open{box-shadow:0 0 0 4px rgba(255,255,255,.15),0 6px 22px -4px rgba(0,0,0,.55);}
+    /* Fallback si no hay soporte backdrop */
+    @supports not ((backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px))){
+        .glass-panel.glass-active{background:rgba(30,30,30,.82);}    
     }
 </style>
 
@@ -61,32 +116,48 @@ document.addEventListener('DOMContentLoaded', function(){
         var toggle = document.getElementById('social-toggle');
         if(!socialList || !toggle) return;
 
-        // Si estamos en la página de catálogo, mostrar siempre la lista y ocultar el toggle
-        if (document.body.classList.contains('catalog-page')) {
-            socialList.classList.add('show');
-            toggle.classList.add('hidden');
-            socialList.setAttribute('aria-hidden', 'false');
-            toggle.setAttribute('aria-hidden', 'true');
-            return;
+        const isCatalog = document.body.classList.contains('catalog-page');
+        const mq = window.matchMedia('(max-width: 639.98px)');
+
+        function applyState(){
+            const isMobile = mq.matches;
+            if(isCatalog && !isMobile){
+                // Catálogo en escritorio: siempre visible, sin toggle
+                socialList.classList.add('show');
+                toggle.classList.add('hidden');
+                socialList.setAttribute('aria-hidden','false');
+                toggle.setAttribute('aria-hidden','true');
+            } else {
+                // Móvil catálogo o cualquier otra página: colapsado inicial con toggle
+                socialList.classList.remove('show');
+                socialList.setAttribute('aria-hidden','true');
+                toggle.classList.remove('hidden');
+                toggle.setAttribute('aria-hidden','false');
+                toggle.setAttribute('aria-expanded','false');
+            }
         }
 
-        // Por defecto (no catálogo): lista colapsada (no 'show')
-        socialList.classList.remove('show');
-        socialList.setAttribute('aria-hidden', 'true');
-        toggle.setAttribute('aria-hidden', 'false');
+        applyState();
+        mq.addEventListener('change', applyState);
 
-        toggle.addEventListener('click', function(e){
+    toggle.addEventListener('click', function(){
             var expanded = this.getAttribute('aria-expanded') === 'true';
+            var icon = this.querySelector('i');
             if (expanded) {
                 socialList.classList.remove('show');
                 socialList.setAttribute('aria-hidden', 'true');
                 this.setAttribute('aria-expanded', 'false');
                 this.setAttribute('aria-label', 'Mostrar redes sociales');
+                this.classList.remove('open');
+                socialList.classList.remove('glass-active');
             } else {
                 socialList.classList.add('show');
                 socialList.setAttribute('aria-hidden', 'false');
                 this.setAttribute('aria-expanded', 'true');
                 this.setAttribute('aria-label', 'Cerrar redes sociales');
+                this.classList.add('open');
+                // Activar panel vidrio tras un pequeño frame para animación suave
+                requestAnimationFrame(()=>socialList.classList.add('glass-active'));
             }
         }, false);
     } catch(err) {

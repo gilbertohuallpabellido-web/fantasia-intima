@@ -74,9 +74,9 @@ def banners_context(request):
         destino = None
         modo = getattr(b, 'modo_destino', 'nueva')
         if modo == 'nueva':
-            destino = f"{reverse('catalogo_publico')}?categoria=nueva_coleccion#product-list-section"
+            destino = f"{reverse('catalogo_publico')}?categoria=nueva_coleccion&banner_id={b.pk}#product-list-section"
         elif modo == 'ofertas':
-            destino = f"{reverse('catalogo_publico')}?solo_ofertas=1#product-list-section"
+            destino = f"{reverse('catalogo_publico')}?solo_ofertas=1&banner_id={b.pk}#product-list-section"
         elif modo == 'producto':
             # Soporte: si hay múltiples seleccionados usamos ?productos=1,2,3
             ids_multi = []
@@ -90,7 +90,7 @@ def banners_context(request):
                     destino = reverse('producto_detalle', args=[ids_multi[0]])
                 else:
                     cadena = ','.join(str(i) for i in ids_multi)
-                    destino = f"{reverse('catalogo_publico')}?productos={cadena}#product-list-section"
+                    destino = f"{reverse('catalogo_publico')}?productos={cadena}&banner_id={b.pk}#product-list-section"
         elif modo == 'enlace' and getattr(b, 'enlace', None):
             destino = b.enlace
         # Debug simple después de resolver destino
@@ -100,11 +100,13 @@ def banners_context(request):
             pass
         if destino:
             banners_out.append({
+                'id': b.pk,
                 'titulo': getattr(b, 'titulo', ''),
                 'subtitulo': getattr(b, 'subtitulo', ''),
                 'imagen_url': b.imagen.url if getattr(b, 'imagen', None) else None,
                 'destino_url': destino,
                 'texto_boton': getattr(b, 'texto_boton', 'Ver ahora'),
                 'fecha_fin': getattr(b, 'fecha_fin', None),
+                'modo': modo,
             })
     return {'banners_activos': banners_out}

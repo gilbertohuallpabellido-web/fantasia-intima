@@ -167,19 +167,28 @@ def catalogo_publico(request):
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    # 6. Contexto (añadimos flags banner)
+    # 6. Banner y flag mostrar_titulo_banner (mismo criterio que versión pública)
+    banner_obj = Banner.objects.filter(activo=True).first()
+    came_from_banner = bool(request.GET.get('banner') or request.GET.get('banner_id'))
+    mostrar_titulo_banner = False
+    if came_from_banner:
+        if not categoria_slug or categoria_slug == 'nueva_coleccion':
+            mostrar_titulo_banner = True
+
     context = {
         "productos": page_obj,
         "page_obj": page_obj,
-        "banner": Banner.objects.filter(activo=True).first(),
+        "banner": banner_obj,
         "filtros_activos": request.GET,
         "solo_ofertas": request.GET.get('solo_ofertas') == '1',
-    "producto_unico": bool(producto_unico_id) and not productos_multi,
-    "productos_multi": productos_multi,
+        "producto_unico": bool(producto_unico_id) and not productos_multi,
+        "productos_multi": productos_multi,
         "matched_count": matched_count,
+        "mostrar_titulo_banner": mostrar_titulo_banner,
     }
     
-    if request.headers.get('x-requested-with') == 'fetch':
+    # Responder parcial tanto para fetch personalizado como para peticiones estándar AJAX
+    if request.headers.get('x-requested-with') in ('fetch', 'XMLHttpRequest'):
         return render(request, 'partials/_product_list_ajax.html', context)
 
     return render(request, "mi_app/catalogo_publico.html", context)

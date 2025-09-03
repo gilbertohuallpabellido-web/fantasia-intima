@@ -1,9 +1,21 @@
 {% load static %}
 
 <!-- Se usa rgba() con la nueva variable --brand-primary-rgb para aplicar transparencia -->
-<header x-data="{ mobileMenuOpen: false }" style="background-color: rgba(var(--brand-primary-rgb, 249, 168, 212), 0.8);" class="backdrop-blur-sm sticky top-0 z-50 shadow-md">
+<header x-data="{ mobileMenuOpen: false }" style="background-color: rgba(var(--brand-primary-rgb, 249, 168, 212), 0.8);" class="backdrop-blur-sm sticky top-0 z-50 shadow-md relative">
     <div class="container mx-auto px-4">
         <div class="flex justify-between items-center h-20">
+            {% if configuracion_ruleta.activa %}
+            <!-- Botón Ruleta (móvil centrado arriba, desktop flotante) -->
+            <button @click="openRoulette && openRoulette()" id="roulette-fab-mobile" class="md:hidden premium-spin-btn absolute top-1 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full flex items-center justify-center text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-300/60 z-60" aria-label="Abrir Ruleta (Móvil)">
+                <div class="roulette-inner text-[1.5rem]">
+                    <i class="fas fa-dice"></i>
+                    <span class="roulette-tooltip">Gira y gana</span>
+                </div>
+                <span class="spark spark-1"></span>
+                <span class="spark spark-2"></span>
+                <span class="spark spark-3"></span>
+            </button>
+            {% endif %}
             <!-- Logo -->
             <a href="{% url 'index' %}" class="flex-shrink-0">
                 <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" class="h-14 w-auto" onerror="this.onerror=null;this.src='https://placehold.co/150x50/f9a8d4/ffffff?text=Logo';">

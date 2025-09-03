@@ -51,11 +51,13 @@ def spin_roulette(request):
 
     response_data = {
         'success': True,
+        'prize_id': premio_ganado.id,  # ID para recalcular índice en frontend si cambia el orden
         'prize': {
+            'id': premio_ganado.id,
             'name': premio_ganado.nombre,
             'coupon_code': cupon.codigo,
         },
-        # Se envía el índice del premio ganador al frontend
+        # Índice según el orden usado aquí (order_by('id')[:8])
         'winning_index': winning_index
     }
     

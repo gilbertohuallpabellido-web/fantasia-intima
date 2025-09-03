@@ -46,83 +46,120 @@
             transform: translateY(-8px);
             box-shadow: 0 20px 25px -5px rgb(236 72 153 / 0.1), 0 8px 10px -6px rgb(236 72 153 / 0.1);
         }
-        .social-icon:hover, #chat-button:hover {
-            transform: scale(1.1);
-        }
-        #roulette-wheel {
-            transform-origin: center center;
-        }
-        #chat-messages::-webkit-scrollbar { width: 6px; }
-        #chat-messages::-webkit-scrollbar-track { background: #fce7f3; }
-        #chat-messages::-webkit-scrollbar-thumb { background: var(--brand-primary); border-radius: 6px; }
-        #chat-messages::-webkit-scrollbar-thumb:hover { background: var(--brand-secondary); }
-        .active-filter-btn {
-            background-color: white !important;
-            color: var(--brand-accent) !important;
-            box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
-        }
-        .hero-banner {
-            background: url('https://placehold.co/1200x400/f9a8d4/4b4244?text=Nueva+Coleccion&font=parisienne') no-repeat center center;
-            background-size: cover;
-        }
-        .prize-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform-origin: 0 0;
-            color: white;
-            font-weight: bold;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-            text-align: center;
-            width: 90px;
-            word-wrap: break-word;
-            pointer-events: none;
-            font-size: 0.8rem;
-            line-height: 1.2;
-        }
-        #big-win-text {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.5);
-            font-size: 4rem;
-            font-weight: 900;
-            color: #ec4899;
-            text-shadow: 2px 2px 10px rgba(0,0,0,0.4);
-            opacity: 0;
-            z-index: 1000;
-            pointer-events: none;
-            transition: transform 0.6s ease-out, opacity 0.6s ease-out;
-        }
-        #big-win-text.show {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1.2);
-        }
-      /* === CONTROL DE ZOOM EN IMAGEN === */
-.zoom-container {
-  /* Permite manejar gestos (pinch, arrastre) solo dentro del contenedor */
-    /* Allow default scrolling when not zoomed; JS will set to 'none' while zoomed */
-    touch-action: manipulation;
-  overflow: hidden;
-  position: relative;
-}
+    .social-icon:hover, #chat-button:hover { transform: scale(1.1); }
+    /* === Estilos globales ruleta (botón premium) === */
+    .premium-spin-btn{background:radial-gradient(circle at 30% 30%,var(--brand-accent) 0%,var(--brand-primary,#ff5fa3) 55%,var(--brand-secondary,#ff2d55) 100%);box-shadow:0 8px 24px -6px rgba(0,0,0,.55),0 4px 12px -4px rgba(0,0,0,.4);position:relative;overflow:visible;}
+    .premium-spin-btn:before{content:"";position:absolute;inset:-5px;border-radius:50%;padding:2px;background:conic-gradient(from 0deg,#ffd36d,#ff63a1,#ffd36d 320deg);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;filter:blur(6px);opacity:.55;transition:opacity .6s ease,filter .6s ease;}
+    .premium-spin-btn:hover:before{opacity:1;filter:blur(3px) brightness(1.15);}     
+    .premium-spin-btn:after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(145deg,rgba(255,255,255,.22),rgba(255,255,255,.05));mix-blend-mode:overlay;pointer-events:none;}
+    .premium-spin-btn .roulette-inner{width:100%;height:100%;display:flex;align-items:center;justify-content:center;border-radius:inherit;font-size:1.9rem;}
+    .premium-spin-btn .roulette-inner{background:radial-gradient(circle at 65% 35%,rgba(255,255,255,.55),rgba(255,255,255,.05) 70%), linear-gradient(135deg,rgba(255,255,255,.2),rgba(255,255,255,.05));backdrop-filter:blur(8px) saturate(140%);-webkit-backdrop-filter:blur(8px) saturate(140%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.35),inset 0 0 14px -4px rgba(255,255,255,.8),0 4px 16px -4px rgba(0,0,0,.5);animation:pulse-glow 4.5s ease-in-out infinite;}
+    @keyframes pulse-glow{0%,100%{transform:scale(1)}50%{transform:scale(1.045);}}
+    .premium-spin-btn:hover .roulette-inner{animation-play-state:paused;}
+    .spark{position:absolute;background:radial-gradient(circle,#fff 0%,rgba(255,255,255,0) 70%);border-radius:50%;opacity:0;animation:sparkle 3.2s linear infinite;mix-blend-mode:screen;}
+    .spark-1{width:14px;height:14px;top:8px;left:10px;animation-delay:.3s;}
+    .spark-2{width:10px;height:10px;bottom:10px;right:14px;animation-delay:1.4s;}
+    .spark-3{width:8px;height:8px;top:14px;right:12px;animation-delay:2.2s;}
+    @keyframes sparkle{0%{opacity:0;transform:scale(.2) translateY(0)}10%{opacity:1;transform:scale(1) translateY(-2px)}40%{opacity:0;transform:scale(.6) translateY(-4px)}100%{opacity:0;}}
+    .roulette-tooltip{position:absolute;top:-42px;left:50%;transform:translateX(-50%) translateY(6px);background:rgba(30,30,30,.85);color:#fff;font-size:.65rem;font-weight:600;padding:6px 10px;border-radius:999px;white-space:nowrap;opacity:0;pointer-events:none;letter-spacing:.5px;transition:opacity .35s ease, transform .4s cubic-bezier(.19,.8,.25,1);box-shadow:0 6px 18px -6px rgba(0,0,0,.6),0 2px 6px -2px rgba(0,0,0,.35);}
+    .premium-spin-btn:hover .roulette-tooltip,.premium-spin-btn:focus-visible .roulette-tooltip{opacity:1;transform:translateX(-50%) translateY(0);}
+    .premium-spin-btn:hover{transform:translateY(-2px) scale(1.05);box-shadow:0 14px 32px -10px rgba(0,0,0,.6),0 6px 16px -4px rgba(0,0,0,.45);} 
+    .premium-spin-btn:active{transform:translateY(0) scale(.97);transition:transform .12s ease;} 
+    @supports not ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))){
+        .premium-spin-btn .roulette-inner{background:linear-gradient(135deg,rgba(255,255,255,.18),rgba(255,255,255,.05));}
+    }
 
-/* 🚫 Bloquear scroll de toda la página cuando hay zoom */
-.disable-scroll {
-  overflow: hidden !important;
-  height: 100%;
-  touch-action: none;
-  position: fixed;
-  width: 100%;
-}
+    /* === Ruleta: estilos de rueda y texto de premios === */
+    #roulette-wheel { position: relative; overflow: visible; aspect-ratio:1/1; box-shadow:0 10px 28px -8px rgba(0,0,0,.35),0 4px 10px -4px rgba(0,0,0,.25); }
+    /* Capa de profundidad y brillo */
+    #roulette-wheel:before{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.4),rgba(255,255,255,0) 60%),radial-gradient(circle at 70% 75%,rgba(255,255,255,.25),rgba(255,255,255,0) 65%);mix-blend-mode:overlay;}
+    /* Separadores sutiles entre segmentos usando máscara */
+    #roulette-wheel:after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;background:repeating-conic-gradient(rgba(255,255,255,.7) 0deg,rgba(255,255,255,.7) 1deg,transparent 1deg,transparent 45deg);mask:radial-gradient(circle at 50% 50%,transparent 0 58%,#000 59% 100%);opacity:.55;mix-blend-mode:overlay;}
+    .dark #roulette-wheel:after{opacity:.35;}
+    .roulette-pointer{animation:pointerPulse 2.6s ease-in-out infinite;}
+    @keyframes pointerPulse{0%,100%{transform:translate(-50%,0) scale(1)}50%{transform:translate(-50%,2px) scale(1.06)}}
+    .roulette-center-shadow{position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 22px -6px rgba(0,0,0,.55),inset 0 4px 14px -4px rgba(0,0,0,.4);pointer-events:none;}
+    
+    /* === INICIO DE LA MEJORA: CSS para el Texto de la Ruleta === */
+    #roulette-wheel .prize-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform-origin: 0% 50%;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: .5px;
+        pointer-events: none;
+        text-transform: uppercase;
+    white-space: normal; /* permitir salto */
+    text-align: center; /* centrado horizontal */
+        text-shadow: 0 2px 4px rgba(0,0,0,.65), 0 0 6px rgba(0,0,0,.45);
+        filter: drop-shadow(0 2px 3px rgba(0,0,0,.55));
+    font-size: 0.78rem;
+    line-height: 1.08;
+    padding: 0 .25rem 0 .1rem;
+    width: 48%; /* longitud radial máxima (desde centro hacia borde) */
+    max-width: 48%;
+    text-align: center; /* para que las líneas empiecen alineadas hacia fuera */
+    display: block; /* volvemos a usar texto tangencial */
+    pointer-events:none;
+    will-change: transform;
+    }
+    @media (min-width: 640px) {
+        #roulette-wheel .prize-text {
+            font-size: 0.85rem;
+        }
+    }
+    /* === FIN DE LA MEJORA === */
+
+    /* Texto central / hub */
+    .roulette-hub-label{letter-spacing:.5px;text-shadow:0 2px 5px rgba(0,0,0,.35);}    
+
+    /* Texto curvo SVG */
+    #roulette-wheel svg { overflow: visible; }
+    .arc-label { font-weight:800; fill:#fff; letter-spacing:.5px; text-transform:uppercase; font-family:inherit; paint-order:stroke; stroke:#000; stroke-width:6px; stroke-linejoin:round; stroke-opacity:.38; }
+    .arc-label.small { font-size:30px; }
+    .arc-label.medium { font-size:34px; }
+    .arc-label.large { font-size:38px; }
+    .arc-label.xl { font-size:42px; }
+    @media (max-width:640px){
+        .arc-label.xl { font-size:34px; }
+        .arc-label.large { font-size:32px; }
+        .arc-label.medium { font-size:30px; }
+        .arc-label.small { font-size:26px; }
+    }
+
+    /* Accesibilidad (lector de pantalla) */
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+
+    .roulette-modal-overlay{z-index:9999;}
+
+    /* 🚫 Bloquear scroll de toda la página cuando hay zoom */
+    .disable-scroll {
+      overflow: hidden !important;
+      height: 100%;
+      touch-action: none;
+      position: fixed;
+      width: 100%;
+    }
 
     /* Oculta la barra de migas (que generaba una franja blanca) en páginas con hero/banner como el catálogo */
     body.catalog-page .breadcrumbs-bar { display: none; }
 
+    /* Ajustes flotantes SOLO en móvil (para no tapar la barra inferior) */
+    @media (max-width: 639.98px){
+        body.catalog-page #social-wrapper { bottom: 88px; }
+        body.catalog-page #chat-button { bottom: 88px; }
+        body.catalog-page #chat-container { bottom: 168px; }
+        /* Se elimina ubicación inferior de la ruleta para usar posición superior */
+    }
+
+    /* Ruleta ahora se maneja dentro del header (mobile absolute, desktop fixed) */
+
     </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body data-cart-count-url="{% url 'cart_count' %}" class="flex flex-col min-h-screen {% block body_class %}{% endblock %}">
+<body data-cart-count-url="{% url 'cart_count' %}" class="flex flex-col min-h-screen {% block body_class %}{% endblock %}" {% if configuracion_ruleta.activa %}x-data="rouletteGame()" x-init="init()"{% endif %}>
 
     <!-- Encabezado y Menú Móvil -->
     {% include 'partials/_header.html' %}
@@ -143,33 +180,79 @@
     <!-- Pie de Página y Elementos Flotantes -->
     {% include 'partials/_footer.html' %}
 
-    <!-- Ruleta de la Suerte -->
     {% if configuracion_ruleta.activa %}
-    <div x-data="rouletteGame()" x-init="init()" class="relative z-50">
-    <button @click="openRoulette()" class="fixed bottom-6 right-20 z-50 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center transform hover:scale-110 transition-transform" style="background-color: var(--brand-accent);">
-            <i class="fas fa-gift text-2xl"></i>
-        </button>
+    <!-- Botón Ruleta Desktop flotante (independiente del header) -->
+    <button @click="openRoulette && openRoulette()" id="roulette-fab" class="hidden md:flex premium-spin-btn fixed bottom-6 right-24 w-16 h-16 rounded-full items-center justify-center text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-300/60 z-50" aria-label="Abrir Ruleta">
+        <div class="roulette-inner">
+            <i class="fas fa-dice fa-lg drop-shadow-md"></i>
+            <span class="roulette-tooltip">Gira y gana</span>
+        </div>
+        <span class="spark spark-1"></span>
+        <span class="spark spark-2"></span>
+        <span class="spark spark-3"></span>
+    </button>
+    {% endif %}
 
+    <!-- Ruleta de la Suerte (modales y lógica) -->
+    {% if configuracion_ruleta.activa %}
         <!-- Modal de la Ruleta (para usuarios logueados) -->
-        <div x-show="isOpen" x-cloak x-transition class="fixed inset-0 bg-black/60 flex items-center justify-center p-4">
+    <div x-show="isOpen" x-cloak x-transition class="roulette-modal-overlay fixed inset-0 bg-black/60 flex items-center justify-center p-4">
             <div @click.away="isOpen = false" class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md text-center">
                 <h2 class="text-3xl font-brand text-[--brand-brown] mb-2" x-text="config.titulo || 'Gira la Ruleta'"></h2>
                 <p class="text-gray-500 mb-6" x-text="message"></p>
                 <div class="relative w-64 h-64 mx-auto mb-6">
                     <div id="roulette-wheel" class="absolute w-full h-full rounded-full border-8" style="border-color: rgba(var(--brand-primary-rgb, 249,168,212),0.6);" :style="{ background: wheelStyle }">
+                        <!-- === INICIO DE LA MEJORA: HTML para el Texto de la Ruleta === -->
                         <template x-for="(prize, index) in prizes" :key="index">
-                            <div class="prize-text" :style="`transform: rotate(${index * (360 / prizes.length) + ((360 / prizes.length) / 2)}deg) translate(75px, -50%) rotate(-90deg);`">
-                                <span x-text="prize.nombre"></span>
-                            </div>
+                            <div class="prize-text" :style="prizeStyle(index)" x-html="formatPrize(prize, index)"></div>
                         </template>
+                        <!-- === FIN DE LA MEJORA === -->
+                        <!-- (SVG curvo desactivado) -->
+                        <svg id="roulette-svg" style="display:none" class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1000 1000"></svg>
+                        <div class="roulette-center-shadow"></div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="roulette-hub-label w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white/90 backdrop-blur font-extrabold text-[--brand-accent] flex items-center justify-center ring-2 ring-pink-300 shadow-inner select-none">FI</div>
+                        </div>
                     </div>
-                    <div class="absolute top-[-10px] left-1/2 -translate-x-1/2 text-4xl" style="color: var(--brand-accent);">▼</div>
+                    <!-- Nuevo puntero elegante -->
+                    <div class="roulette-pointer elegant-pointer absolute -top-6 left-1/2 -translate-x-1/2 w-10 h-14 flex items-end justify-center select-none" aria-hidden="true">
+                        <svg viewBox="0 0 60 90" class="w-full h-full overflow-visible">
+                            <defs>
+                                <linearGradient id="ptrGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stop-color="var(--brand-accent)" stop-opacity="1" />
+                                    <stop offset="55%" stop-color="var(--brand-primary,#f9a8d4)" stop-opacity="1" />
+                                    <stop offset="100%" stop-color="var(--brand-accent)" stop-opacity="1" />
+                                </linearGradient>
+                                <radialGradient id="ptrShine" cx="50%" cy="30%" r="70%">
+                                    <stop offset="0%" stop-color="#fff" stop-opacity="0.9" />
+                                    <stop offset="45%" stop-color="#fff" stop-opacity="0.15" />
+                                    <stop offset="100%" stop-color="#fff" stop-opacity="0" />
+                                </radialGradient>
+                                <filter id="ptrGlow" x="-40%" y="-40%" width="180%" height="180%">
+                                    <feGaussianBlur in="SourceGraphic" stdDeviation="2.2" result="blur" />
+                                    <feMerge>
+                                        <feMergeNode in="blur" />
+                                        <feMergeNode in="SourceGraphic" />
+                                    </feMerge>
+                                </filter>
+                            </defs>
+                            <!-- Base circular -->
+                            <circle cx="30" cy="54" r="20" fill="url(#ptrGrad)" stroke="rgba(255,255,255,0.7)" stroke-width="2" filter="url(#ptrGlow)" />
+                            <circle cx="30" cy="54" r="14" fill="rgba(255,255,255,0.9)" stroke="rgba(255,255,255,0.9)" stroke-width="1" />
+                            <!-- Cuerpo / aguja -->
+                            <path d="M30 4 L48 50 Q30 42 12 50 Z" fill="url(#ptrGrad)" stroke="rgba(255,255,255,0.85)" stroke-width="2" />
+                            <path d="M30 8 L42 48 Q30 44 18 48 Z" fill="url(#ptrShine)" />
+                            <!-- Brillo especular fino -->
+                            <path d="M30 6 L44 48" stroke="rgba(255,255,255,0.55)" stroke-width="2" stroke-linecap="round" />
+                        </svg>
+                    </div>
                 </div>
                 <button @click="spin()" :disabled="isSpinning || (hasPlayed && !isAdmin)" class="w-full text-white font-bold py-3 px-6 rounded-full text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed" :style="{ backgroundColor: 'var(--brand-accent)' }">
                     <span x-show="!isSpinning && !(hasPlayed && !isAdmin)">¡GIRAR AHORA!</span>
                     <span x-show="isSpinning"><i class="fas fa-spinner fa-spin mr-2"></i> Girando...</span>
                     <span x-show="hasPlayed && !isAdmin">¡Vuelve mañana!</span>
                 </button>
+                <div aria-live="polite" class="sr-only" x-text="prizeResult ? 'Has ganado ' + (prizeResult.name || prizeResult.nombre) : ''"></div>
                 <div x-show="prizeResult" x-transition class="mt-6">
                     <p class="text-lg">¡Felicidades! Has ganado:</p>
                     <p class="text-2xl font-bold my-2" x-text="prizeResult ? prizeResult.name : ''" :style="{ color: 'var(--brand-accent)' }"></p>
@@ -180,8 +263,8 @@
             </div>
         </div>
 
-        <!-- Modal "Inicia Sesión" para invitados -->
-        <div x-show="showLoginModal" x-cloak x-transition class="fixed inset-0 bg-black/60 flex items-center justify-center p-4">
+    <!-- Modal "Inicia Sesión" para invitados -->
+    <div x-show="showLoginModal" x-cloak x-transition class="roulette-modal-overlay fixed inset-0 bg-black/60 flex items-center justify-center p-4">
             <div @click.away="showLoginModal = false" class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md text-center">
                 <div class="text-pink-500 text-5xl mb-4">
                     <i class="fas fa-lock"></i>
@@ -193,7 +276,6 @@
                     <a href="{% url 'registro' %}?next={{ request.path }}" class="w-full bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-full transition-transform hover:scale-105">Registrarse</a>
                 </div>
             </div>
-        </div>
     </div>
     {% endif %}
 
@@ -230,6 +312,7 @@
                 whatsappLink: '',
                 message: 'Prueba tu suerte para ganar un premio especial.',
                 isAdmin: {{ request.user.is_superuser|yesno:'true,false' }},
+                currentRotation: 0, // rotación acumulada de la rueda
                 
                 prizes: {{ roulette_prizes_json|safe }},
                 config: {{ roulette_config_json|safe }},
@@ -257,6 +340,100 @@
                     return gradient;
                 },
                 
+                // === INICIO DE LA MEJORA: JS para Estilo del Texto de la Ruleta ===
+                prizeStyle(index) {
+                    const total = this.prizes.length || 1;
+                    const anglePer = 360 / total;
+                    const rot = (index * anglePer) + (anglePer/2) - 90; // ángulo radial
+                    const prize = this.prizes[index] || {};
+                    const txt = (prize.nombre || prize.name || '').trim();
+                    // Escala según longitud (más líneas => menos escala)
+                    let scale = 1;
+                    if (txt.length > 16) scale = 0.92;
+                    if (txt.length > 28) scale = 0.85;
+                    if (txt.length > 40) scale = 0.78;
+                    if (txt.length > 52) scale = 0.7;
+                    /*
+                     * Rayo: el borde izquierdo del bloque queda en el centro (transform-origin 0% 50%).
+                     * No aplicamos traslación inicial (translateX) para que nazca en el centro.
+                     * Sólo empujamos un poco para despegar del centro y evitar tapa del hub.
+                     */
+                    const offset = 28;
+                    return `transform: rotate(${rot}deg) translateX(${offset}%) scale(${scale});`;
+                },
+                formatPrize(prize, index){
+                    const text = (prize.nombre || prize.name || '').trim();
+                    if(!text) return '';
+                    const words = text.split(/\s+/);
+                    const length = text.length;
+                    // Decidir número de líneas: 1 corta, 2 media, 3 muy larga
+                    let linesTarget = 1;
+                    if(length > 16) linesTarget = 2;
+                    if(length > 28) linesTarget = 3;
+                    if(words.length <= linesTarget) {
+                        return words.map(w=>w.toUpperCase()).join('<br>');
+                    }
+                    const avg = Math.ceil(length / linesTarget);
+                    const lines = []; let current='';
+                    words.forEach(w=>{
+                        if((current + ' ' + w).trim().length <= avg || lines.length >= linesTarget-1){
+                            current = (current? current + ' ' : '') + w;
+                        } else {
+                            lines.push(current); current = w;
+                        }
+                    });
+                    if(current) lines.push(current);
+                    while(lines.length > linesTarget){
+                        const last = lines.pop();
+                        lines[lines.length-1] += ' ' + last;
+                    }
+                    return lines.map(l=>l.toUpperCase()).join('<br>');
+                },
+
+                renderCurvedText(){
+                    const svg = document.getElementById('roulette-svg');
+                    if(!svg) return; 
+                    svg.innerHTML='';
+                    const total = this.prizes.length || 1;
+                    if(!total) return;
+                    const center = 500;
+                    const baseRadius = 430; // radio donde se colocará el texto
+                    const anglePerSlice = 360/total;
+                    const reduceFactor = 0.78; // arc length dentro de la tajada
+                    const arcSpan = anglePerSlice * reduceFactor;
+                    const toRad = deg => deg * Math.PI/180;
+                    const polar = (r,deg)=>{ const rad = toRad(deg-90); return {x: center + r*Math.cos(rad), y: center + r*Math.sin(rad)} };
+                    this.prizes.forEach((prize,i)=>{
+                        const centerAngle = (i*anglePerSlice)+(anglePerSlice/2);
+                        const startAngle = centerAngle - arcSpan/2;
+                        const endAngle = centerAngle + arcSpan/2;
+                        const mid = centerAngle % 360;
+                        let start = startAngle; let end = endAngle; let inverted=false;
+                        if(mid > 90 && mid < 270){ inverted=true; start = endAngle; end = startAngle; }
+                        const p1 = polar(baseRadius,start); const p2 = polar(baseRadius,end);
+                        const largeArc = (Math.abs(end-start) > 180)?1:0; // siempre 0 normalmente
+                        const pathId = 'arc-path-'+i;
+                        const d = `M ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} A ${baseRadius} ${baseRadius} 0 ${largeArc} ${inverted?0:1} ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+                        const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+                        path.setAttribute('id',pathId); path.setAttribute('d',d); path.setAttribute('fill','none');
+                        svg.appendChild(path);
+                        const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+                        let cls='xl';
+                        const label = (prize.nombre || prize.name || '').trim();
+                        const len = label.length;
+                        if(len>18) cls='large'; if(len>24) cls='medium'; if(len>32) cls='small';
+                        text.setAttribute('class','arc-label '+cls);
+                        const textPath = document.createElementNS('http://www.w3.org/2000/svg','textPath');
+                        textPath.setAttributeNS('http://www.w3.org/1999/xlink','xlink:href','#'+pathId);
+                        textPath.setAttribute('startOffset','50%');
+                        textPath.setAttribute('text-anchor','middle');
+                        textPath.textContent = label.toUpperCase();
+                        text.appendChild(textPath);
+                        svg.appendChild(text);
+                    });
+                },
+                // === FIN DE LA MEJORA ===
+
                 openRoulette() {
                     if ({{ request.user.is_authenticated|yesno:'true,false' }}) {
                         this.isOpen = true;
@@ -300,10 +477,10 @@
 
                         const winningIndex = data.winning_index;
                         const segmentAngle = 360 / this.prizes.length;
-                        const targetAngle = 270;
+                        const targetAngle = 360; // El puntero está arriba, que es -90 o 270 grados
                         const centerOfSegment = (winningIndex * segmentAngle) + (segmentAngle / 2);
                         const rotationNeeded = (360 + targetAngle - centerOfSegment) % 360;
-                        const totalRotation = (360 * 5) + rotationNeeded;
+                        const totalRotation = (360 * 5) + rotationNeeded; // 5 vueltas completas + la final
 
                         const wheel = document.getElementById('roulette-wheel');
                         this.animateSpin(wheel, totalRotation, 5000, tickSynth, () => {
@@ -328,8 +505,9 @@
                         if (startTime === null) startTime = currentTime;
                         const timeElapsed = currentTime - startTime;
                         const progress = Math.min(timeElapsed / duration, 1);
-                        const easedProgress = 1 - Math.pow(1 - progress, 4); 
+                        const easedProgress = 1 - Math.pow(1 - progress, 4); // easeOutQuart
                         const currentRotation = startRotation + (targetRotation * easedProgress);
+                        this.currentRotation = currentRotation; // actualizar para que Alpine recalcule estilos de texto
                         element.style.transform = `rotate(${currentRotation}deg)`;
                         if (tickSynth) {
                             const currentTickInterval = minTickInterval + (maxTickInterval - minTickInterval) * easedProgress;

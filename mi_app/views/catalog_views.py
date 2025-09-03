@@ -109,6 +109,15 @@ def catalogo_publico(request):
     # Modo especial activado por banner (cualquier destino que fuerza vista estática):
     banner_mode_active = request.GET.get('solo_ofertas') == '1' or (categoria_slug == 'nueva_coleccion')
 
+    # Flag para mostrar título de banner solo si llegó desde click de banner
+    came_from_banner = bool(request.GET.get('banner') or request.GET.get('banner_id'))
+    mostrar_titulo_banner = False
+    if came_from_banner:
+        # Mostrar siempre si viene de banner y no se ha cambiado a otra categoría distinta del target.
+        # Permitimos 'nueva_coleccion' porque es el destino natural de modo nueva.
+        if not categoria_slug or categoria_slug == 'nueva_coleccion':
+            mostrar_titulo_banner = True
+
     context = {
         "productos": page_obj,
         "page_obj": page_obj,
@@ -123,6 +132,7 @@ def catalogo_publico(request):
     "has_grupo_banner": False,
         # Nuevo flag global para desactivar AJAX también en modos 'solo_ofertas' y 'nueva_coleccion'
         "banner_mode_active": banner_mode_active,
+        "mostrar_titulo_banner": mostrar_titulo_banner,
     }
     
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
