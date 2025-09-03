@@ -380,13 +380,14 @@ class TiradaRuleta(models.Model):
 # ... (código existente sin cambios)
     usuario = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, primary_key=True)
     ultima_tirada = models.DateTimeField()
+    attempts = models.PositiveIntegerField(default=0, help_text="Número total de intentos realizados (límite 3).")
 
     class Meta:
         verbose_name = "Tirada de Ruleta"
         verbose_name_plural = "Tiradas de Ruleta"
 
     def puede_jugar(self):
-        return timezone.now() > self.ultima_tirada + timedelta(hours=24)
+        return self.attempts < 3
 
     def __str__(self):
         return f"Última tirada de {self.usuario.username}: {self.ultima_tirada.strftime('%Y-%m-%d %H:%M')}"

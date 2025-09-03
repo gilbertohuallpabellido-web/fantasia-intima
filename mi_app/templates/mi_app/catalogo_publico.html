@@ -252,6 +252,18 @@ document.addEventListener('click', function(e){
       =================================
     -->
     <main class="flex-1">
+        {# Header contextual simplificado (SUBIDO encima del título) #}
+    <div id="banner-context-header" class="sticky z-40 bg-white/90 backdrop-blur border-b border-pink-200 shadow-sm px-4 sm:px-6 py-2 flex items-center gap-3 top-[82px] md:top-[84px]" style="top:82px;">
+            {% if banner and not producto_unico and mostrar_titulo_banner %}
+                <h3 class="text-base sm:text-lg font-extrabold font-brand" style="color: var(--brand-accent);">{{ banner.titulo }}</h3>
+            {% endif %}
+            <span id="matched-counter-pill" role="status" aria-live="polite" class="counter-pill text-xs sm:text-sm font-semibold inline-flex items-center gap-1 needs-urgency-eval{% if matched_count <= 8 %} pre-urgency{% endif %}" style="color: var(--brand-accent);" data-matched-count="{{ matched_count }}">
+                <i class="fas fa-box-open text-[var(--brand-accent)] text-xs"></i>
+                <span class="counter-label hidden sm:inline">Productos:</span>
+                <span class="counter-number">{{ matched_count }}</span>
+                <span class="urgency-msg ml-1 text-[9px] sm:text-[10px] font-bold tracking-wide uppercase hidden"></span>
+            </span>
+        </div>
         <div class="products-header flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
             <h2 id="products-heading" class="text-4xl font-brand" style="color: var(--brand-text);" tabindex="-1">Nuestros Productos</h2>
             <div class="flex items-center gap-4">
@@ -263,23 +275,7 @@ document.addEventListener('click', function(e){
                 </select>
             </div>
         </div>
-
-        {# Header contextual simplificado #}
-        <div class="w-full mb-6 -mt-4" id="banner-context-header">
-            <div class="rounded-2xl px-6 py-4 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" style="background-color: rgba(var(--brand-primary-rgb,249,168,212),0.25); border:1px solid rgba(var(--brand-primary-rgb,249,168,212),0.5);">
-                <div class="flex-1 flex items-center gap-3">
-                    {% if banner and not producto_unico and mostrar_titulo_banner %}
-                        <h3 class="text-xl font-extrabold font-brand mb-1" style="color: var(--brand-accent);">{{ banner.titulo }}</h3>
-                    {% endif %}
-                    <span id="matched-counter-pill" role="status" aria-live="polite" class="counter-pill text-sm font-semibold inline-flex items-center gap-1 needs-urgency-eval{% if matched_count <= 8 %} pre-urgency{% endif %}" style="color: var(--brand-accent);" data-matched-count="{{ matched_count }}">
-                        <i class="fas fa-box-open text-[var(--brand-accent)] text-xs"></i>
-                        <span class="counter-label hidden sm:inline">Productos:</span>
-                        <span class="counter-number">{{ matched_count }}</span>
-                        <span class="urgency-msg ml-1 text-[10px] font-bold tracking-wide uppercase hidden"></span>
-                    </span>
-                </div>
-            </div>
-        </div>
+            <!-- Offset dinámico eliminado: se quita espacio adicional superior -->
 
         <div id="product-list-section" aria-live="polite" aria-busy="false">
             <template id="list-skeleton">
@@ -664,22 +660,7 @@ document.addEventListener('DOMContentLoaded', function(){
     color: var(--brand-accent) !important;
 }
 </style>
-<script>
-// Auto-hide barra inferior (catálogo móvil) - se asegura una sola vez
-(function(){
-  if(window.__MOBILE_BAR_AUTOHIDE__) return; window.__MOBILE_BAR_AUTOHIDE__=true;
-  const bar=document.getElementById('mobile-action-bar');
-  if(!bar) return;
-  let lastY=window.scrollY;
-  window.addEventListener('scroll',()=>{
-    if(window.innerWidth>640) return;
-    const y=window.scrollY;
-    bar.classList.toggle('translate-y-full', y>lastY && y>120);
-    bar.classList.toggle('shadow-lg', y>10);
-    lastY=y;
-  }, {passive:true});
-})();
-</script>
+<!-- Script de auto-ocultado de la barra inferior móvil eliminado a solicitud: ahora siempre visible -->
 <script>
 // Función global para mensaje de urgencia SOLO móvil (revisada)
 window.updateUrgencyPill = function(count){

@@ -340,7 +340,7 @@
                 <button @click="spin()" :disabled="isSpinning || (hasPlayed && !isAdmin)" class="w-full text-white font-bold py-3 px-6 rounded-full text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed" :style="{ backgroundColor: 'var(--brand-accent)' }">
                     <span x-show="!isSpinning && !(hasPlayed && !isAdmin)">¡GIRAR AHORA!</span>
                     <span x-show="isSpinning"><i class="fas fa-spinner fa-spin mr-2"></i> Girando...</span>
-                    <span x-show="hasPlayed && !isAdmin">¡Vuelve mañana!</span>
+                    <span x-show="hasPlayed && !isAdmin">Intentos agotados</span>
                 </button>
                 <div aria-live="polite" class="sr-only" x-text="prizeResult ? 'Has ganado ' + (prizeResult.name || prizeResult.nombre) : ''"></div>
                 <div x-show="prizeResult" x-transition class="mt-6">
@@ -401,22 +401,26 @@
     {% if configuracion_ruleta.activa %}
     <script>
     (function(){
-    // Mostrar siempre mientras la ruleta esté activa (sin limitar por día)
+    // --- Identificador de usuario para aislar claves LS por cuenta ---
+    const USER_ID = '{% if request.user.is_authenticated %}u{{ request.user.id }}{% else %}anon{% endif %}';
+    function userKey(base){ return base + '::' + USER_ID; }
+    const IS_MOBILE = window.matchMedia('(max-width: 768px)').matches;
+    let userClosedToast = false;
+    const SESSION_SHOWN_KEY = userKey('rouletteToastShownSession');
+    // Control por intentos totales (máx 3) mientras la promo esté activa
+    const MAX_TOTAL_ATTEMPTS = 3;
+    function getTotalAttempts(){
+        try { return parseInt(localStorage.getItem(userKey('fiRouletteAttemptsTotal'))||'0',10)||0; } catch(e){ return 0; }
+    }
     function shouldShow(){
-        // Mostrar solo si no jugó hoy y no se mostró ya hoy
-        const lastPlay = localStorage.getItem('fantasiaIntimaLastRoulettePlay');
-        const today = new Date().toISOString().split('T')[0];
-        if(lastPlay === today) return false; // ya jugó hoy
-        const shownDate = localStorage.getItem('fiRouletteToastDate');
-        if(shownDate === today) return false; // ya mostrado hoy
+        if(getTotalAttempts() >= MAX_TOTAL_ATTEMPTS) return false;
+        if(sessionStorage.getItem(SESSION_SHOWN_KEY)==='1') return false;
         return true;
     }
         window.hideRoulettePromo = function(){
             const t = document.getElementById('roulette-promo-toast');
             if(!t) return;
-            t.classList.remove('show');
-            t.classList.add('hide');
-            setTimeout(()=>{ if(t && t.parentNode) t.remove(); }, 900);
+            userClosedToast = true; t.classList.remove('show'); t.classList.add('hide');
         }
         window.openRouletteFromPromo = function(){
             hideRoulettePromo();
@@ -438,11 +442,11 @@
             }, 50);
         }
         document.addEventListener('DOMContentLoaded', function(){
-            if(!shouldShow()) return;
             const t = document.getElementById('roulette-promo-toast');
             if(!t) return;
-            // retraso sutil
-            setTimeout(()=>{ t.classList.add('show'); localStorage.setItem('fiRouletteToastDate', new Date().toISOString().split('T')[0]); }, 1400);
+            if(shouldShow()){
+                setTimeout(()=>{ t.classList.add('show'); sessionStorage.setItem(SESSION_SHOWN_KEY,'1'); }, 650);
+            }
         });
     })();
     </script>
@@ -476,7 +480,7 @@
     let shownTotal = 0;
     let lastShowTime = 0;
     let lastActivity = Date.now();
-    const promoConfig = { cooldownMs: 30000, maxShows: 3 }; // 30s, máximo 3 en la secuencia
+    const promoConfig = { cooldownMs: 30000, maxShows: Infinity }; // 30s, ilimitado mientras permanezca
     const initialCartCount = {{ cart_count|default:0 }};
         function buildCard(type, prod){
             if(type==='contact'){
@@ -560,33 +564,48 @@
         }
         function canShow(){
             const now = Date.now();
-            if(shownTotal >= promoConfig.maxShows) return false;
+            if(shownTotal >= promoConfig.maxShows) return false; // Infinity => nunca corta por contador
             if(now - lastShowTime < promoConfig.cooldownMs) return false;
             return true;
         }
-        // Persistencia sesión (para no repetir al navegar):
-        const LS_KEY='fiPromoSessionV1';
+        // Persistencia sesión (version + reseteo diario)
+    // Clave por usuario para no bloquear nuevas cuentas con el histórico de otro
+    const USER_ID_PROMO = '{% if request.user.is_authenticated %}u{{ request.user.id }}{% else %}anon{% endif %}';
+    const LS_KEY_BASE='fiPromoSessionV2';
+    const LS_KEY=LS_KEY_BASE+'::'+USER_ID_PROMO;
+        const todayStr = new Date().toISOString().split('T')[0];
         function loadSession(){
-            try{ return JSON.parse(localStorage.getItem(LS_KEY))||{shown:{}, count:0,last:0}; }catch(e){ return {shown:{},count:0,last:0}; }
+            try{ const obj = JSON.parse(localStorage.getItem(LS_KEY)); if(!obj||obj.day!==todayStr){ return {day:todayStr, shown:{}, count:0,last:0}; } return obj; }catch(e){ return {day:todayStr,shown:{},count:0,last:0}; }
         }
         function saveSession(s){ try{ localStorage.setItem(LS_KEY, JSON.stringify(s)); }catch(e){} }
         let promoSession = loadSession();
-        function showPopup(kind, forcedType=null){
-            if(shownFlags[kind]) return; // ya en este ciclo
-            if(promoSession.shown[kind]) return; // ya mostrado en navegación previa
-            if(!canShow()) return;
+    const DEBUG_PROMO = true; if(DEBUG_PROMO) console.log('[PROMO] Session:', LS_KEY, promoSession, data);
+    // Helper para pruebas manuales
+    window.resetPromoSessionForUser = function(){ try{ localStorage.removeItem(LS_KEY); promoSession = loadSession(); console.log('[PROMO] reset hecho', LS_KEY, promoSession); }catch(e){} };
+        function showPopup(kind, forcedType=null, opts={}){
+            const ignoreCooldown = !!opts.ignoreCooldown;
+            const dontCount = !!opts.dontCount; // si true no suma al contador
+            // En modo infinito ignoramos persistencias previas: no early returns por shownFlags o session
+            if(!ignoreCooldown && !canShow()) { if(DEBUG_PROMO) console.log('[PROMO] cooldown'); return; }
             let type; let prod=null;
             if(forcedType==='contact'){
                 type='contact';
             } else {
-                prod = pickRandomProduct(); if(!prod) return;
-                type = prod === data.new_collection ? 'new' : (prod === data.offer ? 'offer' : 'offer');
+                prod = pickRandomProduct();
+                if(!prod){
+                    // Fallback a contacto si no hay data de productos
+                    type='contact';
+                    if(DEBUG_PROMO) console.warn('[PROMO] No hay producto disponible, usando contacto');
+                } else {
+                    type = prod === data.new_collection ? 'new' : (prod === data.offer ? 'offer' : 'offer');
+                }
             }
-            shownFlags[kind] = true; promoSession.shown[kind]=Date.now();
-            shownTotal++; promoSession.count = (promoSession.count||0)+1; lastShowTime = Date.now(); promoSession.last=lastShowTime; if(prod) lastProductId = prod.id;
-            saveSession(promoSession);
+            // No marcamos kind como bloqueado; sólo stats ligeras
+            if(!dontCount){ shownTotal++; }
+            lastShowTime = Date.now();
             const id='fi-popup-'+kind;
             root.insertAdjacentHTML('beforeend', popupTemplate(id, buildCard(type, prod)));
+            if(DEBUG_PROMO) console.log('[PROMO] mostrado', kind, type, prod);
             requestAnimationFrame(()=>{
                 const el=document.getElementById(id); if(!el) return; const pos = el.dataset.pos; const base = pos==='center' ? 'translate(-50%,-50%)' : 'translate(0,0)';
                 adjustForToast(el);
@@ -602,21 +621,49 @@
         // Secuencia (cada 30s): entry -> contact -> final, sólo los no mostrados previamente (persistencia LS)
         window.addEventListener('load', ()=>{
             const baseSeq=[{k:'entry', forced:null},{k:'contact', forced:'contact'},{k:'final', forced:null}];
-            // Filtrar los ya mostrados en sesiones previas
-            const sequence = baseSeq.filter(it=>!promoSession.shown[it.k]);
-            if(!sequence.length) return; // nada pendiente
-            let idx=0;
-            function next(){
-                if(idx>=sequence.length) return;
-                const item=sequence[idx];
-                showPopup(item.k, item.forced);
-                idx++;
-                if(idx<sequence.length){ setTimeout(next, promoConfig.cooldownMs); }
+            const LS_LAST_ABS='fiPromoLastShownAbs';
+            const LS_IDX='fiPromoSeqIdx';
+            const interval = promoConfig.cooldownMs; // 30000 ms
+            let seqIdx = parseInt(localStorage.getItem(LS_IDX)||'0',10) || 0;
+            function nextKind(){ const item = baseSeq[seqIdx % baseSeq.length]; seqIdx++; try{localStorage.setItem(LS_IDX, String(seqIdx));}catch(e){} return item; }
+            function doShow(){
+                const item = nextKind();
+                showPopup(item.k, item.forced, {ignoreCooldown:true});
+                try{ localStorage.setItem(LS_LAST_ABS, Date.now().toString()); }catch(e){}
+                schedule();
             }
-            setTimeout(next, 2000);
+            function schedule(){
+                const lastTs = parseInt(localStorage.getItem(LS_LAST_ABS)||'0',10);
+                const now = Date.now();
+                const elapsed = now - lastTs;
+                const remaining = lastTs ? Math.max(0, interval - elapsed) : 0; // si no existe, dispara inmediato
+                if(DEBUG_PROMO) console.log('[PROMO] schedule elapsed', elapsed, 'remaining', remaining);
+                clearTimeout(schedule._t);
+                schedule._t = setTimeout(doShow, remaining);
+            }
+            // Si nunca se mostró, simular que fue hace (interval) para disparar rápido tras breve gracia
+            if(!localStorage.getItem(LS_LAST_ABS)){
+                try{ localStorage.setItem(LS_LAST_ABS, (Date.now()-interval).toString()); }catch(e){}
+            }
+            // Pequeño retraso inicial suave (1s) para no irrumpir al milisegundo
+            setTimeout(schedule, 1000);
         });
         // Exit intent (desktop). Detectar mouse hacia top.
-    document.addEventListener('mouseleave', e=>{ if(e.clientY<=0) showPopup('exit'); });
+    // Exit intent (desktop): salida por borde superior
+    document.addEventListener('mouseleave', e=>{ if(e.clientY<=0) showPopup('exit', null, {ignoreCooldown:true}); });
+    // Cambio de pestaña / minimizar: si el usuario abandona rápido sin ver promos
+    let pageLeaveArmed = true;
+    document.addEventListener('visibilitychange', ()=>{
+        if(document.hidden){
+            if(pageLeaveArmed && !shownFlags.exit && !promoSession.shown.exit){
+                setTimeout(()=>{ if(document.hidden) showPopup('exit', null, {ignoreCooldown:true}); }, 250);
+            }
+        }
+    });
+    // pagehide (Safari / navegadores móviles)
+    window.addEventListener('pagehide', ()=>{
+        if(!shownFlags.exit && !promoSession.shown.exit){ showPopup('exit', null, {ignoreCooldown:true}); }
+    });
     // Eliminado popup intermedio e inactividad para no abrumar
         // Interceptar logout
     document.addEventListener('click', e=>{
@@ -670,13 +717,24 @@
                 whatsappBaseLink: "{{ configuracion_sitio.whatsapp_link|default:'' }}",
                 
                 init() {
-                    const lastPlayDate = localStorage.getItem('fantasiaIntimaLastRoulettePlay');
+                    // Límite 3 intentos por día (por usuario / dispositivo)
                     const today = new Date().toISOString().split('T')[0];
-                    if (lastPlayDate === today && !this.isAdmin) {
-                        this.hasPlayed = true;
-                    }
+                    const USER_ID = '{% if request.user.is_authenticated %}u{{ request.user.id }}{% else %}anon{% endif %}';
+                    const KEY = 'fiRouletteAttempts::'+USER_ID+'::'+today;
+                    const raw = localStorage.getItem(KEY);
+                    let attempts = parseInt(raw||'0',10); if(isNaN(attempts)) attempts=0;
+                    this._attemptKey = KEY;
+                    this.attempts = attempts;
+                    this.maxAttempts = 3;
+                    if(this.attempts >= this.maxAttempts && !this.isAdmin){ this.hasPlayed = true; }
                     // Iniciar rotación de frases mientras no esté abierta la modal
                     this.cycleTaglines();
+                },
+                registerAttempt(){
+                    if(this.isAdmin) return; // admins ilimitado
+                    this.attempts = Math.min(this.attempts+1, this.maxAttempts);
+                    try{ localStorage.setItem(this._attemptKey, String(this.attempts)); }catch(e){}
+                    if(this.attempts >= this.maxAttempts){ this.hasPlayed = true; }
                 },
                 cycleTaglines(){
                     if(this.taglines.length===0) return;
@@ -799,6 +857,17 @@
                 },
                 // === FIN DE LA MEJORA ===
 
+                getTotalAttemptsGlobal(){
+                    try { return parseInt(localStorage.getItem('fiRouletteAttemptsTotal::' + ('{% if request.user.is_authenticated %}u{{ request.user.id }}{% else %}anon{% endif %}'))||'0',10)||0; } catch(e){ return 0; }
+                },
+                incTotalAttempts(){
+                    const key = 'fiRouletteAttemptsTotal::' + ('{% if request.user.is_authenticated %}u{{ request.user.id }}{% else %}anon{% endif %}');
+                    let val = this.getTotalAttemptsGlobal();
+                    val = Math.min(val+1, 999);
+                    try { localStorage.setItem(key, String(val)); }catch(e){}
+                    return val;
+                },
+                attemptsRemaining(){ return Math.max(this.maxAttempts - this.attempts, 0); },
                 openRoulette() {
                     if ({{ request.user.is_authenticated|yesno:'true,false' }}) {
                         this.isOpen = true;
@@ -809,6 +878,10 @@
 
                 async spin() {
                     if (this.isSpinning || (this.hasPlayed && !this.isAdmin)) return;
+                    // Registrar intento inmediatamente
+                    this.registerAttempt();
+                    this.incTotalAttempts();
+                    if(this.attempts >= this.maxAttempts && !this.isAdmin){ this.hasPlayed = true; }
                     if (this.prizes.length === 0) {
                         this.message = 'No hay premios disponibles.';
                         return;
@@ -816,7 +889,8 @@
 
                     this.isSpinning = true;
                     this.prizeResult = null;
-                    this.message = '¡Mucha suerte!';
+                    const rem = this.attemptsRemaining();
+                    this.message = rem>0 ? `¡Mucha suerte! (Te quedarán ${rem} intento${rem===1?'':'s'})` : 'Último intento, ¡aprovéchalo!';
 
                     try { await Tone.start(); } catch (e) { console.warn("No se pudo iniciar AudioContext:", e); }
 
@@ -913,11 +987,13 @@
                     const bigWin = document.getElementById('big-win-text');
                     bigWin.classList.add('show');
                     setTimeout(() => bigWin.classList.remove('show'), 2500);
-                    this.message = '¡Felicidades!';
-                    if (!this.isAdmin) {
+                    const rem = typeof data.remaining === 'number' ? data.remaining : 0;
+                    if(rem>0){
+                        this.message = `¡Felicidades! Te quedan ${rem} intento${rem===1?'':'s'}.`;
+                        this.hasPlayed = false;
+                    } else {
+                        this.message = '¡Felicidades! Se acabaron tus intentos.';
                         this.hasPlayed = true;
-                        const today = new Date().toISOString().split('T')[0];
-                        localStorage.setItem('fantasiaIntimaLastRoulettePlay', today);
                     }
                 }
             }
@@ -942,6 +1018,7 @@
         setTimeout(pulse, 2500);
     });
     </script>
+    <!-- Script de padding-top dinámico removido: se elimina espacio en blanco superior en catálogo -->
 
 </body>
 </html>

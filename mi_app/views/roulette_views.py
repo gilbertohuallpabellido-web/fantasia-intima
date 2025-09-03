@@ -19,10 +19,10 @@ def spin_roulette(request):
             if not last_spin.puede_jugar():
                 return JsonResponse({
                     'success': False,
-                    'error': '¡Ya has probado tu suerte hoy! Vuelve a intentarlo mañana.'
+                    'error': 'Has alcanzado el límite de intentos (3).' 
                 }, status=403)
         except TiradaRuleta.DoesNotExist:
-            pass
+            last_spin = None
 
     try:
         config_ruleta = ConfiguracionRuleta.get_solo()
@@ -44,10 +44,12 @@ def spin_roulette(request):
     )
 
     if not user.is_superuser:
-        TiradaRuleta.objects.update_or_create(
-            usuario=user,
-            defaults={'ultima_tirada': now}
-        )
+        if last_spin:
+            last_spin.attempts = min(last_spin.attempts + 1, 3)
+            last_spin.ultima_tirada = now
+            last_spin.save(update_fields=['attempts','ultima_tirada'])
+        else:
+            last_spin = TiradaRuleta.objects.create(usuario=user, ultima_tirada=now, attempts=1)
 
     response_data = {
         'success': True,
@@ -58,7 +60,8 @@ def spin_roulette(request):
             'coupon_code': cupon.codigo,
         },
         # Índice según el orden usado aquí (order_by('id')[:8])
-        'winning_index': winning_index
+    'winning_index': winning_index,
+    'remaining': (0 if user.is_superuser else max(0, 3 - (last_spin.attempts)))
     }
     
     return JsonResponse(response_data)
