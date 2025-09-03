@@ -170,7 +170,7 @@ document.addEventListener('click', function(e){
                 <a 
                     href="{% url 'catalogo_publico' %}#product-list-section"
                     class="js-category-link block px-3 py-2 rounded-lg text-lg font-bold shadow-sm transition-all hover:underline"
-                    style="color: var(--brand-accent); {% if not filtros_activos.categoria %}background-color: rgba(var(--brand-primary-rgb), 0.2); border: 1px solid var(--brand-primary);{% endif %}"
+                    style="color: var(--brand-accent); {% if not filtros_activos.categoria %}background-color: rgba(var(--brand-primary), 0.2); border: 1px solid var(--brand-primary);{% endif %}"
                     data-filter="categoria" data-value="" onclick="handleFilterClick(event)">
                     Todos
                 </a>
@@ -180,7 +180,7 @@ document.addEventListener('click', function(e){
                     <a 
                         href="?categoria={{ cat.slug }}#product-list-section"
                         class="js-category-link block px-3 py-2 rounded-lg text-lg font-bold shadow-sm transition-all hover:underline"
-                        style="color: var(--brand-accent); {% if filtros_activos.categoria == cat.slug %}background-color: rgba(var(--brand-primary-rgb), 0.2); border: 1px solid var(--brand-primary);{% endif %}"
+                        style="color: var(--brand-accent); {% if filtros_activos.categoria == cat.slug %}background-color: rgba(var(--brand-primary), 0.2); border: 1px solid var(--brand-primary);{% endif %}"
                         data-filter="categoria" data-value="{{ cat.slug }}" onclick="handleFilterClick(event)">
                         {{ cat.nombre }}
                     </a>
@@ -192,7 +192,7 @@ document.addEventListener('click', function(e){
                                     <a 
                                         href="?categoria={{ subcat.slug }}#product-list-section"
                                         class="js-category-link block px-2 py-1 rounded text-base transition-all"
-                                        style="color: var(--brand-text); {% if filtros_activos.categoria == subcat.slug %}background-color: rgba(var(--brand-primary-rgb), 0.2); color: var(--brand-accent); font-weight: 600;{% endif %}"
+                                        style="color: var(--brand-text); {% if filtros_activos.categoria == subcat.slug %}background-color: rgba(var(--brand-primary), 0.2); color: var(--brand-accent); font-weight: 600;{% endif %}"
                                         data-filter="categoria" data-value="{{ subcat.slug }}" onclick="handleFilterClick(event)">
                                         {{ subcat.nombre }}
                                     </a>
@@ -225,7 +225,7 @@ document.addEventListener('click', function(e){
       =================================
     -->
     <main class="flex-1">
-        <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+        <div class="products-header flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
             <h2 id="products-heading" class="text-4xl font-brand" style="color: var(--brand-text);" tabindex="-1">Nuestros Productos</h2>
             <div class="flex items-center gap-4">
                 <label for="sort-by" class="font-semibold whitespace-nowrap">Ordenar por:</label>
@@ -682,4 +682,20 @@ function updateMobileProductsCounter(){ const c=document.getElementById('mobile-
     color: var(--brand-accent) !important;
 }
 </style>
+<script>
+// Auto-hide barra inferior (catálogo móvil) - se asegura una sola vez
+(function(){
+  if(window.__MOBILE_BAR_AUTOHIDE__) return; window.__MOBILE_BAR_AUTOHIDE__=true;
+  const bar=document.getElementById('mobile-action-bar');
+  if(!bar) return;
+  let lastY=window.scrollY;
+  window.addEventListener('scroll',()=>{
+    if(window.innerWidth>640) return;
+    const y=window.scrollY;
+    bar.classList.toggle('translate-y-full', y>lastY && y>120);
+    bar.classList.toggle('shadow-lg', y>10);
+    lastY=y;
+  }, {passive:true});
+})();
+</script>
 {% endblock extra_js %}

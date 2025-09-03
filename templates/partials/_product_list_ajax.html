@@ -23,7 +23,7 @@ La vista 'catalogo_publico' pasa el contexto necesario ('productos', 'page_obj',
                     <!-- Imagen del Producto -->
                     <div class="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-t-lg">
                         {% if producto.imagen_principal %}
-                            <img src="{{ producto.imagen_principal.url }}" alt="{{ producto.nombre }}" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300">
+                            <img src="{{ producto.imagen_principal.url }}" alt="{{ producto.nombre }}" loading="lazy" decoding="async" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300">
                         {% else %}
                             <div class="w-full h-full bg-gray-200 flex items-center justify-center">
                                 <i class="fas fa-image text-gray-400 text-4xl"></i>
@@ -87,7 +87,7 @@ La vista 'catalogo_publico' pasa el contexto necesario ('productos', 'page_obj',
 
 <!-- Paginación -->
 {% if page_obj.paginator.num_pages > 1 %}
-<nav class="mt-12 flex items-center justify-between border-t border-gray-200 px-4 sm:px-0">
+<nav class="mt-12 flex items-center justify-between border-t border-gray-200 px-4 sm:px-0" aria-label="Paginación">
     <!-- Botón Anterior -->
     <div class="-mt-px flex w-0 flex-1">
         {% if page_obj.has_previous %}
@@ -125,3 +125,19 @@ La vista 'catalogo_publico' pasa el contexto necesario ('productos', 'page_obj',
     </div>
 </nav>
 {% endif %}
+
+<script>
+// Auto-hide barra inferior tras actualizar lista (en móvil)
+(function(){
+  const bar = document.getElementById('mobile-action-bar');
+  if(!bar) return;
+  let lastY = window.scrollY;
+  window.addEventListener('scroll',()=>{
+    const y = window.scrollY;
+    if(window.innerWidth>640) return;
+    bar.classList.toggle('translate-y-full', y>lastY && y>120);
+    bar.classList.toggle('shadow-lg', y>10);
+    lastY = y;
+  }, { passive:true });
+})();
+</script>
