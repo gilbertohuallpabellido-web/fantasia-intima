@@ -91,7 +91,19 @@ def catalogo_publico(request):
 
     # 2. Aplicar filtros (Lógica unificada y corregida)
     categoria_slug = request.GET.get("categoria")
-    if categoria_slug:
+    producto_unico_id = request.GET.get('producto')
+    productos_multi = request.GET.get('productos')  # coma separada
+    if productos_multi:
+        ids = [p for p in productos_multi.split(',') if p.isdigit()]
+        if ids:
+            productos_list = productos_list.filter(pk__in=ids)
+            print(f"DEBUG_PRODUCTOS_MULTI: filtrando ids={ids}")
+    elif producto_unico_id:
+        if producto_unico_id.isdigit():
+            productos_list = productos_list.filter(pk=int(producto_unico_id))
+            print(f"DEBUG_PRODUCTO_UNICO: filtrando producto id={producto_unico_id}")
+        # Si se pasa producto, ignoramos el resto de filtros de categoría
+    elif categoria_slug:
         if categoria_slug == "nueva_coleccion":
             productos_list = productos_list.filter(es_nueva_coleccion=True)
         else:
@@ -123,7 +135,22 @@ def catalogo_publico(request):
     # if color:
     #     productos_list = productos_list.filter(variantes__color__iexact=color)
 
-    # 3. Aplicar orden
+    # 3. Filtro solo_ofertas (checkbox es_oferta)
+    if request.GET.get('solo_ofertas') == '1':
+        try:
+            marcados = list(Producto.objects.filter(es_oferta=True).values_list('id', flat=True))
+            print(f"DEBUG_OFERTAS2: ids_marcados={marcados}")
+        except Exception as e:
+            print(f"DEBUG_OFERTAS2 error listando marcados: {e}")
+        antes = productos_list.count()
+        productos_list = productos_list.filter(es_oferta=True)
+        try:
+            ids_res = list(productos_list.values_list('id', flat=True))
+            print(f"SOLO_OFERTAS2 FILTRO: antes={antes} despues={len(ids_res)} ids={ids_res}")
+        except Exception:
+            pass
+
+    # 4. Aplicar orden
     orden = request.GET.get("orden")
     if orden == "price-asc":
         productos_list = productos_list.order_by("precio_efectivo")
@@ -134,17 +161,22 @@ def catalogo_publico(request):
 
     productos_list = productos_list.distinct()
 
-    # 4. Paginación
+    # 5. Paginación (calculamos coincidencias antes)
+    matched_count = productos_list.count()
     paginator = Paginator(productos_list, 12)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    # 5. Contexto (limpio, asume que context_processors provee 'categorias_menu')
+    # 6. Contexto (añadimos flags banner)
     context = {
         "productos": page_obj,
         "page_obj": page_obj,
         "banner": Banner.objects.filter(activo=True).first(),
         "filtros_activos": request.GET,
+        "solo_ofertas": request.GET.get('solo_ofertas') == '1',
+    "producto_unico": bool(producto_unico_id) and not productos_multi,
+    "productos_multi": productos_multi,
+        "matched_count": matched_count,
     }
     
     if request.headers.get('x-requested-with') == 'fetch':

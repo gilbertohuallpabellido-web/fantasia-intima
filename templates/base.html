@@ -116,6 +116,9 @@
   width: 100%;
 }
 
+    /* Oculta la barra de migas (que generaba una franja blanca) en páginas con hero/banner como el catálogo */
+    body.catalog-page .breadcrumbs-bar { display: none; }
+
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -124,8 +127,8 @@
     <!-- Encabezado y Menú Móvil -->
     {% include 'partials/_header.html' %}
 
-    <!-- Migas de Pan -->
-    <div class="bg-white/50 border-b border-gray-200">
+    <!-- Migas de Pan (ocultas en páginas tipo catálogo mediante body_class) -->
+    <div class="breadcrumbs-bar bg-white/50 border-b border-gray-200">
         <div class="container mx-auto px-4 sm:px-8 py-3">
             {% block breadcrumbs %}{% endblock %}
         </div>
@@ -143,7 +146,7 @@
     <!-- Ruleta de la Suerte -->
     {% if configuracion_ruleta.activa %}
     <div x-data="rouletteGame()" x-init="init()" class="relative z-50">
-    <button @click="openRoulette()" class="fixed bottom-6 right-20 z-50 bg-gradient-to-r from-pink-500 to-rose-500 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center transform hover:scale-110 transition-transform">
+    <button @click="openRoulette()" class="fixed bottom-6 right-20 z-50 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center transform hover:scale-110 transition-transform" style="background-color: var(--brand-accent);">
             <i class="fas fa-gift text-2xl"></i>
         </button>
 
@@ -153,14 +156,14 @@
                 <h2 class="text-3xl font-brand text-[--brand-brown] mb-2" x-text="config.titulo || 'Gira la Ruleta'"></h2>
                 <p class="text-gray-500 mb-6" x-text="message"></p>
                 <div class="relative w-64 h-64 mx-auto mb-6">
-                    <div id="roulette-wheel" class="absolute w-full h-full rounded-full border-8 border-pink-200" :style="{ background: wheelStyle }">
+                    <div id="roulette-wheel" class="absolute w-full h-full rounded-full border-8" style="border-color: rgba(var(--brand-primary-rgb, 249,168,212),0.6);" :style="{ background: wheelStyle }">
                         <template x-for="(prize, index) in prizes" :key="index">
                             <div class="prize-text" :style="`transform: rotate(${index * (360 / prizes.length) + ((360 / prizes.length) / 2)}deg) translate(75px, -50%) rotate(-90deg);`">
                                 <span x-text="prize.nombre"></span>
                             </div>
                         </template>
                     </div>
-                    <div class="absolute top-[-10px] left-1/2 -translate-x-1/2 text-4xl text-pink-600">▼</div>
+                    <div class="absolute top-[-10px] left-1/2 -translate-x-1/2 text-4xl" style="color: var(--brand-accent);">▼</div>
                 </div>
                 <button @click="spin()" :disabled="isSpinning || (hasPlayed && !isAdmin)" class="w-full text-white font-bold py-3 px-6 rounded-full text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed" :style="{ backgroundColor: 'var(--brand-accent)' }">
                     <span x-show="!isSpinning && !(hasPlayed && !isAdmin)">¡GIRAR AHORA!</span>

@@ -2,11 +2,15 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
-import dotenv
+try:
+    import dotenv
+except ImportError:  # fallback silencioso si no está instalado
+    dotenv = None
 
 def main():
     """Run administrative tasks."""
-    dotenv.load_dotenv()
+    if dotenv:
+        dotenv.load_dotenv()
     # === INICIO DE LA MEJORA: Apuntamos al cerebro correcto ===
     # Le decimos a Django que SIEMPRE use la configuración de 'mi_proyecto'.
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mi_proyecto.settings')

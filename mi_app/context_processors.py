@@ -63,41 +63,41 @@ def common_context(request):
 
 
 def banners_context(request):
-    """Devuelve una lista de banners activos ya resueltos a una URL destino.
-
-    Prioridad de destino por cada banner:
-      1) Primer producto en `productos_destacados` con stock (usa la vista `producto_detalle`)
-      2) Si no hay producto disponible, usa `banner.enlace` si está presente
-      3) Si no hay destino válido, se omite el banner
-    """
+    """Devuelve banners activos con URL según modo_destino (simplificado)."""
     banners_out = []
-    # No usamos fechas en el modelo actual; solo consideramos `activo=True`
     now = timezone.now()
     for b in Banner.objects.filter(activo=True).order_by('id'):
-        # respetar rango de fechas si están definidos
         if getattr(b, 'fecha_inicio', None) and b.fecha_inicio and b.fecha_inicio > now:
             continue
         if getattr(b, 'fecha_fin', None) and b.fecha_fin and b.fecha_fin < now:
             continue
         destino = None
-        # Prioridad: producto con stock
-        try:
-            productos = list(b.productos_destacados.all())
-        except Exception:
-            productos = []
-
-        # Si hay varios productos destacados válidos, construimos una URL al catálogo
-        valid_product_ids = [str(p.pk) for p in productos if getattr(p, 'total_stock', 0) > 0]
-        if len(valid_product_ids) == 1:
-            destino = reverse('producto_detalle', args=[int(valid_product_ids[0])])
-        elif len(valid_product_ids) > 1:
-            # redirige al catálogo con filtro por lista de productos
-            destino = f"{reverse('catalogo_publico')}?productos={','.join(valid_product_ids)}"
-
-        # Siguiente prioridad: enlace directo
-        if not destino and getattr(b, 'enlace', None):
+        modo = getattr(b, 'modo_destino', 'nueva')
+        if modo == 'nueva':
+            destino = f"{reverse('catalogo_publico')}?categoria=nueva_coleccion#product-list-section"
+        elif modo == 'ofertas':
+            destino = f"{reverse('catalogo_publico')}?solo_ofertas=1#product-list-section"
+        elif modo == 'producto':
+            # Soporte: si hay múltiples seleccionados usamos ?productos=1,2,3
+            ids_multi = []
+            try:
+                ids_multi = list(b.productos_destacados.values_list('pk', flat=True)) if hasattr(b, 'productos_destacados') else []
+            except Exception:
+                ids_multi = []
+            if ids_multi:
+                if len(ids_multi) == 1:
+                    # Uno solo -> detalle
+                    destino = reverse('producto_detalle', args=[ids_multi[0]])
+                else:
+                    cadena = ','.join(str(i) for i in ids_multi)
+                    destino = f"{reverse('catalogo_publico')}?productos={cadena}#product-list-section"
+        elif modo == 'enlace' and getattr(b, 'enlace', None):
             destino = b.enlace
-
+        # Debug simple después de resolver destino
+        try:
+            print(f"BANNER_CTX: banner={b.pk} modo={modo} destino={destino}")
+        except Exception:
+            pass
         if destino:
             banners_out.append({
                 'titulo': getattr(b, 'titulo', ''),
@@ -107,5 +107,4 @@ def banners_context(request):
                 'texto_boton': getattr(b, 'texto_boton', 'Ver ahora'),
                 'fecha_fin': getattr(b, 'fecha_fin', None),
             })
-
     return {'banners_activos': banners_out}

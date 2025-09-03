@@ -7,14 +7,44 @@
 
 {% block content %}
 
+<script>
+    // Flag del servidor que indica que la vista fue cargada desde un banner
+    // Flag inicial enviado por el servidor: incluye productos=, solo_ofertas=1 o categoria=nueva_coleccion
+    window.BANNER_FILTERED = {{ banner_mode_active|yesno:'true,false' }};
+// -------------------------------------------------------------
+// MODO FILTRO POR BANNER (productos=): desactivar AJAX y paginación dinámica
+// -------------------------------------------------------------
+(function(){
+    if(window.BANNER_FILTERED) return; // ya establecido desde el servidor
+    const params = new URLSearchParams(window.location.search);
+    if(params.get('productos') || params.get('solo_ofertas') === '1' || params.get('categoria') === 'nueva_coleccion'){
+        window.BANNER_FILTERED = true;
+        document.addEventListener('DOMContentLoaded', ()=>{ document.body.classList.add('banner-filtered-mode'); });
+    }
+})();
+</script>
+
+<script>
+// Forzar navegación completa en banner (por si algún handler global intercepta)
+document.addEventListener('click', function(e){
+    const a = e.target.closest && e.target.closest('a.banner-cta');
+    if(!a) return;
+    const href = a.getAttribute('href')||'';
+    if(href.includes('solo_ofertas=1')){
+        // desactivar cualquier bandera ajax y hacer location directa
+        window.BANNER_FILTERED = true;
+        window.location.href = href.replace('#product-list-section','')+ '#product-list-section';
+        e.preventDefault();
+    }
+});
+</script>
+
 <!-- 
  =======================================================================
  HERO BANNER
  =======================================================================
 -->
-{# Usamos banners_activos provistos por el context_processor. Si hay al menos
-   uno, mostramos el primero (puedes cambiar a carousel más adelante). Si no,
-   dejamos el hero por defecto intacto. #}
+{# Hero dinámico: se muestra el primer banner activo; si no hay, hero por defecto. #}
 {% if banners_activos and banners_activos|length > 0 %}
     {% with b=banners_activos.0 %}
     <section 
@@ -30,13 +60,17 @@
             {% endif %}
             <a 
                 href="{{ b.destino_url|default:'#product-list-section' }}" 
-                class="mt-6 inline-block text-white font-bold py-3 px-8 rounded-full text-lg hover:bg-opacity-90 transform hover:scale-105 transition-all"
+                class="banner-cta mt-6 inline-block text-white font-bold py-3 px-8 rounded-full text-lg hover:bg-opacity-90 transform hover:scale-105 transition-all"
                 style="background-color: var(--brand-accent);">
                 {{ b.texto_boton }}
             </a>
             {% if b.fecha_fin %}
                 <div class="mt-4">
-                    <div class="countdown text-sm font-semibold" data-fecha-fin="{{ b.fecha_fin|date:'c' }}"></div>
+                        <div class="countdown-badge inline-flex items-center gap-3" aria-live="polite">
+                            <span class="countdown-label text-xs uppercase tracking-wide" style="background-color: var(--brand-accent); color: #fff; padding:4px 8px; border-radius:6px;">Tiempo restante</span>
+                            <div class="countdown text-xl font-extrabold px-3 py-1 rounded-lg" style="background-color: #fff; color: var(--brand-accent);" data-fecha-fin="{{ b.fecha_fin|date:'c' }}"></div>
+                        </div>
+                        <p class="countdown-message mt-2 text-sm font-semibold" style="display:none; color: #fff;">Apresúrate, la oferta termina pronto.</p>
                 </div>
             {% endif %}
         </div>
@@ -66,6 +100,8 @@
  =======================================================================
 -->
 <div class="container mx-auto px-4 flex flex-col lg:flex-row gap-8 mt-8">
+
+    {# Header contextual movido dentro del main para no desplazar el sidebar #}
 
     <!-- 
       =================================
@@ -149,6 +185,32 @@
             </div>
         </div>
 
+        {% if banner and not producto_unico %}
+            {% if productos_multi or solo_ofertas or banner.modo_destino == 'nueva' %}
+                <div class="w-full mb-6 -mt-4" id="banner-context-header">
+                    <div class="rounded-2xl px-6 py-4 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" style="background-color: rgba(var(--brand-primary-rgb,249,168,212),0.25); border:1px solid rgba(var(--brand-primary-rgb,249,168,212),0.5);">
+                        <div>
+                            <h3 class="text-xl font-extrabold font-brand" style="color: var(--brand-accent);">{{ banner.titulo }}</h3>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-semibold px-3 py-1 rounded-full bg-white shadow" style="color: var(--brand-accent);">Productos: {{ matched_count }}</span>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% elif filtros_activos.categoria == 'nueva_coleccion' %}
+            <div class="w-full mb-6 -mt-4" id="banner-context-header">
+                <div class="rounded-2xl px-6 py-4 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" style="background-color: rgba(var(--brand-primary-rgb,249,168,212),0.25); border:1px solid rgba(var(--brand-primary-rgb,249,168,212),0.5);">
+                    <div>
+                        <h3 class="text-xl font-extrabold font-brand" style="color: var(--brand-accent);">Nueva Colección</h3>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-semibold px-3 py-1 rounded-full bg-white shadow" style="color: var(--brand-accent);">Productos: {{ matched_count }}</span>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
         <div id="product-list-section" aria-live="polite">
             {% include 'partials/_product_list_ajax.html' %}
         </div>
@@ -162,33 +224,86 @@
 <script>
 // Countdown simple para banners
 document.addEventListener('DOMContentLoaded', function(){
+    // Contador con segundos y animación simple
     document.querySelectorAll('.countdown[data-fecha-fin]').forEach(function(el){
         const end = new Date(el.getAttribute('data-fecha-fin'));
+        const parent = el.closest('.countdown-badge');
+        const message = parent ? parent.querySelector('.countdown-message') : null;
+
+        function fmt(n){ return String(n).padStart(2,'0'); }
+
         function tick(){
-            const diff = end - new Date();
-            if(diff <= 0){ el.textContent = '¡Oferta terminada!'; return; }
-            const days = Math.floor(diff / (1000*60*60*24));
-            const hours = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
-            const minutes = Math.floor((diff % (1000*60*60)) / (1000*60));
-            el.textContent = `${days}d ${hours}h ${minutes}m`;
-            setTimeout(tick, 1000*30);
+            const now = new Date();
+            const diff = end - now;
+            if(diff <= 0){
+                el.textContent = '00:00:00';
+                if(message) message.textContent = '¡Oferta terminada!';
+                if(parent) parent.classList.add('opacity-50');
+                return;
+            }
+
+            const totalSeconds = Math.floor(diff / 1000);
+            const days = Math.floor(totalSeconds / 86400);
+            const hours = Math.floor((totalSeconds % 86400) / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+
+            // Formato preferible: si hay días mostramos D HH:MM:SS, si no HH:MM:SS
+            const timeStr = (days > 0) ? `${days}d ${fmt(hours)}:${fmt(minutes)}:${fmt(seconds)}` : `${fmt(hours)}:${fmt(minutes)}:${fmt(seconds)}`;
+            el.textContent = timeStr;
+
+            // Mostrar mensaje de urgencia cuando falten < 5 minutos
+            if(message){
+                if(totalSeconds <= 300){
+                    message.style.display = 'block';
+                    message.textContent = 'Apresúrate, la oferta termina pronto.';
+                    // simple pulso para urgencia
+                    el.classList.add('pulse-urgent');
+                } else {
+                    message.style.display = 'none';
+                    el.classList.remove('pulse-urgent');
+                }
+            }
+
+            // update every 1s
+            setTimeout(tick, 1000);
         }
         tick();
     });
+
+    // estilos dinámicos mínimos para el pulso (inserción directa por facilidad)
+    const style = document.createElement('style');
+    style.textContent = `
+    .pulse-urgent{ animation: pulse 1s infinite; }
+    @keyframes pulse{ 0%{ transform: scale(1); } 50%{ transform: scale(1.05); } 100%{ transform: scale(1); } }
+    .countdown-badge{ transition: transform .2s ease, opacity .2s ease; }
+    `;
+    document.head.appendChild(style);
 });
+
+// (Eliminado soporte de enlaces con ?productos= del banner)
 
     let productListContainer;
     let skeleton;
 
     async function updateProducts(url, formButton = null) {
+        // Desactivar completamente cuando estamos en modo banner filtrado
+        if(window.BANNER_FILTERED){
+            console.debug('updateProducts abortado: modo banner filtrado activo');
+            return; // no hacer nada; mantenemos render del servidor
+        }
+
         if (!productListContainer || !skeleton) {
             productListContainer = document.getElementById('product-list-section');
             skeleton = document.getElementById('list-skeleton');
         }
-        
-        const skeletonHTML = skeleton.outerHTML;
-        productListContainer.innerHTML = skeletonHTML;
-        productListContainer.querySelector('#list-skeleton').classList.remove('hidden');
+
+        if(skeleton){
+            const skeletonHTML = skeleton.outerHTML;
+            productListContainer.innerHTML = skeletonHTML;
+            const sk = productListContainer.querySelector('#list-skeleton');
+            if(sk){ sk.classList.remove('hidden'); }
+        }
 
         // === INICIO DE LA MEJORA: Feedback visual en el botón ===
         if (formButton) {
@@ -253,6 +368,10 @@ document.addEventListener('DOMContentLoaded', function(){
     document.addEventListener('DOMContentLoaded', () => {
         productListContainer = document.getElementById('product-list-section');
         skeleton = document.getElementById('list-skeleton');
+        if (window.BANNER_FILTERED) {
+            console.debug('Banner-filtered mode: no se inicializan handlers AJAX');
+            return; // abortar inicialización
+        }
         
         const sortBySelect = document.getElementById('sort-by');
         const priceForm = document.getElementById('price-form');

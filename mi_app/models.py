@@ -8,6 +8,8 @@ from django.utils import timezone
 from datetime import timedelta
 import random
 import string
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 # === INICIO DE LA MEJORA: Importamos la herramienta de Cloudinary ===
 from cloudinary.models import CloudinaryField
 # === FIN DE LA MEJORA ===
@@ -70,8 +72,10 @@ class Producto(models.Model):
         blank=True, 
         help_text="Opcional: Si este precio está fijado, se mostrará como una oferta (con el precio original tachado)."
     )
+    es_oferta = models.BooleanField(default=False, help_text="Márcalo para incluir este producto en el filtro 'Solo ofertas' aunque no tenga precio_oferta menor. Si hay precio_oferta menor que precio, se mostrará el % de descuento.")
     imagen_principal = models.ImageField(upload_to='productos/', blank=True, null=True)
     es_nueva_coleccion = models.BooleanField(default=False, verbose_name="¿Es de la Nueva Colección?")
+    # Campo eliminado: en_grupo_banner (ya no se usa grupo de productos del banner)
     
     @property
     def categoria_padre(self):
@@ -210,18 +214,33 @@ class ConfiguracionSitio(SingletonModel):
 
 
 class Banner(models.Model):
-# ... (código existente sin cambios)
+    # Simplificado: se elimina productos_destacados (ya no se seleccionan varios productos)
     titulo = models.CharField(max_length=100, help_text="Ej: ¡Ofertas de Fin de Semana!")
     subtitulo = models.CharField(max_length=200, blank=True, help_text="Ej: Hasta 50% en productos seleccionados")
     imagen = models.ImageField(upload_to='banners/', help_text="Imagen de fondo (1200x400px recomendado)")
     
-    productos_destacados = models.ManyToManyField(Producto, blank=True, related_name="banners")
-    enlace = models.URLField(blank=True, help_text="URL a la que dirigirá el botón si NO hay productos destacados.")
+    enlace = models.URLField(blank=True, help_text="URL a la que dirigirá el botón si el modo es 'Enlace'.")
     texto_boton = models.CharField(max_length=50, default="Ver ahora")
     activo = models.BooleanField(default=False, help_text="Marca esta casilla para que este banner se muestre en la página principal.")
     # Opcional: activar banner por rango de fechas (si se usan, el banner solo aparece dentro del rango)
     fecha_inicio = models.DateTimeField(blank=True, null=True, help_text="Opcional: fecha/hora de inicio para mostrar el banner")
     fecha_fin = models.DateTimeField(blank=True, null=True, help_text="Opcional: fecha/hora de fin para mostrar el banner")
+    MODO_OPCIONES = [
+        ('nueva', 'Nueva Colección'),
+        ('ofertas', 'Productos en Oferta'),
+        ('producto', 'Producto Individual'),
+        ('enlace', 'Enlace Personalizado'),
+    ]
+    modo_destino = models.CharField(max_length=20, choices=MODO_OPCIONES, default='nueva', help_text="Qué mostrará el botón del banner.")
+    productos_destacados = models.ManyToManyField(
+        'Producto',
+        blank=True,
+        related_name='banners_productos',
+        help_text="Selecciona uno o varios productos para este banner si el modo es 'Producto Individual'. Si seleccionas solo uno se irá directo al detalle; si son varios, se listarán filtrados en el catálogo."
+    )
+    # Campos antiguos (deprecated) mantenidos para compatibilidad
+    usar_nueva_coleccion = models.BooleanField(default=False, editable=False)
+    usar_descuentos = models.BooleanField(default=False, editable=False)
 
     def __str__(self):
         return self.titulo
@@ -234,6 +253,11 @@ class Banner(models.Model):
     class Meta:
         verbose_name = "Banner Promocional"
         verbose_name_plural = "Banners Promocionales"
+
+@receiver(post_save, sender=Banner)
+def banner_post_save(sender, instance, **kwargs):
+    # Solo aseguramos exclusividad de banner activo; no más sincronización de grupos
+    pass
 
 class Pagina(models.Model):
 # ... (código existente sin cambios)

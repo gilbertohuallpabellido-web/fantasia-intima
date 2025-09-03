@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.db import models
 from django.utils.html import format_html
 from django.forms import TextInput, ModelForm
 from django import forms
@@ -98,6 +99,22 @@ class ProductoAdminForm(forms.ModelForm):
             pass
         elif not cleaned_data.get('categoria'):
             self.add_error('categoria', 'Este campo es obligatorio.')
+
+        # Validación de oferta (relajada):
+        # - es_oferta puede ir sin precio_oferta (solo etiqueta y filtro)
+        # - si hay precio_oferta, debe ser menor al precio normal
+        es_oferta = cleaned_data.get('es_oferta')
+        precio = cleaned_data.get('precio')
+        precio_oferta = cleaned_data.get('precio_oferta')
+        if precio_oferta is not None and precio is not None:
+            try:
+                if precio_oferta >= precio:
+                    self.add_error('precio_oferta', 'Debe ser menor que el precio normal.')
+            except Exception:
+                pass
+        if not es_oferta and not precio_oferta:
+            # nada especial; si quieres limpiar explícitamente podrías hacerlo
+            pass
         return cleaned_data
 
     class Media:
@@ -107,22 +124,52 @@ class ProductoAdminForm(forms.ModelForm):
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
     form = ProductoAdminForm
-    list_display = ('nombre', 'get_categoria_padre', 'categoria', 'precio', 'precio_oferta', 'es_nueva_coleccion')
+    list_display = ('nombre', 'get_categoria_padre', 'categoria', 'precio', 'precio_oferta', 'tiene_descuento_real', 'es_oferta', 'es_nueva_coleccion')
     fieldsets = (
         (None, {
             'fields': ('nombre', 'categoria_padre', 'categoria', 'descripcion', 'imagen_principal')
         }),
         ('Precios y Ofertas', {
-            'fields': ('precio', 'precio_oferta')
+            'fields': ('precio', 'precio_oferta', 'es_oferta')
         }),
-        ('Opciones Adicionales', {
-            'fields': ('es_nueva_coleccion',)
+    ('Opciones Adicionales', {
+        'fields': ('es_nueva_coleccion',)
         }),
     )
-    list_filter = ('categoria__parent', 'categoria', 'es_nueva_coleccion')
+    # Filtros: añadimos filtro booleano manual para distinguir descuento real (precio_oferta < precio)
+    class DescuentoRealFilter(admin.SimpleListFilter):
+        title = 'Descuento real'
+        parameter_name = 'descuento_real'
+
+        def lookups(self, request, model_admin):
+            return (
+                ('1', 'Sí'),
+                ('0', 'No'),
+            )
+
+        def queryset(self, request, queryset):
+            val = self.value()
+            if val == '1':
+                return queryset.filter(precio_oferta__isnull=False, precio_oferta__lt=models.F('precio'))
+            if val == '0':
+                # Sin descuento real: o no tiene precio_oferta o no es menor
+                return queryset.exclude(precio_oferta__isnull=False, precio_oferta__lt=models.F('precio'))
+            return queryset
+
+    list_filter = ('categoria__parent', 'categoria', 'es_nueva_coleccion', 'es_oferta', DescuentoRealFilter)
     search_fields = ('nombre', 'descripcion', 'categoria__nombre')
-    list_editable = ('precio', 'precio_oferta', 'es_nueva_coleccion')
+    list_editable = ('precio', 'precio_oferta', 'es_oferta', 'es_nueva_coleccion')
     inlines = [ColorVarianteInline]
+
+    class Media:
+        # Incluimos también el JS de subcategorías ya usado más un script para UX de ofertas
+        js = ('admin/js/dynamic_subcategories.js', 'admin/js/producto_oferta_toggle.js')
+
+    # Columna calculada: indica si existe descuento real (precio_oferta menor)
+    def tiene_descuento_real(self, obj):
+        return obj.descuento_porcentaje > 0
+    tiene_descuento_real.boolean = True
+    tiene_descuento_real.short_description = 'Desc. real'
 
     def get_categoria_padre(self, obj):
         return obj.categoria_padre
@@ -215,20 +262,89 @@ class ConfiguracionSitioAdmin(SingletonModelAdmin):
 # --- Admin de Banners ---
 @admin.register(Banner)
 class BannerAdmin(admin.ModelAdmin):
+    class BannerAdminForm(forms.ModelForm):
+        # Checkboxes virtuales
+        opt_nueva = forms.BooleanField(label="Nueva Colección", required=False)
+        opt_ofertas = forms.BooleanField(label="Ofertas (precio oferta)", required=False)
+        opt_link = forms.BooleanField(label="Link personalizado", required=False)
+        opt_producto = forms.BooleanField(label="Producto individual", required=False)
+
+        class Meta:
+            model = Banner
+            fields = '__all__'
+            widgets = {}
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            # Inicializar checkboxes según modo_destino guardado
+            modo = getattr(self.instance, 'modo_destino', 'nueva') or 'nueva'
+            self.fields['opt_nueva'].initial = (modo == 'nueva')
+            self.fields['opt_ofertas'].initial = (modo == 'ofertas')
+            self.fields['opt_link'].initial = (modo == 'enlace')
+            self.fields['opt_producto'].initial = (modo == 'producto')
+
+        def clean(self):
+            cleaned = super().clean()
+            seleccionados = [
+                cleaned.get('opt_nueva'),
+                cleaned.get('opt_ofertas'),
+                cleaned.get('opt_link'),
+                cleaned.get('opt_producto'),
+            ]
+            count_sel = sum(bool(x) for x in seleccionados)
+            if count_sel == 0:
+                cleaned['opt_nueva'] = True
+            elif count_sel > 1:
+                raise forms.ValidationError("Selecciona solo una opción de destino (una casilla).")
+
+            # Validaciones dependientes
+            if cleaned.get('opt_link') and not cleaned.get('enlace'):
+                self.add_error('enlace', 'Debes ingresar un enlace.')
+            if cleaned.get('opt_producto'):
+                prod_multi = cleaned.get('productos_destacados')
+                if not prod_multi or prod_multi.count() == 0:
+                    self.add_error('productos_destacados', 'Selecciona al menos un producto.')
+            return cleaned
+
     list_display = ('titulo', 'activo')
     list_filter = ('activo','fecha_inicio','fecha_fin')
     list_editable = ('activo',)
     filter_horizontal = ('productos_destacados',)
+    form = BannerAdminForm
     fieldsets = (
         (None, {'fields': ('titulo', 'subtitulo', 'imagen', 'activo')}),
-        ('Acción del Banner', {'fields': ('texto_boton', 'enlace')}),
-        ('Colección Destacada (Opcional)', {'fields': ('productos_destacados',)}),
+        ('Destino (elige UNA casilla)', {
+            'fields': (
+                'opt_nueva', 'opt_ofertas', 'opt_link', 'opt_producto',
+                'productos_destacados', 'enlace', 'texto_boton'
+            ),
+            'description': 'Marca solo UNA opción:\n- Nueva Colección → filtra nueva.\n- Ofertas → solo ofertas.\n- Link → usa el enlace.\n- Producto → se listan los productos seleccionados (múltiples soportados).'
+        }),
         ('Rango de Fechas (Opcional)', {
             'fields': ('fecha_inicio', 'fecha_fin'),
             'classes': ('collapse',),
-            'description': 'Si se rellenan, el banner sólo estará activo dentro del rango especificado.'
+            'description': 'Mostrar solo dentro del intervalo.'
         }),
     )
+
+    def save_model(self, request, obj, form, change):
+        # Mapear checkbox a modo_destino
+        if form.cleaned_data.get('opt_nueva'):
+            obj.modo_destino = 'nueva'
+            obj.enlace = ''
+        elif form.cleaned_data.get('opt_ofertas'):
+            obj.modo_destino = 'ofertas'
+            obj.enlace = ''
+        elif form.cleaned_data.get('opt_producto'):
+            obj.modo_destino = 'producto'
+            obj.enlace = ''
+        elif form.cleaned_data.get('opt_link'):
+            obj.modo_destino = 'enlace'
+        super().save_model(request, obj, form, change)
+
+    class Media:
+        js = ('admin/js/banner_modes.js',)
+        css = {'all': ('admin/css/banner_modes.css',)}
 
 # --- Admin de Páginas Informativas ---
 @admin.register(Pagina)
