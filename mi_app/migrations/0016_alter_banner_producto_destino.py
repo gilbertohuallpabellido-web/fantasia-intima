@@ -10,10 +10,7 @@ class Migration(migrations.Migration):
         ('mi_app', '0015_merge_0014_alter_banner_enlace_0014_banner_productos_destacados'),
     ]
 
-    operations = [
-        migrations.AlterField(
-            model_name='banner',
-            name='producto_destino',
-            field=models.ForeignKey(blank=True, help_text='(Obsoleto si usas múltiples) Producto único rápido. Si además seleccionas varios abajo, se ignorará este campo.', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='banners_destino', to='mi_app.producto'),
-        ),
-    ]
+    # Esta migración se ha neutralizado porque el campo 'producto_destino' fue eliminado
+    # por la otra rama (0016_remove_banner_producto_destino). Dejamos operaciones vacías
+    # para que no falle en despliegues donde el orden de aplicación invierta remove/alter.
+    operations = []

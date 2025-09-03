@@ -9,9 +9,6 @@ class Migration(migrations.Migration):
         ('mi_app', '0017_merge_0016_alter_banner_producto_destino_0016_remove_banner_producto_destino'),
     ]
 
-    operations = [
-        migrations.RemoveField(
-            model_name='banner',
-            name='producto_destino',
-        ),
-    ]
+    # Esta migración queda vacía porque el campo 'producto_destino' ya fue
+    # eliminado en 0016_remove_banner_producto_destino.
+    operations = []
