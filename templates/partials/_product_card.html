@@ -2,7 +2,8 @@
 Este parcial reutilizable dibuja una única tarjeta de producto.
 Recibe una variable 'producto' desde donde se le incluye.
 {% endcomment %}
-<div class="product-card group relative border rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300 bg-white">
+{% with first_variant=producto.variantes.first %}
+<div class="product-card group relative border rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300 bg-white" data-product-id="{{ producto.pk }}" {% if first_variant %}data-variant-id="{{ first_variant.id }}"{% endif %}>
     <a href="{% url 'producto_detalle' producto.pk %}" class="block">
 
         <!-- Contenedor relativo para la imagen y las etiquetas superpuestas -->
@@ -53,4 +54,5 @@ Recibe una variable 'producto' desde donde se le incluye.
             </div>
         </div>
     </a>
-</div>
+ </div>
+{% endwith %}

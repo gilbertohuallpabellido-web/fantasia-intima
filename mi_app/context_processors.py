@@ -1,6 +1,6 @@
 # mi_app/context_processors.py
 import json
-from .models import Categoria, ConfiguracionSitio, Pagina, ConfiguracionRuleta, ConfiguracionChatbot, Banner
+from .models import Categoria, ConfiguracionSitio, Pagina, ConfiguracionRuleta, ConfiguracionChatbot, Banner, Producto
 from django.urls import reverse
 from django.utils import timezone
 
@@ -34,6 +34,62 @@ def common_context(request):
         'configuracion_ruleta': config_ruleta,
         'chatbot_config': chatbot_config, # <-- Aquí está la nueva configuración
     }
+
+    # === PROMOS: Selección rápida de 1 producto nueva colección y 1 oferta ===
+    try:
+        nuevo = (Producto.objects
+                 .filter(es_nueva_coleccion=True, imagen_principal__isnull=False)
+                 .order_by('?')
+                 .first())
+    except Exception:
+        nuevo = None
+    try:
+        oferta = (Producto.objects
+                  .filter(es_oferta=True, imagen_principal__isnull=False)
+                  .order_by('?')
+                  .first())
+    except Exception:
+        oferta = None
+
+    promo_payload = {
+        'new_collection': None,
+        'offer': None,
+    }
+    if nuevo:
+        promo_payload['new_collection'] = {
+            'id': nuevo.id,
+            'name': nuevo.nombre,
+            'image': getattr(nuevo.imagen_principal, 'url', None),
+            'price': str(nuevo.precio),
+        }
+    if oferta:
+        promo_payload['offer'] = {
+            'id': oferta.id,
+            'name': oferta.nombre,
+            'image': getattr(oferta.imagen_principal, 'url', None),
+            'price': str(oferta.precio),
+            'offer_price': str(oferta.precio_oferta) if oferta.precio_oferta else None,
+            'discount_percent': oferta.descuento_porcentaje,
+        }
+    # Fallback: cualquier producto con imagen si ambos faltan
+    if not promo_payload['new_collection'] and not promo_payload['offer']:
+        try:
+            cualquiera = (Producto.objects
+                           .filter(imagen_principal__isnull=False)
+                           .order_by('?')
+                           .first())
+        except Exception:
+            cualquiera = None
+        if cualquiera:
+            promo_payload['any_product'] = {
+                'id': cualquiera.id,
+                'name': cualquiera.nombre,
+                'image': getattr(cualquiera.imagen_principal, 'url', None),
+                'price': str(cualquiera.precio),
+            }
+    else:
+        promo_payload['any_product'] = None
+    context['promo_products_json'] = json.dumps(promo_payload)
 
     # Preparamos los datos JSON específicos para la ruleta si existe.
     if config_ruleta:

@@ -41,31 +41,31 @@ document.addEventListener('click', function(e){
 
 <!-- 
  =======================================================================
- HERO BANNER
+ HERO BANNER (añadido: animaciones móviles)
  =======================================================================
 -->
 {# Hero dinámico: se muestra el primer banner activo; si no hay, hero por defecto. #}
 {% if banners_activos and banners_activos|length > 0 %}
     {% with b=banners_activos.0 %}
     <section 
-        class="relative w-full h-56 sm:h-72 md:h-80 flex items-center justify-center text-white bg-gray-400"
+        class="hero-animate relative w-full h-56 sm:h-72 md:h-80 flex items-center justify-center text-white bg-gray-400"
         style="background-image: url('{{ b.imagen_url }}'); background-size: cover; background-position: center;"
         role="img"
         aria-label="{{ b.titulo }}">
-        <div class="absolute inset-0 bg-black/40"></div>
-        <div class="relative text-center p-4">
-            <h1 class="text-3xl sm:text-5xl md:text-6xl font-brand drop-shadow-lg leading-tight">{{ b.titulo }}</h1>
+        <div class="hero-overlay absolute inset-0"></div>
+        <div class="hero-content relative text-center p-4">
+            <h1 class="hero-title text-3xl sm:text-5xl md:text-6xl font-brand drop-shadow-lg leading-tight">{{ b.titulo }}</h1>
             {% if b.subtitulo %}
-                <p class="mt-2 text-base sm:text-xl drop-shadow-md">{{ b.subtitulo }}</p>
+                <p class="hero-sub mt-2 text-base sm:text-xl drop-shadow-md">{{ b.subtitulo }}</p>
             {% endif %}
             <a 
                 href="{{ b.destino_url|default:'#product-list-section' }}" 
-                class="banner-cta mt-6 inline-block text-white font-bold py-3 px-8 rounded-full text-lg hover:bg-opacity-90 transform hover:scale-105 transition-all"
+                class="banner-cta hero-cta mt-6 inline-block text-white font-bold py-3 px-8 rounded-full text-lg hover:bg-opacity-90 transform hover:scale-105 transition-all"
                 style="background-color: var(--brand-accent);">
                 {{ b.texto_boton }}
             </a>
             {% if b.fecha_fin %}
-                <div class="mt-4">
+                <div class="mt-4 hero-countdown-wrapper">
                         <div class="countdown-badge inline-flex items-center gap-3" aria-live="polite">
                             <span class="countdown-label text-xs uppercase tracking-wide" style="background-color: var(--brand-accent); color: #fff; padding:4px 8px; border-radius:6px;">Tiempo restante</span>
                             <div class="countdown text-xl font-extrabold px-3 py-1 rounded-lg" style="background-color: #fff; color: var(--brand-accent);" data-fecha-fin="{{ b.fecha_fin|date:'c' }}"></div>
@@ -77,14 +77,14 @@ document.addEventListener('click', function(e){
     </section>
     {% endwith %}
 {% else %}
-    <section class="hero-banner relative w-full h-64 sm:h-80 flex items-center justify-center text-white">
-        <div class="absolute inset-0 bg-black/30"></div>
-        <div class="relative text-center p-4">
-            <h1 class="text-3xl sm:text-5xl md:text-6xl font-brand drop-shadow-lg leading-tight">Nueva Colección</h1>
-            <p class="mt-2 text-lg sm:text-xl drop-shadow-md">Descubre la sensualidad en cada detalle</p>
+    <section class="hero-animate hero-banner relative w-full h-64 sm:h-80 flex items-center justify-center text-white">
+        <div class="hero-overlay absolute inset-0 bg-black/30"></div>
+        <div class="hero-content relative text-center p-4">
+            <h1 class="hero-title text-3xl sm:text-5xl md:text-6xl font-brand drop-shadow-lg leading-tight">Nueva Colección</h1>
+            <p class="hero-sub mt-2 text-lg sm:text-xl drop-shadow-md">Descubre la sensualidad en cada detalle</p>
             <a 
                 href="?categoria=nueva_coleccion#product-list-section" 
-                class="js-category-link mt-6 inline-block text-white font-bold py-3 px-8 rounded-full text-lg hover:bg-opacity-90 transform hover:scale-105 transition-all"
+                class="js-category-link hero-cta mt-6 inline-block text-white font-bold py-3 px-8 rounded-full text-lg hover:bg-opacity-90 transform hover:scale-105 transition-all"
                 data-filter="categoria" data-value="nueva_coleccion" onclick="handleFilterClick(event)"
                 style="background-color: var(--brand-accent);">
                 Ver ahora
@@ -93,6 +93,33 @@ document.addEventListener('click', function(e){
     </section>
 {% endif %}
     <!-- Barra de chips categorías (solo móvil) -->
+    <script>
+    // Parallax móvil del hero (restaurado)
+    (function(){
+        const hero = document.querySelector('.catalog-page .hero-animate');
+        if(!hero) return;
+        // Solo móvil / tablets pequeñas
+        const mq = window.matchMedia('(max-width: 640px)');
+        if(!mq.matches) return;
+        if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        let ticking=false; let lastY=window.scrollY;
+        const maxOffset = 40; // desplazamiento máximo en px
+        function onScroll(){
+            lastY = window.scrollY;
+            if(!ticking){
+                requestAnimationFrame(()=>{
+                    const offset = Math.min(maxOffset, lastY * 0.25);
+                    // Usamos background-position Y dinámico
+                    hero.style.backgroundPosition = `center calc(50% + ${offset}px)`;
+                    ticking=false;
+                });
+                ticking=true;
+            }
+        }
+        hero.style.willChange = 'background-position';
+        window.addEventListener('scroll', onScroll, {passive:true});
+    })();
+    </script>
     <div class="lg:hidden mt-4 px-1" id="mobile-category-chips">
         <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2" style="scroll-snap-type:x proximity;">
             <a href="{% url 'catalogo_publico' %}#product-list-section" class="shrink-0 px-4 py-2 rounded-full text-sm font-semibold border transition-colors scroll-snap-align-start {% if not filtros_activos.categoria %}bg-[rgba(var(--brand-primary-rgb),0.15)] border-[var(--brand-accent)] text-[var(--brand-accent)]{% else %}text-[var(--brand-text)] border-gray-300{% endif %}" data-filter="categoria" data-value="" onclick="handleFilterClick(event)">Todos</a>
@@ -240,16 +267,35 @@ document.addEventListener('click', function(e){
         {# Header contextual simplificado #}
         <div class="w-full mb-6 -mt-4" id="banner-context-header">
             <div class="rounded-2xl px-6 py-4 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" style="background-color: rgba(var(--brand-primary-rgb,249,168,212),0.25); border:1px solid rgba(var(--brand-primary-rgb,249,168,212),0.5);">
-                <div class="flex-1">
+                <div class="flex-1 flex items-center gap-3">
                     {% if banner and not producto_unico and mostrar_titulo_banner %}
                         <h3 class="text-xl font-extrabold font-brand mb-1" style="color: var(--brand-accent);">{{ banner.titulo }}</h3>
                     {% endif %}
-                    <span id="matched-counter-pill" class="text-sm font-semibold px-3 py-1 rounded-full bg-white shadow inline-block" style="color: var(--brand-accent);" data-matched-count="{{ matched_count }}">Productos: {{ matched_count }}</span>
+                    <span id="matched-counter-pill" role="status" aria-live="polite" class="counter-pill text-sm font-semibold inline-flex items-center gap-1 needs-urgency-eval{% if matched_count <= 8 %} pre-urgency{% endif %}" style="color: var(--brand-accent);" data-matched-count="{{ matched_count }}">
+                        <i class="fas fa-box-open text-[var(--brand-accent)] text-xs"></i>
+                        <span class="counter-label hidden sm:inline">Productos:</span>
+                        <span class="counter-number">{{ matched_count }}</span>
+                        <span class="urgency-msg ml-1 text-[10px] font-bold tracking-wide uppercase hidden"></span>
+                    </span>
                 </div>
             </div>
         </div>
 
-        <div id="product-list-section" aria-live="polite">
+        <div id="product-list-section" aria-live="polite" aria-busy="false">
+            <template id="list-skeleton">
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {% for i in '12345678' %}
+                <div class="skeleton-card relative rounded-xl overflow-hidden bg-white shadow-sm">
+                  <div class="skeleton-img shimmer"></div>
+                  <div class="p-3 space-y-2">
+                    <div class="skeleton-line shimmer w-5/6 h-3"></div>
+                    <div class="skeleton-line shimmer w-2/3 h-3"></div>
+                    <div class="skeleton-price shimmer w-1/3 h-4 mt-3"></div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </template>
             {% include 'partials/_product_list_ajax.html' %}
         </div>
     </main>
@@ -325,82 +371,37 @@ document.addEventListener('DOMContentLoaded', function(){
     let skeleton;
 
     async function updateProducts(url, formButton = null) {
-        // Desactivar completamente cuando estamos en modo banner filtrado
         if(window.BANNER_FILTERED){
             console.debug('updateProducts abortado: modo banner filtrado activo');
-            return; // no hacer nada; mantenemos render del servidor
+            return;
         }
-
-        if (!productListContainer || !skeleton) {
-            productListContainer = document.getElementById('product-list-section');
-            skeleton = document.getElementById('list-skeleton');
+        if (!productListContainer) productListContainer = document.getElementById('product-list-section');
+        const tpl = document.getElementById('list-skeleton');
+        if(tpl){
+          productListContainer.setAttribute('aria-busy','true');
+          productListContainer.innerHTML = tpl.innerHTML;
         }
-
-        if(skeleton){
-            const skeletonHTML = skeleton.outerHTML;
-            productListContainer.innerHTML = skeletonHTML;
-            const sk = productListContainer.querySelector('#list-skeleton');
-            if(sk){ sk.classList.remove('hidden'); }
-        }
-
-        // === INICIO DE LA MEJORA: Feedback visual en el botón ===
-        if (formButton) {
-            formButton.disabled = true;
-            formButton.querySelector('.btn-text').classList.add('hidden');
-            formButton.querySelector('.btn-loader').classList.remove('hidden');
-        }
-        // === FIN DE LA MEJORA ===
-
+        if (formButton) { formButton.disabled = true; formButton.querySelector('.btn-text').classList.add('hidden'); formButton.querySelector('.btn-loader').classList.remove('hidden'); }
         try {
-            const response = await fetch(url, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-
+            const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
             const html = await response.text();
             productListContainer.innerHTML = html;
-
-            // Salvaguarda: si por algún motivo vino la página completa, intentar extraer solo la lista
-            if(productListContainer.querySelector('html')){
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html,'text/html');
-                const extracted = doc.querySelector('#product-list-section');
-                if(extracted){
-                    const inner = extracted.innerHTML;
-                    productListContainer.innerHTML = inner;
-                }
-            }
-
-            const heading = document.getElementById('products-heading');
-            if (heading) heading.focus();
-            // Actualizar contador unificado (independiente del origen del filtro)
+            if(productListContainer.querySelector('html')){ const parser = new DOMParser(); const doc = parser.parseFromString(html,'text/html'); const extracted = doc.querySelector('#product-list-section'); if(extracted){ productListContainer.innerHTML = extracted.innerHTML; } }
+            const heading = document.getElementById('products-heading'); if (heading) heading.focus();
             (function(){
                 const pill = document.getElementById('matched-counter-pill');
-                if(!pill) return;
-                const count = productListContainer.querySelectorAll('.product-card').length;
-                pill.textContent = 'Productos: ' + count;
-                pill.setAttribute('data-matched-count', count);
+                if(!pill) return; const count = productListContainer.querySelectorAll('.product-card').length; const numEl = pill.querySelector('.counter-number'); if(numEl) numEl.textContent = count; pill.setAttribute('data-matched-count', count); if(window.updateUrgencyPill){ window.updateUrgencyPill(count); } pill.classList.remove('bump'); void pill.offsetWidth; pill.classList.add('bump');
             })();
-            // Scroll suave a la lista (solo móvil)
-            if(window.innerWidth < 640){
-                setTimeout(()=>{
-                    const section = document.querySelector('#product-list-section');
-                    if(section){ section.scrollIntoView({behavior:'smooth', block:'start'}); }
-                }, 50);
-            }
-
+            if(window.innerWidth < 640){ setTimeout(()=>{ const section = document.querySelector('#product-list-section'); if(section){ section.scrollIntoView({behavior:'smooth', block:'start'}); } }, 50); }
+            // initQuickAdd() eliminado (ya no usamos botón de añadir rápido aquí)
+            prefetchNextPage();
         } catch (error) {
             console.error('Error al actualizar los productos:', error);
-            productListContainer.innerHTML = '<p class="text-center text-red-500">Hubo un error al cargar los productos.</p>';
+            productListContainer.innerHTML = '<p class="text-center text-red-500 py-10">Hubo un error al cargar los productos.</p>';
         } finally {
-            // === INICIO DE LA MEJORA: Restaurar el botón ===
-            if (formButton) {
-                formButton.disabled = false;
-                formButton.querySelector('.btn-text').classList.remove('hidden');
-                formButton.querySelector('.btn-loader').classList.add('hidden');
-            }
-            // === FIN DE LA MEJORA ===
+            if (formButton) { formButton.disabled = false; formButton.querySelector('.btn-text').classList.remove('hidden'); formButton.querySelector('.btn-loader').classList.add('hidden'); }
+            productListContainer.setAttribute('aria-busy','false');
         }
     }
 
@@ -626,53 +627,34 @@ document.addEventListener('DOMContentLoaded', function(){
         #mobile-category-chips .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
         @keyframes slide-up{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
         .animate-slide-up{animation:slide-up .25s ease}
-        </style>
-<script>
-// Marca visual activa para categorías (chips + sidebar + panel móvil)
-function setActiveCategory(slug){
-    const activeInline = 'background-color: rgba(var(--brand-primary-rgb),0.2); border:1px solid var(--brand-primary);';
-    const baseInline = 'color: var(--brand-accent);';
+        /* Shimmer skeleton */
+.skeleton-img{height:120px;background:#f3f3f3;border-bottom:1px solid #eee;}
+.skeleton-line,.skeleton-price{background:#f3f3f3;border-radius:6px;}
+.shimmer{position:relative;overflow:hidden;}
+.shimmer:after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(110deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.7) 40%,rgba(255,255,255,0) 80%);animation:shimmer 1.1s infinite;}
+@keyframes shimmer{100%{transform:translateX(100%);}}
 
-    function applyInline(list){
-        list.forEach(a=>{
-            if(!a) return; 
-            const isAll = !slug && !a.dataset.value;
-            const match = (a.dataset.value===slug) || isAll;
-            a.setAttribute('style', baseInline + (match? (' '+activeInline):''));
-            a.classList.toggle('bg-pink-50', match); // refuerzo visual móvil
-        });
-    }
+/* (Estilos quick add eliminados) */
 
-    applyInline(document.querySelectorAll('aside#filters-sidebar a.js-category-link'));
-    applyInline(document.querySelectorAll('#mobile-filters-content a.js-category-link'));
-
-    // Chips móviles: aplicar clase unificada para estado activo y limpiar estilos previos
-    const chipLinks = document.querySelectorAll('#mobile-category-chips a.js-category-link, #mobile-category-chips a[data-filter="categoria"]');
-    const ACTIVE_CLASSES = ['bg-[rgba(var(--brand-primary-rgb),0.15)]','border-[var(--brand-accent)]','text-[var(--brand-accent)]','chip-active'];
-    const INACTIVE_CLASSES = ['text-[var(--brand-text)]','border-gray-300'];
-    chipLinks.forEach(a=>{
-        // limpiar clases de estado
-        ACTIVE_CLASSES.concat(INACTIVE_CLASSES).forEach(c=>a.classList.remove(c));
-        if(a.hasAttribute('style')) a.removeAttribute('style');
-        const isAll = !slug && !a.dataset.value;
-        const match = (a.dataset.value===slug) || isAll;
-        if(match){
-            ACTIVE_CLASSES.forEach(c=>a.classList.add(c));
-        } else {
-            INACTIVE_CLASSES.forEach(c=>a.classList.add(c));
-        }
-    });
-}
-// ---- Contador móvil de productos ----
-function setMobileCounterLoading(){ const c=document.getElementById('mobile-products-count-number'); if(c) c.textContent='...'; }
-function countCurrentProducts(){
-    const cards=document.querySelectorAll('#product-list-section .product-card');
-    if(cards.length) return cards.length;
-    const badge=[...document.querySelectorAll('#product-list-section span')].find(s=>/Productos:\s*\d+/.test(s.textContent));
-    if(badge){ const m=badge.textContent.match(/(\d+)/); if(m) return parseInt(m[1]); }
-    return 0;
-}
-function updateMobileProductsCounter(){ const c=document.getElementById('mobile-products-count-number'); if(!c) return; c.textContent=countCurrentProducts(); }
+/* Animaciones hero móviles */
+.hero-animate{overflow:hidden;position:relative;}
+.hero-overlay{background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,.35) 30%,rgba(0,0,0,.55));animation:fadeIn .9s ease both;}
+.hero-content{animation:riseIn .9s cubic-bezier(.22,.9,.3,1) .15s both;}
+.hero-title{background:linear-gradient(90deg,#fff,#ffe4f2 60%,#fff);-webkit-background-clip:text;color:transparent;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));animation:titleGlow 4.5s ease-in-out infinite;}
+.hero-sub{opacity:0;animation:fadeIn .9s ease .35s forwards;}
+.hero-cta{position:relative;overflow:hidden;}
+.hero-cta:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.35),rgba(255,255,255,0) 70%);opacity:0;transition:opacity .5s;}
+.hero-cta:hover:before{opacity:.9;}
+.hero-countdown-wrapper{animation:fadeIn .9s ease .55s both;}
+@keyframes fadeIn{0%{opacity:0}100%{opacity:1}}
+@keyframes riseIn{0%{opacity:0;transform:translateY(30px) scale(.98);}60%{opacity:1;}100%{opacity:1;transform:translateY(0) scale(1);} }
+@keyframes titleGlow{0%,100%{filter:drop-shadow(0 2px 6px rgba(0,0,0,.4)) brightness(1);}50%{filter:drop-shadow(0 4px 10px rgba(0,0,0,.55)) brightness(1.15);} }
+/* Partículas ligeras */
+.hero-animate .particle{position:absolute;top:0;left:0;width:6px;height:6px;background:radial-gradient(circle,#fff,#ffc1e3);border-radius:50%;opacity:0;animation:float 6s linear infinite;mix-blend-mode:screen;}
+@keyframes float{0%{transform:translate3d(var(--xStart),var(--yStart),0) scale(.4);opacity:0}10%{opacity:.9}85%{opacity:.9}100%{transform:translate3d(var(--xEnd),var(--yEnd),0) scale(1);opacity:0}}
+@media (max-width:640px){.hero-animate{height:50vh!important;min-height:300px;} }
+</style>
+<!-- Bloque residual de quick add y prefetch eliminado -->
 </script>
 <style>
 /* Estado visual consistente para chip activo (corrige que se quede resaltado al cambiar a "Todos") */
@@ -698,4 +680,35 @@ function updateMobileProductsCounter(){ const c=document.getElementById('mobile-
   }, {passive:true});
 })();
 </script>
+<script>
+// Función global para mensaje de urgencia SOLO móvil (revisada)
+window.updateUrgencyPill = function(count){
+  const pill=document.getElementById('matched-counter-pill');
+  if(!pill) return; const msgEl=pill.querySelector('.urgency-msg');
+  const w = window.innerWidth || document.documentElement.clientWidth || screen.width;
+  // Mostrar solo móvil <= 768 para mayor tolerancia
+  if(w>768){ pill.classList.remove('urgency','urgency-hot'); if(msgEl){msgEl.classList.add('hidden'); msgEl.textContent='';} return; }
+  let text=''; let mode='';
+  if(count>0 && count<=4){ text='¡Últimas unidades!'; mode='hot'; }
+  else if(count>0 && count<=8){ text='Stock limitado'; mode='warn'; }
+  else if(count===0){ text='Sin stock'; mode='warn'; }
+  if(text){ msgEl.textContent=text; msgEl.classList.remove('hidden'); pill.classList.add('urgency'); if(mode==='hot') pill.classList.add('urgency-hot'); else pill.classList.remove('urgency-hot'); }
+  else { if(msgEl){ msgEl.classList.add('hidden'); msgEl.textContent=''; } pill.classList.remove('urgency','urgency-hot'); }
+};
+// Inicial en carga + fallback diferido
+function __initUrgency(){ const pill=document.getElementById('matched-counter-pill'); if(pill){ const c=parseInt(pill.getAttribute('data-matched-count')|| pill.querySelector('.counter-number')?.textContent ||'0'); window.updateUrgencyPill(c); pill.classList.remove('needs-urgency-eval'); } }
+document.addEventListener('DOMContentLoaded',()=>{ setTimeout(__initUrgency,10); setTimeout(__initUrgency,500); });
+// Observer por si AJAX cambia el número y no se disparó update
+(function(){ const pill=document.getElementById('matched-counter-pill'); if(!pill) return; const num=pill.querySelector('.counter-number'); if(!num) return; const obs=new MutationObserver(()=>{ const c=parseInt(num.textContent||'0'); window.updateUrgencyPill(c); }); obs.observe(num,{childList:true,subtree:true}); })();
+// Re-evaluar al redimensionar
+window.addEventListener('resize',()=>{ const pill=document.getElementById('matched-counter-pill'); if(pill){ const c=parseInt(pill.getAttribute('data-matched-count')||pill.querySelector('.counter-number')?.textContent||'0'); window.updateUrgencyPill(c); } });
+</script>
+<!-- 
+  =======================================================================
+  MEJORAS Y OPTIMIZACIONES VARIAS
+  =======================================================================
+-->
+{% comment %} Sección de mejoras y optimizaciones varias {% endcomment %}
+{% if false %} {# Ocultar sección de mejoras #} {% endif %}
+<!-- Vista rápida eliminada (sección placeholder removida por solicitud) -->
 {% endblock extra_js %}

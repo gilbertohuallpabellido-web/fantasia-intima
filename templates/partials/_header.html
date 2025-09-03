@@ -7,9 +7,10 @@
             {% if configuracion_ruleta.activa %}
             <!-- Botón Ruleta (móvil centrado arriba, desktop flotante) -->
             <button @click="openRoulette && openRoulette()" id="roulette-fab-mobile" class="md:hidden premium-spin-btn absolute top-1 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full flex items-center justify-center text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-300/60 z-60" aria-label="Abrir Ruleta (Móvil)">
-                <div class="roulette-inner text-[1.5rem]">
+                <div class="roulette-inner text-[1.5rem] relative">
                     <i class="fas fa-dice"></i>
                     <span class="roulette-tooltip">Gira y gana</span>
+                    <div class="roulette-fab-callout hidden md:hidden"><i class="fas fa-bolt"></i><span>Gira y gana premios</span></div>
                 </div>
                 <span class="spark spark-1"></span>
                 <span class="spark spark-2"></span>
