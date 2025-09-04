@@ -67,6 +67,14 @@ if IS_PRODUCTION or USE_JAZZMIN:
         # En caso de cualquier problema con importlib no rompemos el arranque
         pass
 
+# Limpieza automática (opcional): si está instalado, borra archivos al eliminar/reemplazar
+try:
+    import importlib
+    if importlib.util.find_spec('django_cleanup'):
+        INSTALLED_APPS.append('django_cleanup.apps.CleanupConfig')
+except Exception:
+    pass
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',

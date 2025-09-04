@@ -1,4 +1,5 @@
 from django.db import models
+import os
 from django.conf import settings
 import uuid
 from solo.models import SingletonModel
@@ -8,10 +9,12 @@ from django.utils import timezone
 from datetime import timedelta
 import random
 import string
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_delete, pre_save, post_delete
 from django.dispatch import receiver
 # === INICIO DE LA MEJORA: Importamos la herramienta de Cloudinary ===
 from cloudinary.models import CloudinaryField
+import cloudinary.api
+import cloudinary.uploader
 # === FIN DE LA MEJORA ===
 # ... (El resto de tus modelos como Categoria, Producto, etc., se mantienen igual)
 class Categoria(MPTTModel):
@@ -320,6 +323,7 @@ class ConfiguracionRuleta(SingletonModel):
     sonido_giro = CloudinaryField(
         'sonido_giro',
         resource_type='raw', # Le decimos que es un archivo de audio/raw
+        folder='sonidos_ruleta',
         blank=True,
         null=True,
         help_text="Sonido (MP3) que se reproduce mientras la ruleta gira."
@@ -327,6 +331,7 @@ class ConfiguracionRuleta(SingletonModel):
     sonido_premio = CloudinaryField(
         'sonido_premio',
         resource_type='raw', # Le decimos que es un archivo de audio/raw
+        folder='sonidos_ruleta',
         blank=True,
         null=True,
         help_text="Sonido (MP3) que se reproduce al ganar un premio."
@@ -449,3 +454,299 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
     instance.profile.save()
+
+# === LIMPIEZA AUTOMÁTICA DE ARCHIVOS EN CLOUDINARY ===
+def _destroy_cloudinary_resource(field_value, resource_type=None):
+    """Intenta eliminar el recurso en Cloudinary usando su public_id.
+    No lanza excepción si falla (modo best-effort).
+    """
+    try:
+        if not field_value:
+            return
+        public_id = getattr(field_value, 'public_id', None)
+        if not public_id:
+            return
+
+        def debug_lookup(public_id):
+            if not settings.DEBUG:
+                return
+            for rt in ['raw', 'video', 'image']:
+                for typ in ['upload', 'authenticated', 'private']:
+                    try:
+                        info = cloudinary.api.resource(public_id, resource_type=rt, type=typ)
+                        print(f"[CLOUDINARY LOOKUP HIT] pid={public_id} rt={rt} type={typ} bytes={info.get('bytes')} format={info.get('format')}")
+                    except Exception as e:
+                        # Silencio los misses para no saturar
+                        pass
+
+        debug_lookup(public_id)
+
+        def attempt_uploader(rt=None, typ=None):
+            try:
+                kwargs = {'invalidate': True}
+                if rt:
+                    kwargs['resource_type'] = rt
+                if typ:
+                    kwargs['type'] = typ
+                if settings.DEBUG:
+                    print(f"[CLOUDINARY DESTROY] public_id={public_id} rt={rt} type={typ}")
+                res = cloudinary.uploader.destroy(public_id, **kwargs)
+                if settings.DEBUG:
+                    print(f"[CLOUDINARY DESTROY RES] => {res}")
+                return res
+            except Exception as e:
+                if settings.DEBUG:
+                    print(f"[CLOUDINARY DESTROY ERR] rt={rt} type={typ} err={e}")
+                return None
+
+        def attempt_api(rt, typ):
+            try:
+                if settings.DEBUG:
+                    print(f"[CLOUDINARY API DELETE] public_id={public_id} rt={rt} type={typ}")
+                res = cloudinary.api.delete_resources([public_id], resource_type=rt, type=typ)
+                if settings.DEBUG:
+                    print(f"[CLOUDINARY API DELETE RES] => {res}")
+                return res
+            except Exception as e:
+                if settings.DEBUG:
+                    print(f"[CLOUDINARY API DELETE ERR] rt={rt} type={typ} err={e}")
+                return None
+
+        tried_ok = False
+        rts = []
+        if resource_type:
+            rts.append(resource_type)
+        for rt in ['video', 'raw', 'image', 'auto']:
+            if rt not in rts:
+                rts.append(rt)
+        types = [None, 'upload', 'authenticated', 'private']
+
+        # Candidatos de public_id: base y, para raw, intentar con extensión
+        pid_candidates = [public_id]
+        url_str = None
+        try:
+            url_str = str(field_value)
+        except Exception:
+            url_str = None
+        ext_candidates = []
+        if url_str and '/upload/' in url_str:
+            tail = url_str.split('/upload/', 1)[-1]
+            last = tail.split('?')[0].split('#')[0].split('/')[-1]
+            if '.' in last:
+                ext = last.rsplit('.', 1)[-1].lower()
+                if ext and ext not in ('', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm', 'mov'):
+                    ext_candidates.append(ext)
+        # Audio comunes
+        for ext in ['mp3', 'wav', 'ogg']:
+            if ext not in ext_candidates:
+                ext_candidates.append(ext)
+        for ext in ext_candidates:
+            pid_with_ext = f"{public_id}.{ext}"
+            if pid_with_ext not in pid_candidates:
+                pid_candidates.append(pid_with_ext)
+
+        for pid in pid_candidates:
+            if settings.DEBUG and pid != public_id:
+                print(f"[CLOUDINARY PID VARIANT] trying {pid}")
+            for rt in rts:
+                for typ in types:
+                    # parche: sobrescribir public_id localmente
+                    saved_pid = public_id
+                    public_id = pid
+                    res = attempt_uploader(rt, typ)
+                    public_id = saved_pid
+                    if isinstance(res, dict) and res.get('result') == 'ok':
+                        tried_ok = True
+                        break
+                if tried_ok:
+                    break
+            if tried_ok:
+                break
+
+        if not tried_ok:
+            for pid in pid_candidates:
+                for rt in ['video', 'raw', 'image', 'auto']:
+                    for typ in ['upload', 'authenticated', 'private']:
+                        try:
+                            if settings.DEBUG:
+                                print(f"[CLOUDINARY API DELETE] public_id={pid} rt={rt} type={typ}")
+                            res = cloudinary.api.delete_resources([pid], resource_type=rt, type=typ)
+                            if settings.DEBUG:
+                                print(f"[CLOUDINARY API DELETE RES] => {res}")
+                        except Exception as e:
+                            if settings.DEBUG:
+                                print(f"[CLOUDINARY API DELETE ERR] rt={rt} type={typ} err={e}")
+    except Exception as e:
+        if settings.DEBUG:
+            print(f"[CLOUDINARY DESTROY FATAL] err={e}")
+
+def _delete_filefield_file(file_field_file):
+    """Elimina el archivo de un FileField/ImageField usando su storage backend."""
+    try:
+        if not file_field_file:
+            return
+        name = getattr(file_field_file, 'name', None)
+        storage = getattr(file_field_file, 'storage', None)
+        if name and storage:
+            if settings.DEBUG:
+                print(f"[STORAGE DELETE] name={name}")
+            storage.delete(name)
+            # Mejor esfuerzo: también borrar directamente en Cloudinary por public_id
+            public_id = name.replace('\\', '/').lstrip('/')
+            if public_id.startswith('media/'):
+                public_id = public_id[len('media/'):]
+            public_id, _ext = os.path.splitext(public_id)
+            try:
+                if settings.DEBUG:
+                    print(f"[CLOUDINARY DESTROY FROM NAME] public_id={public_id}")
+                cloudinary.uploader.destroy(public_id, resource_type='image', invalidate=True)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
+@receiver(pre_delete, sender=Profile)
+def _profile_avatar_delete(sender, instance, **kwargs):
+    # Avatar es una imagen
+    _destroy_cloudinary_resource(instance.avatar, resource_type='image')
+
+
+# Redundancia por si algún backend no dispara pre_delete
+@receiver(post_delete, sender=Profile)
+def _profile_avatar_post_delete(sender, instance, **kwargs):
+    # Redundancia por si algún backend no dispara pre_delete
+    _destroy_cloudinary_resource(instance.avatar, resource_type='image')
+
+
+@receiver(pre_save, sender=Profile)
+def _profile_avatar_replace(sender, instance, **kwargs):
+    # Si cambia el avatar, borramos el anterior
+    if not instance.pk:
+        return
+    try:
+        old = Profile.objects.get(pk=instance.pk)
+    except Profile.DoesNotExist:
+        return
+    if getattr(old, 'avatar', None):
+        old_pid = getattr(old.avatar, 'public_id', None)
+        new_pid = getattr(getattr(instance, 'avatar', None), 'public_id', None)
+        if old_pid and old_pid != new_pid:
+            _destroy_cloudinary_resource(old.avatar, resource_type='image')
+
+
+@receiver(pre_delete, sender=ConfiguracionRuleta)
+def _ruleta_sounds_delete(sender, instance, **kwargs):
+    # Sonidos son recursos tipo 'raw'
+    if settings.DEBUG:
+        print("[RULETA pre_delete] Eliminando sonidos si existen")
+    _destroy_cloudinary_resource(instance.sonido_giro, resource_type='raw')
+    _destroy_cloudinary_resource(instance.sonido_premio, resource_type='raw')
+
+
+@receiver(post_delete, sender=ConfiguracionRuleta)
+def _ruleta_sounds_post_delete(sender, instance, **kwargs):
+    _destroy_cloudinary_resource(instance.sonido_giro, resource_type='raw')
+    _destroy_cloudinary_resource(instance.sonido_premio, resource_type='raw')
+
+
+@receiver(pre_save, sender=ConfiguracionRuleta)
+def _ruleta_sounds_replace(sender, instance, **kwargs):
+    if not instance.pk:
+        return
+    try:
+        old = ConfiguracionRuleta.objects.get(pk=instance.pk)
+    except ConfiguracionRuleta.DoesNotExist:
+        return
+    if getattr(old, 'sonido_giro', None):
+        old_pid = getattr(old.sonido_giro, 'public_id', None)
+        new_pid = getattr(getattr(instance, 'sonido_giro', None), 'public_id', None)
+        if settings.DEBUG:
+            print(f"[RULETA pre_save] sonido_giro old={old_pid} new={new_pid}")
+        if old_pid and old_pid != new_pid:
+            _destroy_cloudinary_resource(old.sonido_giro, resource_type='raw')
+    if getattr(old, 'sonido_premio', None):
+        old_pid = getattr(old.sonido_premio, 'public_id', None)
+        new_pid = getattr(getattr(instance, 'sonido_premio', None), 'public_id', None)
+        if settings.DEBUG:
+            print(f"[RULETA pre_save] sonido_premio old={old_pid} new={new_pid}")
+        if old_pid and old_pid != new_pid:
+            _destroy_cloudinary_resource(old.sonido_premio, resource_type='raw')
+
+
+# === LIMPIEZA PARA ImageField (CloudinaryStorage) ===
+@receiver(pre_delete, sender=Banner)
+def _banner_image_delete(sender, instance, **kwargs):
+    _delete_filefield_file(instance.imagen)
+
+
+@receiver(pre_save, sender=Banner)
+def _banner_image_replace(sender, instance, **kwargs):
+    if not instance.pk:
+        return
+    try:
+        old = Banner.objects.get(pk=instance.pk)
+    except Banner.DoesNotExist:
+        return
+    if getattr(old, 'imagen', None) and old.imagen and old.imagen.name != getattr(instance.imagen, 'name', None):
+        _delete_filefield_file(old.imagen)
+
+
+@receiver(pre_delete, sender=Producto)
+def _producto_image_delete(sender, instance, **kwargs):
+    _delete_filefield_file(instance.imagen_principal)
+
+
+@receiver(pre_save, sender=Producto)
+def _producto_image_replace(sender, instance, **kwargs):
+    if not instance.pk:
+        return
+    try:
+        old = Producto.objects.get(pk=instance.pk)
+    except Producto.DoesNotExist:
+        return
+    if getattr(old, 'imagen_principal', None) and old.imagen_principal and old.imagen_principal.name != getattr(instance.imagen_principal, 'name', None):
+        _delete_filefield_file(old.imagen_principal)
+
+
+@receiver(pre_delete, sender=ColorVariante)
+def _colorvariante_images_delete(sender, instance, **kwargs):
+    _delete_filefield_file(instance.imagen)
+    _delete_filefield_file(instance.imagen_textura)
+
+
+@receiver(pre_save, sender=ColorVariante)
+def _colorvariante_images_replace(sender, instance, **kwargs):
+    if not instance.pk:
+        return
+    try:
+        old = ColorVariante.objects.get(pk=instance.pk)
+    except ColorVariante.DoesNotExist:
+        return
+    if getattr(old, 'imagen', None) and old.imagen and old.imagen.name != getattr(instance.imagen, 'name', None):
+        _delete_filefield_file(old.imagen)
+    if getattr(old, 'imagen_textura', None) and old.imagen_textura and old.imagen_textura.name != getattr(instance.imagen_textura, 'name', None):
+        _delete_filefield_file(old.imagen_textura)
+
+
+@receiver(pre_delete, sender=ConfiguracionSitio)
+def _config_sitio_images_delete(sender, instance, **kwargs):
+    _delete_filefield_file(instance.logo)
+    _delete_filefield_file(instance.imagen_yape)
+    _delete_filefield_file(instance.imagen_plin)
+
+
+@receiver(pre_save, sender=ConfiguracionSitio)
+def _config_sitio_images_replace(sender, instance, **kwargs):
+    if not instance.pk:
+        return
+    try:
+        old = ConfiguracionSitio.objects.get(pk=instance.pk)
+    except ConfiguracionSitio.DoesNotExist:
+        return
+    if getattr(old, 'logo', None) and old.logo and old.logo.name != getattr(instance.logo, 'name', None):
+        _delete_filefield_file(old.logo)
+    if getattr(old, 'imagen_yape', None) and old.imagen_yape and old.imagen_yape.name != getattr(instance.imagen_yape, 'name', None):
+        _delete_filefield_file(old.imagen_yape)
+    if getattr(old, 'imagen_plin', None) and old.imagen_plin and old.imagen_plin.name != getattr(instance.imagen_plin, 'name', None):
+        _delete_filefield_file(old.imagen_plin)

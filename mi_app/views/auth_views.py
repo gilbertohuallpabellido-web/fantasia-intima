@@ -81,6 +81,37 @@ def mi_cuenta(request):
     if request.method == 'POST':
         form_type = request.POST.get('form_type')
 
+        # Subida de avatar desde "Mi Cuenta"
+        if form_type == 'update_profile_avatar':
+            avatar_file = request.FILES.get('avatar')
+            profile = getattr(request.user, 'profile', None)
+            if profile is None:
+                messages.error(request, 'No se encontró tu perfil de usuario.')
+                return redirect('mi_cuenta')
+            if avatar_file:
+                # Asignar sólo el avatar para no tocar otros campos
+                profile.avatar = avatar_file
+                profile.save(update_fields=['avatar'])
+                messages.success(request, '¡Tu foto de perfil se actualizó correctamente!')
+            else:
+                messages.error(request, 'Selecciona una imagen para subir.')
+            return redirect('mi_cuenta')
+
+        # Eliminación de avatar desde "Mi Cuenta"
+        if form_type == 'delete_avatar':
+            profile = getattr(request.user, 'profile', None)
+            if profile is None:
+                messages.error(request, 'No se encontró tu perfil de usuario.')
+                return redirect('mi_cuenta')
+            if profile.avatar:
+                # Al limpiar el campo, nuestras señales eliminarán el recurso antiguo
+                profile.avatar = None
+                profile.save(update_fields=['avatar'])
+                messages.success(request, 'Tu foto de perfil fue eliminada.')
+            else:
+                messages.info(request, 'No tienes una foto de perfil para eliminar.')
+            return redirect('mi_cuenta')
+
         if form_type == 'update_profile':
             profile_form = UserUpdateForm(request.POST, instance=request.user)
             if profile_form.is_valid():

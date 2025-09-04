@@ -1,0 +1,4 @@
+/* Simple fallback to avoid 404; customize as needed */
+fieldset.module.collapse > h2::after {
+  content: '';
+}
