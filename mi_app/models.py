@@ -451,9 +451,9 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
     """
     Crea un perfil para el usuario si es nuevo, o simplemente lo guarda si ya existe.
     """
-    if created:
-        Profile.objects.create(user=instance)
-    instance.profile.save()
+    # Evitar acceder a instance.profile si no existe aún (caso usuarios antiguos)
+    # En login, Django actualiza last_login y dispara post_save: aquí garantizamos el Profile.
+    Profile.objects.get_or_create(user=instance)
 
 # === LIMPIEZA AUTOMÁTICA DE ARCHIVOS EN CLOUDINARY ===
 def _destroy_cloudinary_resource(field_value, resource_type=None):
