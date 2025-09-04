@@ -2,8 +2,9 @@
 # exit on error
 set -o errexit
 
-# Instala dependencias
-pip install -r requirements.txt
+# Actualiza pip y herramientas base y reinstala dependencias (forzar upgrades)
+python -m pip install --upgrade pip setuptools wheel
+pip install --upgrade -r requirements.txt
 
 # Recolecta archivos estáticos
 python manage.py collectstatic --no-input
