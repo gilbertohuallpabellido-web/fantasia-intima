@@ -170,7 +170,8 @@ document.addEventListener('DOMContentLoaded', function(){
 {% if chatbot_config and chatbot_config.activo %}
 <div id="chat-wrapper" class="fixed bottom-6 right-6 z-50">
     <button id="chat-button" class="bg-blue-500 text-white w-16 h-16 rounded-full shadow-lg hover:bg-blue-600 flex items-center justify-center transition-transform transform hover:scale-110">
-        <i class="fas fa-comment-dots text-3xl"></i>
+        <i class="fas fa-comment-dots text-3xl hidden md:inline"></i>
+        <span class="md:hidden font-extrabold tracking-wide">CHAT</span>
     </button>
 </div>
 <!-- === INICIO DE LA MEJORA: Se añade 'flex' por defecto al contenedor === -->

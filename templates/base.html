@@ -184,6 +184,12 @@
     /* Overrides específicos cuando es catálogo (más específico) */
     body.catalog-page #chat-wrapper { right: calc(env(safe-area-inset-right, 0px) + 8px) !important; }
     body.catalog-page #chat-container { right: calc(env(safe-area-inset-right, 0px) + 8px) !important; }
+
+    /* Estilo pestaña vertical (móvil) */
+    #chat-button{ width: 42px !important; height: 120px !important; border-radius: 12px 0 0 12px !important; writing-mode: vertical-rl; text-orientation: mixed; font-size: 12px; letter-spacing: 1px; font-weight: 900; }
+    #chat-button span{ transform: rotate(180deg); }
+    /* Elevar un poco más para no chocar con barra inferior del sistema */
+    #chat-wrapper{ bottom: calc(1rem + env(safe-area-inset-bottom, 0px)) !important; }
     }
 
     /* Ruleta ahora se maneja dentro del header (mobile absolute, desktop fixed) */
