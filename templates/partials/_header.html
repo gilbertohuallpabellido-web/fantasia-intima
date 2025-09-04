@@ -3,11 +3,11 @@
 <!-- Se usa rgba() con la nueva variable --brand-primary-rgb para aplicar transparencia -->
 <header x-data="{ mobileMenuOpen: false }" style="background-color: rgba(var(--brand-primary-rgb, 249, 168, 212), 0.8);" class="backdrop-blur-sm sticky top-0 z-50 shadow-md relative">
     <div class="container mx-auto px-4">
-    <div class="flex justify-between items-center h-20">
+    <div class="flex justify-between items-center h-14 md:h-20">
             {% if ruleta_activa %}
             <!-- Botón Ruleta (móvil centrado arriba, desktop flotante) -->
-            <button @click="openRoulette && openRoulette()" id="roulette-fab-mobile" :disabled="config && config.remaining_seconds <= 0" class="md:hidden premium-spin-btn absolute top-1 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full flex items-center justify-center text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-300/60 z-60" aria-label="Abrir Ruleta (Móvil)">
-                <div class="roulette-inner text-[1.5rem] relative">
+            <button @click="openRoulette && openRoulette()" id="roulette-fab-mobile" :disabled="config && config.remaining_seconds <= 0" class="md:hidden premium-spin-btn absolute top-1 left-1/2 -translate-x-1/2 w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-300/60 z-60" aria-label="Abrir Ruleta (Móvil)">
+                <div class="roulette-inner text-[1.35rem] md:text-[1.5rem] relative">
                     <i class="fas fa-dice"></i>
                     <span class="roulette-tooltip">Gira y gana</span>
                     <!-- Callout móvil desactivado para no tapar UI; el callout desktop se maneja por CSS -->
@@ -21,7 +21,7 @@
             {% endif %}
             <!-- Logo -->
             <a href="{% url 'index' %}" class="flex-shrink-0">
-                <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" class="h-14 w-auto" onerror="this.onerror=null;this.src='https://placehold.co/150x50/f9a8d4/ffffff?text=Logo';">
+                <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" class="h-10 md:h-14 w-auto" onerror="this.onerror=null;this.src='https://placehold.co/150x50/f9a8d4/ffffff?text=Logo';">
             </a>
 
             <!-- Navegación Principal (para pantallas grandes) -->
