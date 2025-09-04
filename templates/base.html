@@ -185,9 +185,26 @@
     body.catalog-page #chat-wrapper { right: calc(env(safe-area-inset-right, 0px) + 8px) !important; }
     body.catalog-page #chat-container { right: calc(env(safe-area-inset-right, 0px) + 8px) !important; }
 
-    /* Estilo pestaña vertical (móvil) */
-    #chat-button{ width: 42px !important; height: 120px !important; border-radius: 12px 0 0 12px !important; writing-mode: vertical-rl; text-orientation: mixed; font-size: 12px; letter-spacing: 1px; font-weight: 900; }
-    #chat-button span{ transform: rotate(180deg); }
+        /* Estilo pestaña vertical (móvil) */
+        #chat-button{
+            width: 25px !important; height: 80px !important;
+            border-radius: 14px 0 0 14px !important;
+            writing-mode: vertical-rl; text-orientation: mixed;
+            font-size: 12px; letter-spacing: 1px; font-weight: 900;
+            background: linear-gradient(180deg, var(--brand-accent), var(--brand-primary, #ff5fa3));
+            color: #fff; position: relative; overflow: visible;
+            box-shadow: 0 10px 18px -10px rgba(0,0,0,.45), 0 6px 12px -8px rgba(0,0,0,.35);
+            border: none;
+            text-shadow: 0 1px 2px rgba(0,0,0,.35);
+        }
+        #chat-button span{ transform: rotate(180deg); }
+        #chat-button::after{
+            content: ""; position: absolute; left: -6px; top: 50%; transform: translateY(-50%);
+            border-right: 6px solid var(--brand-accent);
+            border-top: 6px solid transparent; border-bottom: 6px solid transparent;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,.2));
+        }
+        #chat-button:hover{ filter: brightness(1.05); }
     /* Elevar un poco más para no chocar con barra inferior del sistema */
     #chat-wrapper{ bottom: calc(1rem + env(safe-area-inset-bottom, 0px)) !important; }
     }
