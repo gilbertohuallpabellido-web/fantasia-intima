@@ -65,9 +65,12 @@
         /* Pegar a los bordes usando safe-area para iOS notch */
         #social-wrapper{left:env(safe-area-inset-left,0);bottom:env(safe-area-inset-bottom,0);padding-left:2px;padding-bottom:2px;}
         #social-toggle{width:48px;height:48px;}
-        #social-list{bottom:76px!important;}
-        /* Iconos internos más compactos en móvil */
-        #social-list a.social-icon{width:48px;height:48px;}
+    /* La cajita debe medir lo mismo que el botón: 48px totales */
+    #social-list{bottom:60px!important; width:48px!important;}
+    #social-list.glass-active{padding:4px!important;}
+    /* Cada ícono 40x40 + 4px de padding a cada lado = 48px totales */
+    #social-list a.social-icon{width:40px;height:40px;}
+    #social-list a.social-icon i{font-size:1.1rem;}
     }
     /* Rotación elegante del ícono (+ a X) */
     /* Se elimina rotación + y se incorpora diseño moderno */
