@@ -178,6 +178,12 @@
     body.catalog-page #chat-button { bottom: auto !important; }
     body.catalog-page #chat-container { bottom: 220px !important; right: 1rem !important; }
         /* Se elimina ubicación inferior de la ruleta para usar posición superior */
+    /* Pegar chat a la pared derecha con margen seguro en móviles */
+    #chat-wrapper { right: calc(env(safe-area-inset-right, 0px) + 8px) !important; left: auto !important; }
+    #chat-container { right: calc(env(safe-area-inset-right, 0px) + 8px) !important; left: auto !important; }
+    /* Overrides específicos cuando es catálogo (más específico) */
+    body.catalog-page #chat-wrapper { right: calc(env(safe-area-inset-right, 0px) + 8px) !important; }
+    body.catalog-page #chat-container { right: calc(env(safe-area-inset-right, 0px) + 8px) !important; }
     }
 
     /* Ruleta ahora se maneja dentro del header (mobile absolute, desktop fixed) */
