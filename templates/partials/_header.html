@@ -10,7 +10,7 @@
                 <div class="roulette-inner text-[1.5rem] relative">
                     <i class="fas fa-dice"></i>
                     <span class="roulette-tooltip">Gira y gana</span>
-                    <div class="roulette-fab-callout hidden md:hidden"><i class="fas fa-bolt"></i><span>Gira y gana premios</span></div>
+                    <!-- Callout móvil desactivado para no tapar UI; el callout desktop se maneja por CSS -->
                 </div>
                 <!-- Mini contador de urgencia -->
                 <span class="fi-mini-countdown" x-show="config && config.remaining_seconds > 0" x-text="formatCountdownShort(config.remaining_seconds)" aria-live="polite"></span>
