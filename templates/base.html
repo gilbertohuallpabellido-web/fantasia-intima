@@ -484,22 +484,40 @@
     const initialCartCount = {{ cart_count|default:0 }};
         function buildCard(type, prod){
             if(type==='contact'){
-                return `<div class="flex flex-col gap-2 py-1">
-                    <div class="inline-flex items-center text-[10px] uppercase tracking-wider font-bold bg-gradient-to-r from-emerald-400 to-green-600 text-white px-2 py-1 rounded-full shadow mb-1">Atención directa</div>
-                    <h4 class="text-sm font-extrabold text-white leading-tight">¿Pregunta rápida?</h4>
-                    <p class="text-[12px] text-white/90 leading-snug mb-1">Escríbenos por WhatsApp y te ayudamos al instante.</p>
-                    <a href="{{ configuracion_sitio.whatsapp_link|default:'#' }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-[11px] font-bold bg-white text-green-600 px-3 py-2 rounded-full shadow hover:scale-105 transition"><i class='fab fa-whatsapp text-[14px]'></i> Chatear</a>
-                </div>`;
+                return `<a href="{{ configuracion_sitio.whatsapp_link|default:'#' }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-[13px] sm:text-[14px] font-extrabold text-green-700 whitespace-nowrap">
+                    <i class='fab fa-whatsapp text-[18px]'></i>
+                    <span>Escribir por WhatsApp</span>
+                </a>`;
             }
             if(!prod) return '';
+            // Tomar hasta 2 imágenes (variantes) si existen
+            const extractImages = (p)=>{
+                const out=[];
+                if(Array.isArray(p?.variant_images)) out.push(...p.variant_images.filter(Boolean));
+                if(Array.isArray(p?.images)) out.push(...p.images.filter(Boolean));
+                if(Array.isArray(p?.variantes)) out.push(...p.variantes.map(v=>v?.image||v?.imagen||v?.url).filter(Boolean));
+                if(p?.image) out.push(p.image);
+                // eliminar duplicados conservando orden
+                return Array.from(new Set(out)).slice(0,2);
+            };
+            const imgs = extractImages(prod);
             const discount = prod.discount_percent ? `<span class="text-xs font-bold bg-white/90 text-pink-600 px-2 py-1 rounded-full ml-2 shadow">-${prod.discount_percent}%</span>` : '';
             const price = prod.offer_price ? `<span class='line-through opacity-70 mr-2'>S/ ${prod.price}</span><span class='text-white font-bold'>S/ ${prod.offer_price}</span>` : `<span class='text-white font-bold'>S/ ${prod.price}</span>`;
             const label = type==='new' ? 'Nueva Colección' : 'Oferta Especial';
             const badgeColor = type==='new'? 'from-pink-500 to-rose-500':'from-amber-400 to-pink-500';
             return `<div class="promo-card flex gap-3">
-                <div class="w-20 h-24 rounded-xl overflow-hidden ring-2 ring-white/40 flex-shrink-0 bg-pink-100">
-                    ${prod.image ? `<img src='${prod.image}' alt='${prod.name}' class='w-full h-full object-cover'>` : ''}
+                ${imgs.length ? `
+                <div class="flex-shrink-0 self-center">
+                    ${imgs.length>1 ? `
+                    <div class='flex gap-2'>
+                        <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden ring-2 ring-white/40 bg-pink-100"><img src='${imgs[0]}' alt='${prod.name}' class='w-full h-full object-cover'></div>
+                        <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden ring-2 ring-white/40 bg-pink-100"><img src='${imgs[1]}' alt='${prod.name}' class='w-full h-full object-cover'></div>
+                    </div>
+                    ` : `
+                    <div class="w-40 h-40 sm:w-44 sm:h-44 rounded-xl overflow-hidden ring-2 ring-white/40 bg-pink-100"><img src='${imgs[0]}' alt='${prod.name}' class='w-full h-full object-cover'></div>
+                    `}
                 </div>
+                ` : ''}
                 <div class="flex-1 min-w-0">
                     <div class="inline-flex items-center text-[10px] uppercase tracking-wider font-bold bg-gradient-to-r ${badgeColor} text-white px-2 py-1 rounded-full shadow mb-1">${label}${discount}</div>
                     <h4 class="text-sm font-extrabold text-white leading-tight mb-1">${prod.name}</h4>
@@ -529,9 +547,23 @@
             return `<div id='${id}' data-pos='${pos}' class="fi-promo-popup group pointer-events-auto select-none overflow-hidden backdrop-blur-sm bg-gradient-to-br from-pink-600 via-rose-600 to-fuchsia-600 text-white shadow-[0_18px_48px_-12px_rgba(0,0,0,.55)] border border-white/15 ring-1 ring-white/10" style="${style} opacity:0; transform:${entry}; transform-origin:${origin}; z-index:9999;">
                 <div class='pulse-ring' style="pointer-events:none;"></div><div class='shimmer' style="pointer-events:none;"></div>
                 <button type='button' aria-label='Cerrar' data-close class='fi-promo-close absolute top-1.5 right-1.5 w-8 h-8 rounded-full bg-white/25 hover:bg-white/40 flex items-center justify-center text-white text-base font-bold backdrop-blur-sm transition focus:outline-none focus:ring-2 focus:ring-white/70' style="z-index:20;">×</button>
-                <div class='flex gap-3 pr-2'>
-                  <div class='img-wrap floaty w-20 h-24 ring-2 ring-white/30 shadow-inner'>${inner.match(/<div class=\"promo-card[\s\S]*?<\/div>\s*<\/div>/)? '' : ''}</div>
-                  <div class='flex-1 min-w-0 relative'>${inner}</div>
+                <div class='pr-2'>${inner}</div>
+            </div>`;
+        }
+        // Variante pill para WhatsApp (sin tarjeta grande)
+        function contactPopupTemplate(id, inner){
+            const pos = pickPosition();
+            const margin = 12;
+            let style=""; let origin="center"; let entry="";
+            if(pos==='top-left'){ style = `top:${margin+64}px; left:${margin}px;`; origin='top left'; entry='translate(-12px,-10px) scale(.9)'; }
+            if(pos==='top-right'){ style = `top:${margin+64}px; right:${margin}px;`; origin='top right'; entry='translate(12px,-10px) scale(.9)'; }
+            if(pos==='bottom-left'){ style = `bottom:${margin+96}px; left:${margin}px;`; origin='bottom left'; entry='translate(-12px,12px) scale(.9)'; }
+            if(pos==='bottom-right'){ style = `bottom:${margin+96}px; right:${margin}px;`; origin='bottom right'; entry='translate(12px,12px) scale(.9)'; }
+            if(pos==='center'){ style = `top:50%; left:50%;`; origin='center'; entry='translate(-50%,-50%) scale(.9)'; }
+            return `<div id='${id}' data-pos='${pos}' class="fi-promo-popup pointer-events-auto select-none" style="${style} opacity:0; transform:${entry}; transform-origin:${origin}; z-index:9999; background:transparent; box-shadow:none; border:none; width:auto; max-width:none;">
+                <button type='button' aria-label='Cerrar' data-close class='absolute -top-2 -right-2 w-7 h-7 rounded-full bg-black/40 hover:bg-black/55 text-white flex items-center justify-center text-sm font-bold shadow' style="z-index:20;">×</button>
+                <div class="inline-flex bg-white rounded-full px-5 py-2 shadow-xl border-2 border-emerald-400/80 text-green-700">
+                    ${inner}
                 </div>
             </div>`;
         }
@@ -555,12 +587,14 @@
             if(!el) return;
             if(!isToastVisible()) return;
             const pos = el.dataset.pos;
+            // Popups flotantes en esquinas
             if(pos==='bottom-left' || pos==='bottom-right'){
                 const t=document.getElementById('roulette-promo-toast');
                 const h = t ? t.getBoundingClientRect().height : 0;
                 // Separación extra para respirar
                 el.style.bottom = (h + 28) + 'px';
             }
+            
         }
         function canShow(){
             const now = Date.now();
@@ -606,7 +640,9 @@
             if(!dontCount){ shownTotal++; }
             lastShowTime = Date.now();
             const id='fi-popup-'+kind;
-            root.insertAdjacentHTML('beforeend', popupTemplate(id, buildCard(type, prod)));
+            const inner = buildCard(type, prod);
+            const html = (type==='contact') ? contactPopupTemplate(id, inner) : popupTemplate(id, inner);
+            root.insertAdjacentHTML('beforeend', html);
             if(DEBUG_PROMO) console.log('[PROMO] mostrado', kind, type, prod);
             requestAnimationFrame(()=>{
                 const el=document.getElementById(id); if(!el) return; const pos = el.dataset.pos; const base = pos==='center' ? 'translate(-50%,-50%)' : 'translate(0,0)';
@@ -615,7 +651,7 @@
                 // micro animación hover group (manteniendo centro si aplica)
                 el.addEventListener('mouseenter',()=>{ el.style.transitionDuration='.45s'; el.style.transform=`${base} scale(1.05)`; });
                 el.addEventListener('mouseleave',()=>{ el.style.transform=`${base} scale(1)`; });
-                el.querySelector('[data-close]').addEventListener('click', ()=>hide(el));
+                el.querySelector('[data-close]')?.addEventListener('click', ()=>hide(el));
                 setTimeout(()=>hide(el), 9000);
             });
         }

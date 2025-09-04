@@ -430,3 +430,22 @@ Ejemplo: "Para darte la mejor recomendación, ¿qué buscas? [BOTONES: Algo atre
 
     class Meta:
         verbose_name = "Configuración del Chatbot"
+
+class Profile(models.Model):
+    user = models.OneToOneField('auth.User', on_delete=models.CASCADE)
+    avatar = CloudinaryField('avatar', folder='media/foto_de_perfil', blank=True, null=True)
+    nombre = models.CharField(max_length=100, blank=True)
+    apellido = models.CharField(max_length=100, blank=True)
+    telefono = models.CharField(max_length=20, blank=True)
+
+    def __str__(self):
+        return self.user.username
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_or_update_user_profile(sender, instance, created, **kwargs):
+    """
+    Crea un perfil para el usuario si es nuevo, o simplemente lo guarda si ya existe.
+    """
+    if created:
+        Profile.objects.create(user=instance)
+    instance.profile.save()

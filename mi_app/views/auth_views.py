@@ -8,7 +8,7 @@ from django.utils.encoding import force_str
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth import get_user_model
 
-from ..models import PedidoWhatsApp, Direccion
+from ..models import PedidoWhatsApp, Direccion, ConfiguracionSitio
 from ..forms import RegistroForm, UserUpdateForm, DireccionForm
 
 User = get_user_model()
@@ -31,7 +31,9 @@ def login_view(request):
                 messages.error(request, "Usuario o contraseña inválidos.")
     else:
         form = AuthenticationForm()
-    return render(request, 'mi_app/login.html', {'form': form})
+    
+    site_config = ConfiguracionSitio.objects.first()
+    return render(request, 'mi_app/login.html', {'form': form, 'site_config': site_config})
 
 
 def registro_view(request):
@@ -50,7 +52,8 @@ def registro_view(request):
     else:
         form = RegistroForm()
 
-    return render(request, 'mi_app/registro.html', {'form': form})
+    site_config = ConfiguracionSitio.objects.first()
+    return render(request, 'mi_app/registro.html', {'form': form, 'site_config': site_config})
 
 
 def activate(request, uidb64, token):
@@ -110,13 +113,21 @@ def mi_cuenta(request):
     pedidos = PedidoWhatsApp.objects.filter(user=request.user).order_by('-fecha_creacion')
     direcciones = Direccion.objects.filter(user=request.user).order_by('-predeterminada', 'alias')
 
+    active_tab = request.GET.get('tab') or 'perfil'
+    active_tab_color = 'var(--brand-primary)' if active_tab == 'perfil' else '#fff'
+
+    site_config = ConfiguracionSitio.objects.first()
     context = {
         'pedidos': pedidos,
         'direcciones': direcciones,
         'profile_form': profile_form,
         'address_form': address_form,
+        'activeTab': active_tab,
+        'active_tab_color': active_tab_color,
+        'site_config': site_config,
     }
     return render(request, 'mi_app/mi_cuenta.html', context)
+
 
 # === INICIO DE LA MEJORA: Vista para eliminar la cuenta ===
 @login_required
@@ -135,5 +146,6 @@ def eliminar_cuenta_view(request):
         messages.success(request, 'Tu cuenta ha sido eliminada permanentemente. ¡Esperamos verte de nuevo pronto!')
         return redirect('index')
     
-    return render(request, 'mi_app/confirmar_eliminacion.html')
+    site_config = ConfiguracionSitio.objects.first()
+    return render(request, 'mi_app/confirmar_eliminacion.html', {'site_config': site_config})
 # === FIN DE LA MEJORA ===

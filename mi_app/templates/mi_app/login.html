@@ -14,21 +14,22 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Parisienne&display=swap" rel="stylesheet">
     <style>
         :root {
-            --brand-primary: #f9a8d4;
-            --brand-secondary: #f472b6;
-            --brand-accent: #ec4899;
-            --brand-brown: #5C2C0C;
-            --brand-text: #4b4244;
+            --brand-primary: {{ site_config.color_primario|default:'#f9a8d4' }};
+            --brand-secondary: {{ site_config.color_secundario|default:'#f472b6' }};
+            --brand-accent: {{ site_config.color_acento|default:'#ec4899' }};
+            --brand-brown: {{ site_config.color_marron|default:'#5C2C0C' }};
+            --brand-text: {{ site_config.color_texto|default:'#4b4244' }};
+            --input-bg: #fdf2f8;
         }
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #fdf2f8; /* Un rosa muy suave para el fondo */
+            background-color: var(--input-bg);
         }
         .font-brand {
             font-family: 'Parisienne', cursive;
         }
         .hero-image {
-            background-image: url('https://placehold.co/800x1000/f9a8d4/ffffff?text=Fantasía+Íntima&font=parisienne');
+            background-image: url('https://placehold.co/800x1000/{{ site_config.color_primario|default:"f9a8d4"|slice:"1:" }}/ffffff?text=Fantasía+Íntima&font=parisienne');
             background-size: cover;
             background-position: center;
         }

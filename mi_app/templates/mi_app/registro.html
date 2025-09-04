@@ -14,27 +14,72 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Parisienne&display=swap" rel="stylesheet">
     <style>
         :root {
-            --brand-primary: #f9a8d4;
-            --brand-secondary: #f472b6;
-            --brand-accent: #ec4899;
-            --brand-brown: #5C2C0C;
-            --brand-text: #4b4244;
+            --brand-primary: {{ site_config.color_primario|default:'#f9a8d4' }};
+            --brand-secondary: {{ site_config.color_secundario|default:'#f472b6' }};
+            --brand-accent: {{ site_config.color_acento|default:'#ec4899' }};
+            --brand-brown: {{ site_config.color_marron|default:'#5C2C0C' }};
+            --brand-text: {{ site_config.color_texto|default:'#4b4244' }};
+            --input-bg: #fdf2f8;
+            --input-border: var(--brand-primary);
+            --input-focus: var(--brand-accent);
+            --error-bg: #fee2e2;
+            --error-text: #b91c1c;
+            --success-bg: #d1fae5;
+            --success-text: #065f46;
         }
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #fdf2f8;
+            background-color: var(--input-bg);
         }
         .font-brand {
             font-family: 'Parisienne', cursive;
         }
         .hero-image {
-            background-image: url('https://placehold.co/800x1000/f9a8d4/ffffff?text=Fantasía+Íntima&font=parisienne');
+            background-image: url('https://placehold.co/800x1000/{{ site_config.color_primario|default:"f9a8d4"|slice:"1:" }}/ffffff?text=Fantasía+Íntima&font=parisienne');
             background-size: cover;
             background-position: center;
         }
+        .input-base {
+            background: var(--input-bg);
+            border: 2px solid var(--input-border);
+            border-radius: 0.75rem;
+            transition: border-color 0.2s;
+            color: var(--brand-text);
+        }
+        .input-base:focus {
+            border-color: var(--input-focus);
+            outline: none;
+        }
+        .error-msg {
+            background: var(--error-bg);
+            color: var(--error-text);
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.95rem;
+            margin-top: 0.5rem;
+        }
+        .btn-main {
+            background: var(--brand-accent);
+            color: #fff;
+            font-weight: bold;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            box-shadow: 0 2px 8px var(--brand-primary);
+            transition: background 0.2s;
+            border: none;
+        }
+        .btn-main:hover {
+            background: var(--brand-secondary);
+        }
+        .link-accent {
+            color: var(--brand-accent);
+        }
+        .label-base {
+            color: var(--brand-text);
+        }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
+<body style="background: var(--input-bg);" class="flex items-center justify-center min-h-screen p-4">
     <div class="flex flex-col md:flex-row w-full max-w-6xl bg-white rounded-3xl shadow-2xl overflow-hidden">
         <div class="md:w-1/2 hidden md:block hero-image"></div>
         
@@ -44,11 +89,11 @@
                     <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" class="h-20 w-auto mx-auto">
                 </a>
                 <h1 class="text-5xl font-brand mt-4" style="color: var(--brand-text);">Crear Cuenta</h1>
-                <p class="text-gray-500">Únete a nuestra comunidad</p>
+                <p style="color: var(--brand-text);">Únete a nuestra comunidad</p>
             </div>
             
             {% if form.non_field_errors %}
-            <div class="mb-4 p-3 rounded-lg text-sm font-semibold bg-red-100 text-red-700">
+            <div class="error-msg">
                 {% for error in form.non_field_errors %}{{ error }}{% endfor %}
             </div>
             {% endif %}
@@ -58,76 +103,81 @@
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">{{ form.first_name.label }}</label>
-                        <input type="text" name="{{ form.first_name.name }}" id="{{ form.first_name.id_for_label }}" class="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[--brand-accent]" placeholder="Tus nombres" required>
-                        {% for error in form.first_name.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+                        <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium label-base mb-2">{{ form.first_name.label }}</label>
+                        <input type="text" name="{{ form.first_name.name }}" id="{{ form.first_name.id_for_label }}" class="input-base w-full px-3 py-3" placeholder="Tus nombres" required>
+                        {% for error in form.first_name.errors %}<div class="error-msg">{{ error }}</div>{% endfor %}
                     </div>
                     <div>
-                        <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">{{ form.last_name.label }}</label>
-                        <input type="text" name="{{ form.last_name.name }}" id="{{ form.last_name.id_for_label }}" class="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[--brand-accent]" placeholder="Tus apellidos" required>
-                        {% for error in form.last_name.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+                        <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium label-base mb-2">{{ form.last_name.label }}</label>
+                        <input type="text" name="{{ form.last_name.name }}" id="{{ form.last_name.id_for_label }}" class="input-base w-full px-3 py-3" placeholder="Tus apellidos" required>
+                        {% for error in form.last_name.errors %}<div class="error-msg">{{ error }}</div>{% endfor %}
                     </div>
                 </div>
 
                 <div>
-                    <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">{{ form.username.label }}</label>
+                    <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium label-base mb-2">{{ form.username.label }}</label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3"><i class="fas fa-user text-gray-400"></i></span>
-                        <input type="text" name="{{ form.username.name }}" id="{{ form.username.id_for_label }}" class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[--brand-accent]" placeholder="Crea un nombre de usuario" required>
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3"><i class="fas fa-user" style="color: var(--brand-primary);"></i></span>
+                        <input type="text" name="{{ form.username.name }}" id="{{ form.username.id_for_label }}" class="input-base w-full pl-10 pr-3 py-3" placeholder="Crea un nombre de usuario" required>
                     </div>
-                    {% for error in form.username.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+                    {% for error in form.username.errors %}<div class="error-msg">{{ error }}</div>{% endfor %}
                 </div>
 
                 <div>
-                    <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">{{ form.email.label }}</label>
+                    <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium label-base mb-2">{{ form.email.label }}</label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3"><i class="fas fa-envelope text-gray-400"></i></span>
-                        <input type="email" name="{{ form.email.name }}" id="{{ form.email.id_for_label }}" class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[--brand-accent]" placeholder="ejemplo@gmail.com" required>
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3"><i class="fas fa-envelope" style="color: var(--brand-primary);"></i></span>
+                        <input type="email" name="{{ form.email.name }}" id="{{ form.email.id_for_label }}" class="input-base w-full pl-10 pr-3 py-3" placeholder="ejemplo@gmail.com" required>
                     </div>
-                    {% for error in form.email.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+                    {% for error in form.email.errors %}<div class="error-msg">{{ error }}</div>{% endfor %}
                 </div>
 
                 <div>
-                    <label for="{{ form.password1.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">{{ form.password1.label }}</label>
+                    <label for="{{ form.password1.id_for_label }}" class="block text-sm font-medium label-base mb-2">{{ form.password1.label }}</label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3"><i class="fas fa-lock text-gray-400"></i></span>
-                        <input :type="passwordVisible ? 'text' : 'password'" name="{{ form.password1.name }}" id="{{ form.password1.id_for_label }}" @input="validatePassword($event.target.value)" class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[--brand-accent]" placeholder="Crea una contraseña segura" required>
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3"><i class="fas fa-lock" style="color: var(--brand-primary);"></i></span>
+                        <input :type="passwordVisible ? 'text' : 'password'" name="{{ form.password1.name }}" id="{{ form.password1.id_for_label }}" @input="validatePassword($event.target.value)" class="input-base w-full pl-10 pr-10 py-3" placeholder="Crea una contraseña segura" required>
                         <span class="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer" @click="passwordVisible = !passwordVisible">
-                            <i class="fas text-gray-400" :class="passwordVisible ? 'fa-eye-slash' : 'fa-eye'"></i>
+                            <i class="fas" style="color: var(--brand-primary);" :class="passwordVisible ? 'fa-eye-slash' : 'fa-eye'"></i>
                         </span>
                     </div>
-                    {% for error in form.password1.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+                    {% for error in form.password1.errors %}<div class="error-msg">{{ error }}</div>{% endfor %}
                 </div>
                 
-                <div x-show="password" class="p-4 bg-gray-50 rounded-lg text-sm space-y-2">
-                    <p class="flex items-center" :class="{'text-green-600': checks.length, 'text-gray-500': !checks.length}"><i class="fas mr-2" :class="{'fa-check-circle': checks.length, 'fa-times-circle text-red-400': !checks.length}"></i> Al menos 8 caracteres</p>
-                    <p class="flex items-center" :class="{'text-green-600': checks.number, 'text-gray-500': !checks.number}"><i class="fas mr-2" :class="{'fa-check-circle': checks.number, 'fa-times-circle text-red-400': !checks.number}"></i> Contiene al menos un número</p>
-                    <p class="flex items-center" :class="{'text-green-600': checks.upper, 'text-gray-500': !checks.upper}"><i class="fas mr-2" :class="{'fa-check-circle': checks.upper, 'fa-times-circle text-red-400': !checks.upper}"></i> Contiene al menos una mayúscula</p>
+                <div x-show="password" class="p-4" style="background: var(--input-bg); border-radius: 0.75rem; font-size: 0.95rem;">
+                    <p class="flex items-center" style="color: var(--brand-text);"><i class="fas mr-2" :class="{'fa-check-circle': checks.length, 'fa-times-circle': !checks.length}" style="color: var(--brand-accent);"></i> Al menos 8 caracteres</p>
+                    <p class="flex items-center" style="color: var(--brand-text);"><i class="fas mr-2" :class="{'fa-check-circle': checks.number, 'fa-times-circle': !checks.number}" style="color: var(--brand-accent);"></i> Contiene al menos un número</p>
+                    <p class="flex items-center" style="color: var(--brand-text);"><i class="fas mr-2" :class="{'fa-check-circle': checks.upper, 'fa-times-circle': !checks.upper}" style="color: var(--brand-accent);"></i> Contiene al menos una mayúscula</p>
                 </div>
 
                 <div>
-                    <label for="{{ form.password2.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">{{ form.password2.label }}</label>
+                    <label for="{{ form.password2.id_for_label }}" class="block text-sm font-medium label-base mb-2">{{ form.password2.label }}</label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3"><i class="fas fa-lock text-gray-400"></i></span>
-                        <input :type="password2Visible ? 'text' : 'password'" name="{{ form.password2.name }}" id="{{ form.password2.id_for_label }}" class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[--brand-accent]" placeholder="Confirma tu contraseña" required>
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3"><i class="fas fa-lock" style="color: var(--brand-primary);"></i></span>
+                        <input :type="password2Visible ? 'text' : 'password'" name="{{ form.password2.name }}" id="{{ form.password2.id_for_label }}" class="input-base w-full pl-10 pr-10 py-3" placeholder="Confirma tu contraseña" required>
                         <span class="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer" @click="password2Visible = !password2Visible">
-                            <i class="fas text-gray-400" :class="password2Visible ? 'fa-eye-slash' : 'fa-eye'"></i>
+                            <i class="fas" style="color: var(--brand-primary);" :class="password2Visible ? 'fa-eye-slash' : 'fa-eye'"></i>
                         </span>
                     </div>
-                    {% for error in form.password2.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+                    {% for error in form.password2.errors %}<div class="error-msg">{{ error }}</div>{% endfor %}
                 </div>
 
-                <button type="submit" class="w-full text-white font-bold py-3 px-4 rounded-lg shadow-md" style="background-color: var(--brand-accent);">Crear Cuenta</button>
+                <button type="submit" class="btn-main w-full shadow-md">Crear Cuenta</button>
             </form>
 
-            <div class="mt-6 text-center text-gray-600">
-                <p>¿Ya tienes una cuenta? <a href="{% url 'login' %}" class="hover:underline font-medium" style="color: var(--brand-accent);">Iniciar Sesión</a></p>
-            </div>
+            <div class="mt-6 text-center" style="color: var(--brand-text);">
+                 <p>¿Ya tienes una cuenta? 
+        <a href="{% url 'login' %}" 
+           class="bg-transparent border-none p-0 hover:underline font-medium link-accent cursor-pointer">
+           Iniciar Sesión
+        </a>
+    </p>
+</div>
         </div>
     </div>
 
     <script src="//unpkg.com/alpinejs" defer></script>
-    <script>
+   <script>
         function passwordValidator() {
             return {
                 password: '',

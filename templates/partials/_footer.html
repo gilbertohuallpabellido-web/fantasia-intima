@@ -196,20 +196,20 @@ document.addEventListener('DOMContentLoaded', function(){
 
 
 <!-- PIE DE PÁGINA -->
-<footer class="bg-gradient-to-r from-[--brand-primary] to-[--brand-secondary] text-white py-10 mt-16">
-    <div class="container mx-auto px-6 text-center">
+<footer class="site-footer bg-gradient-to-r from-[--brand-primary] to-[--brand-secondary] text-white py-5 sm:py-10 mt-4 sm:mt-16">
+    <div class="container mx-auto px-3 sm:px-6 text-center">
         {% if configuracion_sitio.logo %}
-            <img src="{{ configuracion_sitio.logo.url }}" alt="Logo de {{ configuracion_sitio.nombre_tienda }}" class="h-16 w-auto mx-auto mb-4 drop-shadow-lg">
+            <img src="{{ configuracion_sitio.logo.url }}" alt="Logo de {{ configuracion_sitio.nombre_tienda }}" class="footer-logo h-10 sm:h-16 w-auto mx-auto mb-1 sm:mb-4 drop-shadow-lg">
         {% else %}
-            <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" class="h-16 w-auto mx-auto mb-4 drop-shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/100x64/f9a8d4/ffffff?text=Logo';">
+            <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" class="footer-logo h-10 sm:h-16 w-auto mx-auto mb-1 sm:mb-4 drop-shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/100x64/f9a8d4/ffffff?text=Logo';">
         {% endif %}
         
-        <div class="flex justify-center flex-wrap gap-x-6 gap-y-2 my-4">
+    <div class="footer-links flex justify-center flex-wrap gap-x-3 sm:gap-x-6 gap-y-1.5 my-2 sm:my-4 text-xs sm:text-base">
             {% for pagina in paginas_informativas %}
                 <a href="{% url 'pagina_informativa' pagina.slug %}" class="text-gray-200 hover:text-white transition-colors hover:underline">{{ pagina.titulo }}</a>
             {% endfor %}
         </div>
         
-        <p>&copy; {% now "Y" %} {{ configuracion_sitio.nombre_tienda|default:"Fantasía Íntima" }}. Todos los derechos reservados.</p>
+    <p class="text-[11px] sm:text-base leading-tight">&copy; {% now "Y" %} {{ configuracion_sitio.nombre_tienda|default:"Fantasía Íntima" }}. Todos los derechos reservados.</p>
     </div>
 </footer>

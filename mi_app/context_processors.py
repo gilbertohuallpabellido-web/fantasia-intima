@@ -56,17 +56,29 @@ def common_context(request):
         'offer': None,
     }
     if nuevo:
+        try:
+            variant_urls_nuevo = [getattr(v.imagen, 'url', None) for v in nuevo.variantes.all()][:2]
+            variant_urls_nuevo = [u for u in variant_urls_nuevo if u]
+        except Exception:
+            variant_urls_nuevo = []
         promo_payload['new_collection'] = {
             'id': nuevo.id,
             'name': nuevo.nombre,
             'image': getattr(nuevo.imagen_principal, 'url', None),
+            'variant_images': variant_urls_nuevo,
             'price': str(nuevo.precio),
         }
     if oferta:
+        try:
+            variant_urls_oferta = [getattr(v.imagen, 'url', None) for v in oferta.variantes.all()][:2]
+            variant_urls_oferta = [u for u in variant_urls_oferta if u]
+        except Exception:
+            variant_urls_oferta = []
         promo_payload['offer'] = {
             'id': oferta.id,
             'name': oferta.nombre,
             'image': getattr(oferta.imagen_principal, 'url', None),
+            'variant_images': variant_urls_oferta,
             'price': str(oferta.precio),
             'offer_price': str(oferta.precio_oferta) if oferta.precio_oferta else None,
             'discount_percent': oferta.descuento_porcentaje,
@@ -81,10 +93,16 @@ def common_context(request):
         except Exception:
             cualquiera = None
         if cualquiera:
+            try:
+                variant_urls_any = [getattr(v.imagen, 'url', None) for v in cualquiera.variantes.all()][:2]
+                variant_urls_any = [u for u in variant_urls_any if u]
+            except Exception:
+                variant_urls_any = []
             promo_payload['any_product'] = {
                 'id': cualquiera.id,
                 'name': cualquiera.nombre,
                 'image': getattr(cualquiera.imagen_principal, 'url', None),
+                'variant_images': variant_urls_any,
                 'price': str(cualquiera.precio),
             }
     else:

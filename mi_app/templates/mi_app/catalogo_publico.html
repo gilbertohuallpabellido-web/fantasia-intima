@@ -294,25 +294,25 @@ document.addEventListener('click', function(e){
         }
     });
     </script>
-    <div class="lg:hidden mt-4 px-1" id="mobile-category-chips">
-        <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2" style="scroll-snap-type:x proximity;">
-            <a href="{% url 'catalogo_publico' %}#product-list-section" class="js-category-link shrink-0 px-4 py-2 rounded-full text-sm font-semibold border transition-colors scroll-snap-align-start text-[var(--brand-text)] border-gray-300" data-filter="categoria" data-value="" onclick="handleFilterClick(event)">Todos</a>
+    <div class="lg:hidden mt-3 px-1" id="mobile-category-chips">
+        <div class="flex gap-1.5 overflow-x-auto no-scrollbar pb-0" style="scroll-snap-type:x proximity;">
+            <a href="{% url 'catalogo_publico' %}#product-list-section" class="js-category-link shrink-0 px-3 py-1.5 rounded-full text-[13px] font-semibold border transition-colors scroll-snap-align-start text-[var(--brand-text)] border-gray-300" data-filter="categoria" data-value="" onclick="handleFilterClick(event)">Todos</a>
             {% for cat in categorias_menu %}
-                <a href="?categoria={{ cat.slug }}#product-list-section" class="shrink-0 px-4 py-2 rounded-full text-sm font-semibold border transition-colors scroll-snap-align-start js-category-link {% if filtros_activos.categoria == cat.slug %}bg-[rgba(var(--brand-primary-rgb),0.15)] border-[var(--brand-accent)] text-[var(--brand-accent)]{% else %}text-[var(--brand-text)] border-gray-300{% endif %}" data-filter="categoria" data-value="{{ cat.slug }}" onclick="handleFilterClick(event)">{{ cat.nombre }}</a>
+                <a href="?categoria={{ cat.slug }}#product-list-section" class="shrink-0 px-3 py-1.5 rounded-full text-[13px] font-semibold border transition-colors scroll-snap-align-start js-category-link {% if filtros_activos.categoria == cat.slug %}bg-[rgba(var(--brand-primary-rgb),0.15)] border-[var(--brand-accent)] text-[var(--brand-accent)]{% else %}text-[var(--brand-text)] border-gray-300{% endif %}" data-filter="categoria" data-value="{{ cat.slug }}" onclick="handleFilterClick(event)">{{ cat.nombre }}</a>
             {% endfor %}
         </div>
     </div>
 
     <!-- Barra fija inferior (móvil) -->
-    <div class="lg:hidden fixed bottom-0 left-0 right-0 z-40 flex justify-around bg-white/95 backdrop-blur border-t shadow-md py-2" id="mobile-action-bar">
-        <button id="open-filters-btn" class="flex flex-col items-center text-xs font-semibold text-[var(--brand-text)]">
-            <i class="fas fa-sliders-h text-lg mb-1" style="color: var(--brand-accent);"></i>Filtros
+    <div class="lg:hidden fixed bottom-0 left-0 right-0 z-40 flex justify-around bg-white/95 backdrop-blur border-t shadow-md py-1" id="mobile-action-bar">
+        <button id="open-filters-btn" class="flex flex-col items-center text-[11px] font-medium text-[var(--brand-text)]">
+            <i class="fas fa-sliders-h text-base mb-0.5" style="color: var(--brand-accent);"></i>Filtros
         </button>
-        <button id="open-sort-btn" class="flex flex-col items-center text-xs font-semibold text-[var(--brand-text)]">
-            <i class="fas fa-sort-amount-down text-lg mb-1" style="color: var(--brand-accent);"></i>Ordenar
+        <button id="open-sort-btn" class="flex flex-col items-center text-[11px] font-medium text-[var(--brand-text)]">
+            <i class="fas fa-sort-amount-down text-base mb-0.5" style="color: var(--brand-accent);"></i>Ordenar
         </button>
-        <a href="#product-list-section" class="flex flex-col items-center text-xs font-semibold text-[var(--brand-text)]">
-            <i class="fas fa-th-large text-lg mb-1" style="color: var(--brand-accent);"></i>Productos
+        <a href="#product-list-section" class="flex flex-col items-center text-[11px] font-medium text-[var(--brand-text)]">
+            <i class="fas fa-th-large text-base mb-0.5" style="color: var(--brand-accent);"></i>Productos
         </a>
     </div>
 
@@ -352,7 +352,7 @@ document.addEventListener('click', function(e){
  CONTENIDO PRINCIPAL (Sidebar y Lista de Productos)
  =======================================================================
 -->
-<div class="container mx-auto px-4 flex flex-col lg:flex-row gap-8 mt-8">
+<div class="container mx-auto px-4 flex flex-col lg:flex-row gap-8 mt-2 sm:mt-8">
 
     {# Header contextual movido dentro del main para no desplazar el sidebar #}
 
@@ -435,7 +435,7 @@ document.addEventListener('click', function(e){
                 <span class="urgency-msg ml-1 text-[9px] sm:text-[10px] font-bold tracking-wide uppercase hidden"></span>
             </span>
         </div>
-    <div class="products-header flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+    <div class="products-header flex flex-col sm:flex-row justify-between items-center mb-3 sm:mb-8 gap-3">
             <h2 id="products-heading" class="text-4xl font-brand w-full" style="color: var(--brand-text);" tabindex="-1">Nuestros Productos</h2>
             <div class="flex items-center gap-4 w-full sm:w-auto justify-start sm:justify-end">
                 <label for="sort-by" class="font-semibold whitespace-nowrap">Ordenar por:</label>
@@ -685,6 +685,37 @@ document.addEventListener('DOMContentLoaded', function(){
         const initParams = new URLSearchParams(window.location.search);
         setActiveCategory(initParams.get('categoria')||'');
     updateMobileProductsCounter();
+
+        // --- Comportamiento del contador en móvil: aparece al hacer scroll hacia arriba ---
+        try {
+            const mq = window.matchMedia('(max-width: 640px)');
+            const header = document.querySelector('header');
+            const counterBar = document.getElementById('banner-context-header');
+            let lastY = window.scrollY;
+            let ticking = false;
+            function updateTop(){
+                if(!counterBar || !header) return;
+                const top = header.getBoundingClientRect().height;
+                // Subimos 29px (10px más respecto al ajuste anterior)
+                const adjusted = Math.max(48, Math.round(top - 29));
+                document.documentElement.style.setProperty('--catalog-counter-top', `${adjusted}px`);
+            }
+            function onScroll(){
+                const y = window.scrollY;
+                const scrollingUp = y < lastY - 4; // margen mínimo
+                if(mq.matches){
+                    if(scrollingUp && y > 10){ counterBar.classList.add('floating'); }
+                    else { counterBar.classList.remove('floating'); }
+                } else {
+                    counterBar.classList.remove('floating');
+                }
+                lastY = y;
+            }
+            if(mq.matches){ updateTop(); }
+            window.addEventListener('resize', updateTop);
+            window.addEventListener('orientationchange', updateTop);
+            window.addEventListener('scroll', ()=>{ if(!ticking){ requestAnimationFrame(()=>{ onScroll(); ticking=false; }); ticking=true; }}, {passive:true});
+        } catch(e) { console.debug('contador flotante init error', e); }
     });
 </script>
 <script>
@@ -854,7 +885,7 @@ document.addEventListener('DOMContentLoaded', function(){
 .hero-animate{overflow:hidden;position:relative;}
 .hero-overlay{background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,.35) 30%,rgba(0,0,0,.55));animation:fadeIn .9s ease both;}
 .hero-content{animation:riseIn .9s cubic-bezier(.22,.9,.3,1) .15s both;}
-.hero-title{background:linear-gradient(90deg,#fff,#ffe4f2 60%,#fff);-webkit-background-clip:text;color:transparent;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));animation:titleGlow 4.5s ease-in-out infinite;}
+.hero-title{background:linear-gradient(90deg,#fff,#ffe4f2 60%,#fff);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));animation:titleGlow 4.5s ease-in-out infinite;}
 .hero-sub{opacity:0;animation:fadeIn .9s ease .35s forwards;}
 .hero-cta{position:relative;overflow:hidden;}
 .hero-cta:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.35),rgba(255,255,255,0) 70%);opacity:0;transition:opacity .5s;}
@@ -866,7 +897,7 @@ document.addEventListener('DOMContentLoaded', function(){
 /* Partículas ligeras */
 .hero-animate .particle{position:absolute;top:0;left:0;width:6px;height:6px;background:radial-gradient(circle,#fff,#ffc1e3);border-radius:50%;opacity:0;animation:float 6s linear infinite;mix-blend-mode:screen;}
 @keyframes float{0%{transform:translate3d(var(--xStart),var(--yStart),0) scale(.4);opacity:0}10%{opacity:.9}85%{opacity:.9}100%{transform:translate3d(var(--xEnd),var(--yEnd),0) scale(1);opacity:0}}
-@media (max-width:640px){.hero-animate{height:50vh!important;min-height:300px;} }
+@media (max-width:640px){.hero-animate{height:42vh!important;min-height:260px;} }
 </style>
 <!-- Bloque residual de quick add y prefetch eliminado -->
 </script>
@@ -876,6 +907,19 @@ document.addEventListener('DOMContentLoaded', function(){
     background-color: rgba(var(--brand-primary-rgb),0.15) !important;
     border:1px solid var(--brand-accent) !important;
     color: var(--brand-accent) !important;
+}
+/* Compactación móvil adicional */
+@media (max-width: 640px){
+    /* Evitar solape inferior con la barra fija */
+    body.catalog-page main{ padding-bottom: 64px; }
+    /* Chips más compactos */
+    #mobile-category-chips a{ font-size: 12px; padding: 6px 10px; border-radius: 9999px; white-space: nowrap; }
+    /* Modo flotante (se activa solo al desplazarse hacia arriba) */
+    #banner-context-header.floating{ position: fixed; left: 0; right: 0; top: var(--catalog-counter-top, 84px); z-index: 45; }
+    /* Compactar el propio header de conteo para ahorrar espacio */
+    #banner-context-header{ padding-top: .25rem; padding-bottom: .25rem; }
+    /* Barra inferior: respetar safe-area en iOS */
+    #mobile-action-bar{ padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 2px); }
 }
 </style>
 <!-- Script de auto-ocultado de la barra inferior móvil eliminado a solicitud: ahora siempre visible -->

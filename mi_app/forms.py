@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.forms import inlineformset_factory
 from django.contrib.auth import get_user_model
-from .models import Producto, ColorVariante, Direccion
+from .models import Producto, ColorVariante, Direccion, Profile
 
 User = get_user_model()
 
@@ -73,3 +73,12 @@ class LoginForm(AuthenticationForm):
         label="Contraseña", 
         widget=forms.PasswordInput(attrs={'class': 'w-full px-4 py-2 border rounded-lg'})
     )
+
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ['avatar', 'nombre', 'apellido', 'telefono'] # incluye avatar y otros campos necesarios
+        widgets = {
+            'avatar': forms.ClearableFileInput(attrs={'accept': 'image/*'}),
+            # ...otros widgets...
+        }
