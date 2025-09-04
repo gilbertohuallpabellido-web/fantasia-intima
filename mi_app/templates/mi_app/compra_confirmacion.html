@@ -1,31 +1,115 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}¡Compra Exitosa! - {{ block.super }}{% endblock %}
+{% block title %}!Compra Exitosa! - {{ block.super }}{% endblock %}
+{% block body_class %}confirmation-page{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Ajustes generales */
+    .order-code-box{background:linear-gradient(145deg,var(--brand-primary,#f9a8d4),var(--brand-accent));color:#fff;position:relative;overflow:hidden;}
+    .order-code-box:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 25% 20%,rgba(255,255,255,.55),rgba(255,255,255,0) 60%);mix-blend-mode:overlay;}
+    .order-code-value{font-feature-settings:"tnum" on,"lnum" on;letter-spacing:.5px;}
+    .steps-list li{display:flex;align-items:flex-start;gap:.75rem;padding:.65rem 0;}
+    .steps-list li i{color:var(--brand-accent);font-size:1.05rem;margin-top:.15rem;}
+    .success-icon-wrap{width:110px;height:110px;border-radius:2rem;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 35% 30%,#4ade80,#16a34a);box-shadow:0 8px 24px -6px rgba(34,197,94,.45);}
+    @media (max-width:640px){
+        .confirmation-shell{padding:2.5rem 1.4rem 2.75rem;}
+        .success-icon-wrap{width:84px;height:84px;border-radius:1.5rem;}
+        .success-icon-wrap i{font-size:3.2rem!important;}
+        .confirmation-shell h1{font-size:1.9rem;margin-bottom:.9rem;}
+        .order-code-box{border-radius:1.4rem;padding:1rem 1.1rem;}
+        .order-code-box h2{font-size:1rem;margin-bottom:.35rem;}
+        .order-code-value{font-size:1.35rem;}
+        .steps-list li{padding:.5rem 0;}
+        .confirmation-actions a{width:100%;}
+    }
+    /* Animación entrada */
+    @keyframes popFade{0%{transform:scale(.92) translateY(12px);opacity:0}60%{transform:scale(1.02) translateY(0);opacity:1}100%{transform:scale(1);}}
+    .animate-pop{animation:popFade .7s cubic-bezier(.19,1,.22,1);}
+    .copy-btn{background:rgba(255,255,255,.18);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
+    .copy-btn:hover{background:rgba(255,255,255,.3);}
+    .copy-toast{position:fixed;left:50%;bottom:-80px;transform:translateX(-50%);background:#111;color:#fff;padding:.65rem 1.1rem;border-radius:1rem;font-size:.8rem;font-weight:600;letter-spacing:.5px;box-shadow:0 6px 18px -6px rgba(0,0,0,.4);opacity:0;transition:bottom .55s cubic-bezier(.19,1,.22,1),opacity .4s ease;z-index:6000;}
+    .copy-toast.show{bottom:1.25rem;opacity:1;}
+</style>
+{% endblock %}
 
 {% block content %}
-<main class="flex items-center justify-center min-h-[70vh] px-4 py-12">
-    <div class="w-full max-w-2xl mx-auto text-center bg-white p-8 md:p-12 rounded-3xl shadow-xl">
-        <div class="text-green-500 mb-6">
-            <i class="fas fa-check-circle text-7xl"></i>
-        </div>
-        <h1 class="text-4xl font-brand text-gray-800 mb-4">¡Gracias por tu compra!</h1>
-        <p class="text-lg text-gray-600 mb-2">Hemos recibido tu pedido <strong style="color: var(--brand-accent);">#{{ pedido.codigo_pedido }}</strong>.</p>
-        
-        <div class="mt-8 p-6 bg-yellow-50 text-yellow-800 rounded-xl border border-yellow-200">
-            <h2 class="font-bold text-lg mb-2">¡Último Paso!</h2>
-            <p>Para finalizar, por favor envía la captura de tu pago de Yape/Plin a nuestro WhatsApp para coordinar el envío.</p>
-        </div>
+<section class="flex items-center justify-center min-h-[70vh] px-4 py-12">
+  <div class="confirmation-shell w-full max-w-2xl mx-auto text-center bg-white p-8 md:p-12 rounded-3xl shadow-xl animate-pop relative">
+    <div class="mx-auto success-icon-wrap mb-6 text-white">
+        <i class="fas fa-check-circle text-6xl md:text-7xl drop-shadow"></i>
+    </div>
+    <h1 class="text-4xl font-brand text-gray-800">¡Gracias por tu compra!</h1>
+    <p class="text-lg text-gray-600 mt-2">Hemos recibido tu pedido.</p>
 
-        <div class="mt-8 flex flex-col sm:flex-row justify-center gap-4">
-            <a href="{{ whatsapp_link_con_mensaje }}" target="_blank" class="inline-flex items-center justify-center bg-green-500 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform duration-200 hover:scale-105">
-                <i class="fab fa-whatsapp mr-3"></i>
-                Enviar Captura por WhatsApp
-            </a>
-            <a href="{% url 'catalogo_publico' %}" class="inline-block bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-full hover:bg-gray-300 transition-colors">
-                Ver más productos
-            </a>
+    <!-- Código de pedido destacado -->
+    <div class="order-code-box mt-8 rounded-2xl p-6 text-left shadow-inner">
+        <h2 class="text-sm font-semibold uppercase tracking-wide opacity-90 mb-1">Código de pedido</h2>
+        <div class="flex items-center gap-3 flex-wrap">
+            <span class="order-code-value text-2xl md:text-3xl font-extrabold">#{{ pedido.codigo_pedido }}</span>
+            <button type="button" class="copy-btn text-xs font-semibold px-3 py-1.5 rounded-full text-white flex items-center gap-1" onclick="copyOrderCode()">
+                <i class="fas fa-copy"></i> Copiar
+            </button>
         </div>
     </div>
-</main>
+
+    <!-- Pasos siguientes -->
+    <div class="mt-8 text-left bg-yellow-50 text-yellow-900 rounded-2xl border border-yellow-200 p-6">
+        <h2 class="font-bold text-lg mb-3 flex items-center gap-2"><i class="fas fa-bolt text-yellow-500"></i> Último paso</h2>
+        <p class="text-sm md:text-base mb-4">Envía la captura de tu pago (Yape / Plin) para acelerar la validación y coordinar el envío.</p>
+        <ul class="steps-list text-sm md:text-base">
+            <li><i class="fas fa-receipt"></i><span>Haz la captura clara del pago.</span></li>
+            <li><i class="fab fa-whatsapp"></i><span>Presiona el botón WhatsApp y envíala.</span></li>
+            <li><i class="fas fa-truck"></i><span>Coordinaremos envío: <strong style="color:var(--brand-accent)">Lima 1 día / Provincia 3-5 días</strong>.</span></li>
+        </ul>
+    </div>
+
+    <div class="confirmation-actions mt-10 flex flex-col sm:flex-row justify-center gap-4">
+        <a href="{{ whatsapp_link_con_mensaje }}" target="_blank" class="inline-flex items-center justify-center bg-green-500 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform duration-200 hover:scale-105">
+            <i class="fab fa-whatsapp mr-3"></i>
+            Enviar Captura
+        </a>
+        <a href="{% url 'catalogo_publico' %}" class="inline-flex items-center justify-center bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-full hover:bg-gray-300 transition-colors">
+            Seguir Comprando
+        </a>
+    </div>
+
+    <p class="mt-8 text-xs text-gray-400">Conserva tu código para seguimiento o soporte.</p>
+  </div>
+  <div id="copy-toast" class="copy-toast" role="status" aria-live="polite">Código copiado</div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Confeti simple al cargar
+    document.addEventListener('DOMContentLoaded', () => {
+        try {
+            if (window.confetti) {
+                confetti({
+                    particleCount: 120,
+                    spread: 70,
+                    origin: { y: 0.25 }
+                });
+                setTimeout(()=>confetti({ particleCount: 70, spread: 55, origin:{y:0.3}}), 450);
+            }
+        } catch(err) { console.debug('confetti skip', err); }
+    });
+
+    function copyOrderCode(){
+        const code = '#{{ pedido.codigo_pedido }}';
+        if(!navigator.clipboard){ fallbackCopy(code); return; }
+        navigator.clipboard.writeText(code).then(showCopyToast).catch(()=>fallbackCopy(code));
+    }
+    function fallbackCopy(text){
+        const ta=document.createElement('textarea');
+        ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){};document.body.removeChild(ta);showCopyToast();
+    }
+    function showCopyToast(){
+        const toast=document.getElementById('copy-toast');
+        if(!toast) return; toast.classList.add('show');
+        setTimeout(()=>toast.classList.remove('show'),2200);
+    }
+</script>
 {% endblock %}

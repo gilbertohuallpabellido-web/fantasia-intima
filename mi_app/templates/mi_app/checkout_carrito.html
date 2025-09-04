@@ -28,11 +28,83 @@
         background-color: #fdf2f8; /* bg-pink-50 */
         box-shadow: 0 0 0 2px var(--brand-accent);
     }
+    /* ===================== */
+    /*  Mejora SOLO MÓVIL    */
+    /* ===================== */
+    /* Variable de altura de la barra inferior */
+    body.checkout-page { --mobile-bottom-bar-height: 88px; }
+    @media (max-width: 1023px) { /* debajo de lg (Tailwind lg=1024px) */
+        .checkout-page {
+            padding-bottom: 7rem; /* espacio para la barra fija */
+        }
+        .checkout-page h1 {
+            font-size: 1.9rem; /* reducir encabezados */
+        }
+        #checkout-form {
+            gap: 1.25rem;
+        }
+        #checkout-form input, #checkout-form select {
+            font-size: 0.95rem;
+            padding-top: 0.8rem;
+            padding-bottom: 0.8rem;
+        }
+        /* Cards de método de pago más compactas y scroll horizontal si excede */
+        .payment-methods-scroll {
+            display: flex;
+            gap: .75rem;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding-bottom: .25rem;
+            margin-bottom: .25rem;
+        }
+        .payment-methods-scroll::-webkit-scrollbar { display: none; }
+        .payment-card { min-width: 110px; }
+        /* Barra inferior fija */
+        #mobile-summary-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: .95rem 1.2rem;
+            z-index: 1000; /* mantener por encima del contenido, NO sobre botones (lo elevamos) */
+            min-height: 74px;
+            left: .75rem;
+            right: .75rem;
+            width: auto;
+            bottom: 72px; /* deja libres los botones flotantes en el borde */
+            border-radius: 1.75rem;
+            box-shadow: 0 8px 24px -8px rgba(0,0,0,.25), 0 2px 8px -3px rgba(0,0,0,.15);
+            border: 1px solid rgba(0,0,0,.05);
+        }
+        #mobile-summary-bar.show { opacity:1; }
+        #mobile-summary-bar .total-label { font-size: .75rem; letter-spacing: .5px; text-transform: uppercase; color:#555; }
+        #mobile-summary-bar .total-value { font-size: 1.35rem; font-weight: 700; color: var(--brand-accent); line-height:1; }
+        #mobile-summary-bar button {
+            flex: 1;
+            background: var(--brand-accent);
+            color: #fff;
+            font-weight: 600;
+            padding: .95rem 1rem;
+            border-radius: 999px;
+            font-size: .95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
+        }
+        /* Ocultar botón grande original en móvil (ya tenemos barra fija) */
+        #submit-button { display: none; }
+    /* Ya NO movemos social/chat: elevamos la barra. Ajustar padding inferior del contenido si fuera necesario */
+    .checkout-main { padding-bottom: 11rem; }
+    }
 </style>
 {% endblock %}
 
+{% block body_class %}checkout-page{% endblock %}
+
 {% block content %}
-<main class="container mx-auto p-4 md:p-8 flex-grow">
+<main class="container mx-auto p-4 md:p-8 flex-grow checkout-main checkout-page">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 w-full max-w-6xl mx-auto">
         <!-- Columna de Detalles de Envío y Pago -->
         <div class="bg-white p-6 md:p-8 rounded-3xl shadow-xl">
@@ -179,7 +251,19 @@
             </div>
         </div>
     </div>
-</main>
+ </main>
+
+<!-- Barra fija inferior SOLO móvil -->
+<div id="mobile-summary-bar" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-xl lg:hidden opacity-0 transition-opacity duration-300 hidden">
+    <div class="flex flex-col">
+        <span class="total-label">Total</span>
+        <span id="mobile-final-total" class="total-value">—</span>
+    </div>
+    <button id="mobile-submit-btn" type="button">
+        <span class="btn-text">Finalizar</span>
+        <i class="fas fa-lock text-xs"></i>
+    </button>
+</div>
 
 <div id="card-unavailable-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50 opacity-0 hidden transition-opacity duration-300">
     <div class="relative w-full max-w-sm mx-auto p-8 rounded-3xl shadow-2xl bg-white text-center transform scale-95 transition-transform duration-300">
@@ -192,6 +276,9 @@
 
 {% block extra_js %}
 <script>
+    // Guardar último método de pago válido (no tarjeta) seleccionado
+    let previousPaymentMethod = null;
+
     function updateDeliveryInfo(ciudad) {
         const deliveryCostElement = document.getElementById('delivery-cost');
         const subtotalElement = document.getElementById('subtotal-price');
@@ -210,25 +297,47 @@
         if(diasInput) diasInput.value = (ciudad === 'Lima') ? 'Aprox. 1 día hábil.' : 'Aprox. 3-5 días hábiles.';
     }
     
+    function buildWalletFields(method) {
+        const paymentNumber = "{{ configuracion_sitio.numero_yape_plin|default:'Número no configurado' }}";
+        const label = method.charAt(0).toUpperCase() + method.slice(1);
+        return `
+            <div class="text-center p-4 bg-gray-100 rounded-xl">
+                <p class="text-sm font-medium text-gray-700">Realiza el pago a través de ${label} al siguiente número:</p>
+                <div class="flex items-center justify-center gap-3 mt-2">
+                    <p id="payment-number" class="text-lg font-bold" style="color: var(--brand-accent);">${paymentNumber}</p>
+                    <button type="button" onclick="copyToClipboard('${paymentNumber}')" class="bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm hover:bg-gray-300 transition-colors">
+                        <i class="fas fa-copy mr-1"></i> Copiar
+                    </button>
+                </div>
+            </div>`;
+    }
+
     function togglePaymentFields(method) {
         const container = document.getElementById('payment-fields');
         if (!container) return;
-        container.innerHTML = '';
-        
-        if (method === 'yape' || method === 'plin') {
-            const paymentNumber = "{{ configuracion_sitio.numero_yape_plin|default:'Número no configurado' }}";
-            container.innerHTML = `
-                <div class="text-center p-4 bg-gray-100 rounded-xl">
-                    <p class="text-sm font-medium text-gray-700">Realiza el pago a través de ${method.charAt(0).toUpperCase() + method.slice(1)} al siguiente número:</p>
-                    <div class="flex items-center justify-center gap-3 mt-2">
-                        <p id="payment-number" class="text-lg font-bold" style="color: var(--brand-accent);">${paymentNumber}</p>
-                        <button type="button" onclick="copyToClipboard('${paymentNumber}')" class="bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm hover:bg-gray-300 transition-colors">
-                            <i class="fas fa-copy mr-1"></i> Copiar
-                        </button>
-                    </div>
-                </div>
-            `;
+
+        // Si el usuario selecciona tarjeta, mostrar aviso inmediato y revertir
+        if (method === 'tarjeta') {
+            showModal('card-unavailable-modal');
+            const radios = document.querySelectorAll('input[name="metodo_pago"]');
+            // Revertir a la opción previa si existía
+            if (previousPaymentMethod) {
+                radios.forEach(r => { r.checked = (r.value === previousPaymentMethod); });
+                container.innerHTML = (previousPaymentMethod === 'yape' || previousPaymentMethod === 'plin') ? buildWalletFields(previousPaymentMethod) : '';
+            } else {
+                // Ningún método previo: simplemente desmarcar tarjeta y limpiar
+                radios.forEach(r => { if (r.value === 'tarjeta') r.checked = false; });
+                container.innerHTML = '';
+            }
+            return; // no continuamos
         }
+
+        // Métodos válidos (yape / plin)
+        container.innerHTML = '';
+        if (method === 'yape' || method === 'plin') {
+            container.innerHTML = buildWalletFields(method);
+        }
+        previousPaymentMethod = method; // guardar último válido
     }
 
     function copyToClipboard(text) {
@@ -288,6 +397,8 @@
         if (ciudadSelect) {
             updateDeliveryInfo(ciudadSelect.value);
         }
+    // Inicializar barra móvil
+    initMobileBar();
     });
 
     function showModal(modalId) {
@@ -303,6 +414,52 @@
         modal.classList.add('opacity-0');
         modal.querySelector('div[class*="transform"]').classList.add('scale-95');
         setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+
+    /* ============================= */
+    /*   Funciones de barra móvil    */
+    /* ============================= */
+    function initMobileBar() {
+        const bar = document.getElementById('mobile-summary-bar');
+        if (!bar) return;
+        // Mostrar solo si ancho < 1024
+        if (window.innerWidth < 1024) {
+            bar.classList.remove('hidden');
+            requestAnimationFrame(() => bar.classList.add('show'));
+            syncMobileTotal();
+        }
+        window.addEventListener('resize', () => {
+            if (window.innerWidth < 1024) {
+                bar.classList.remove('hidden');
+                syncMobileTotal();
+            } else {
+                bar.classList.add('hidden');
+            }
+        });
+        document.getElementById('mobile-submit-btn')?.addEventListener('click', () => {
+            const form = document.getElementById('checkout-form');
+            if (!form) return;
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            // Simular clic del botón original (oculto en móvil)
+            handleFormSubmit(new Event('submit'));
+            form.submit();
+        });
+        // Observador para cambios de total
+        const finalTotal = document.getElementById('final-total');
+        if (finalTotal && 'MutationObserver' in window) {
+            const observer = new MutationObserver(syncMobileTotal);
+            observer.observe(finalTotal, { childList: true, characterData: true, subtree: true });
+        }
+    }
+    function syncMobileTotal() {
+        const desktopTotal = document.getElementById('final-total');
+        const mobileTotal = document.getElementById('mobile-final-total');
+        if (desktopTotal && mobileTotal) {
+            mobileTotal.textContent = desktopTotal.textContent.replace('Total:','').trim();
+        }
     }
 </script>
 {% endblock %}
