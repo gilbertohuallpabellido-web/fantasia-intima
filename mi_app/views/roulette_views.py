@@ -28,7 +28,8 @@ def spin_roulette(request):
         config_ruleta = ConfiguracionRuleta.get_solo()
         # Se obtienen hasta 8 premios para que coincida con el diseño visual
         premios_activos = list(config_ruleta.premios.filter(activo=True).order_by('id')[:8])
-        if not config_ruleta.activa or not premios_activos:
+        is_active = config_ruleta.is_active_now() if hasattr(config_ruleta, 'is_active_now') else config_ruleta.activa
+        if not is_active or not premios_activos:
             return JsonResponse({'success': False, 'error': 'La ruleta no está disponible en este momento.'}, status=500)
     except ConfiguracionRuleta.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'La ruleta no está configurada.'}, status=500)

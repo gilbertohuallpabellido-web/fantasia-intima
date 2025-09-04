@@ -81,6 +81,10 @@
         #roulette-fab-mobile .roulette-fab-callout{top: -50px; font-size:.6rem;}
     }
 
+    /* Mini badge de countdown en FAB móvil */
+    .fi-mini-countdown{position:absolute; top:-6px; right:-6px; background:#fff; color:var(--brand-accent); font-weight:800; font-size:.65rem; line-height:1; padding:.22rem .38rem; border-radius:999px; border:1px solid rgba(255,255,255,.6); box-shadow:0 6px 14px -6px rgba(0,0,0,.45); min-width:28px; text-align:center; letter-spacing:.2px;}
+    @media (max-width:640px){ .fi-mini-countdown{font-size:.62rem; top:-5px; right:-5px; } }
+
     /* === Ruleta: estilos de rueda y texto de premios === */
     #roulette-wheel { position: relative; overflow: visible; aspect-ratio:1/1; box-shadow:0 10px 28px -8px rgba(0,0,0,.35),0 4px 10px -4px rgba(0,0,0,.25); }
     /* Capa de profundidad y brillo */
@@ -213,18 +217,33 @@
     }
 
     /* === Toast Promocional Ruleta === */
-    #roulette-promo-toast { position:fixed; left:50%; bottom:-220px; transform:translateX(-50%); width:calc(100% - 2rem); max-width:420px; background:linear-gradient(135deg,var(--brand-accent),var(--brand-primary,#ff5fa3)); color:#fff; border-radius:1.75rem; padding:1.1rem 1.35rem 1.25rem; box-shadow:0 18px 40px -12px rgba(0,0,0,.45),0 6px 18px -6px rgba(0,0,0,.35); z-index:50000; display:flex; gap:.9rem; align-items:flex-start; font-family:inherit; line-height:1.15; letter-spacing:.3px; backdrop-filter:blur(8px) saturate(160%); -webkit-backdrop-filter:blur(8px) saturate(160%); }
-    #roulette-promo-toast.show { transition:bottom .75s cubic-bezier(.19,1,.22,1); bottom:1.15rem; }
+    #roulette-promo-toast { position:fixed; left:50%; bottom:-220px; transform:translateX(-50%); width:calc(100% - 2rem); max-width:420px; background:linear-gradient(135deg,var(--brand-accent),var(--brand-primary,#ff5fa3)); color:#fff; border-radius:1.25rem; padding:0.9rem 1.1rem 1rem; box-shadow:0 16px 36px -12px rgba(0,0,0,.45),0 6px 16px -6px rgba(0,0,0,.35); z-index:50000; display:flex; gap:.75rem; align-items:flex-start; font-family:inherit; line-height:1.15; letter-spacing:.3px; backdrop-filter:blur(8px) saturate(160%); -webkit-backdrop-filter:blur(8px) saturate(160%); }
+    #roulette-promo-toast.show { transition:bottom .75s cubic-bezier(.19,1,.22,1); bottom:calc(env(safe-area-inset-bottom, 0px) + .9rem); }
     #roulette-promo-toast.hide { bottom:-240px; }
-    #roulette-promo-toast .icon-wrap { width:54px; height:54px; flex:0 0 54px; border-radius:1.2rem; background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.85),rgba(255,255,255,.15)); display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px -4px rgba(0,0,0,.35), inset 0 0 0 2px rgba(255,255,255,.3); position:relative; }
+    #roulette-promo-toast .icon-wrap { width:48px; height:48px; flex:0 0 48px; border-radius:1rem; background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.85),rgba(255,255,255,.15)); display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px -6px rgba(0,0,0,.35), inset 0 0 0 2px rgba(255,255,255,.3); position:relative; }
     #roulette-promo-toast .icon-wrap:after { content:""; position:absolute; inset:0; border-radius:inherit; background:conic-gradient(from 0deg,rgba(255,255,255,.6),rgba(255,255,255,0) 70%); mix-blend-mode:overlay; opacity:.5; }
-    #roulette-promo-toast h4 { font-size:1.1rem; font-weight:800; margin:0 0 .25rem; text-shadow:0 2px 6px rgba(0,0,0,.35); }
-    #roulette-promo-toast p { font-size:.8rem; margin:0 0 .75rem; opacity:.95; font-weight:500; }
-    #roulette-promo-toast button.promo-spin { background:#fff; color:var(--brand-accent); font-weight:800; font-size:.8rem; letter-spacing:.5px; padding:.7rem 1.1rem .75rem; border-radius:1.25rem; display:inline-flex; align-items:center; gap:.4rem; box-shadow:0 6px 14px -6px rgba(0,0,0,.4); transition:transform .35s ease, box-shadow .35s ease; }
+    #roulette-promo-toast h4 { font-size:1rem; font-weight:800; margin:0 0 .15rem; text-shadow:0 2px 6px rgba(0,0,0,.35); }
+    #roulette-promo-toast p { font-size:.78rem; margin:0 0 .55rem; opacity:.95; font-weight:500; display:block; overflow:visible; white-space:normal; word-break:break-word; hyphens:auto; }
+    #roulette-promo-toast button.promo-spin { background:#fff; color:var(--brand-accent); font-weight:800; font-size:.78rem; letter-spacing:.4px; padding:.55rem .95rem .6rem; border-radius:1rem; display:inline-flex; align-items:center; gap:.4rem; box-shadow:0 6px 12px -6px rgba(0,0,0,.4); transition:transform .3s ease, box-shadow .3s ease; }
     #roulette-promo-toast button.promo-spin:hover { transform:translateY(-2px); box-shadow:0 10px 22px -8px rgba(0,0,0,.5); }
     #roulette-promo-toast button.close-toast { position:absolute; top:6px; right:8px; background:rgba(255,255,255,.15); width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:.95rem; font-weight:600; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); transition:background .3s ease; }
     #roulette-promo-toast button.close-toast:hover { background:rgba(255,255,255,.3); }
-    @media (max-width:640px){ #roulette-promo-toast { padding:1rem 1.1rem 1.15rem; border-radius:1.5rem; } #roulette-promo-toast h4{font-size:1rem;} }
+    /* Móvil: más compacto */
+    @media (max-width:640px){
+        #roulette-promo-toast { padding:.8rem .9rem .9rem; border-radius:1.1rem; gap:.6rem; width:calc(100% - 1.2rem); }
+        #roulette-promo-toast .icon-wrap{ width:42px; height:42px; border-radius:.9rem; }
+        #roulette-promo-toast h4{font-size:.95rem;}
+    #roulette-promo-toast p{ font-size:.75rem; margin-bottom:.5rem; white-space:normal; word-break:break-word; hyphens:auto; }
+        #roulette-promo-toast button.promo-spin{ font-size:.75rem; padding:.5rem .85rem .55rem; border-radius:.9rem; }
+    }
+
+    /* Estado compacto automático */
+    #roulette-promo-toast.compact{ padding:.55rem .7rem; border-radius:1rem; align-items:center; gap:.55rem; }
+    #roulette-promo-toast.compact .icon-wrap{ width:36px; height:36px; border-radius:.8rem; }
+    #roulette-promo-toast.compact h4{ font-size:.9rem; margin:0; }
+    #roulette-promo-toast.compact p{ display:none; }
+    #roulette-promo-toast.compact .inline-flex{ transform:scale(.95); transform-origin:left center; }
+    #roulette-promo-toast.compact button.promo-spin{ padding:.45rem .75rem .5rem; font-size:.72rem; }
 
     /* Flecha guía redes */
     .social-arrow-hint{position:fixed; left:1.1rem; bottom:4.8rem; z-index:4800; display:flex; flex-direction:column; align-items:flex-start; font-size:.65rem; font-weight:700; color:#fff; text-shadow:0 2px 6px rgba(0,0,0,.45); pointer-events:none;}
@@ -249,7 +268,7 @@
     </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body data-cart-count-url="{% url 'cart_count' %}" class="flex flex-col min-h-screen {% block body_class %}{% endblock %}" {% if configuracion_ruleta.activa %}x-data="rouletteGame()" x-init="init()"{% endif %}>
+<body data-cart-count-url="{% url 'cart_count' %}" class="flex flex-col min-h-screen {% block body_class %}{% endblock %}" {% if ruleta_activa %}x-data="rouletteGame()" x-init="init()"{% endif %}>
 
     <!-- Encabezado y Menú Móvil -->
     {% include 'partials/_header.html' %}
@@ -270,7 +289,7 @@
     <!-- Pie de Página y Elementos Flotantes -->
     {% include 'partials/_footer.html' %}
 
-    {% if configuracion_ruleta.activa %}
+    {% if ruleta_activa %}
     <!-- Botón Ruleta Desktop flotante (independiente del header) -->
     <button @click="openRoulette && openRoulette()" id="roulette-fab" class="hidden md:flex premium-spin-btn fixed bottom-6 right-24 w-16 h-16 rounded-full items-center justify-center text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-300/60 z-50" aria-label="Abrir Ruleta">
         <div class="roulette-inner">
@@ -284,11 +303,22 @@
     {% endif %}
 
     <!-- Ruleta de la Suerte (modales y lógica) -->
-    {% if configuracion_ruleta.activa %}
+    {% if ruleta_activa %}
         <!-- Modal de la Ruleta (para usuarios logueados) -->
     <div x-show="isOpen" x-cloak x-transition class="roulette-modal-overlay fixed inset-0 bg-black/60 flex items-center justify-center p-4">
             <div @click.away="isOpen = false" class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md text-center">
                 <h2 class="text-3xl font-brand text-[--brand-brown] mb-2" x-text="config.titulo || 'Gira la Ruleta'"></h2>
+                <template x-if="config.remaining_seconds && config.remaining_seconds > 0">
+                    <div class="mb-3" aria-live="polite">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-lg" style="background:#fff; color: var(--brand-accent); border:1px solid rgba(236,72,153,.35);">
+                            <i class="fas fa-hourglass-half"></i>
+                            <span class="font-bold tabular-nums" x-text="formatCountdown(config.remaining_seconds)"></span>
+                        </div>
+                        <div class="w-full h-1.5 rounded mt-2" style="background: rgba(236,72,153,.15);">
+                            <div class="h-full rounded" :style="{ width: progressPercent() + '%', background: 'linear-gradient(90deg, var(--brand-accent), var(--brand-primary,#f9a8d4))' }"></div>
+                        </div>
+                    </div>
+                </template>
                 <p class="text-gray-500 mb-6" x-text="message"></p>
                 <div class="relative w-64 h-64 mx-auto mb-6">
                     <div id="roulette-wheel" class="absolute w-full h-full rounded-full border-8" style="border-color: rgba(var(--brand-primary-rgb, 249,168,212),0.6);" :style="{ background: wheelStyle }">
@@ -370,7 +400,7 @@
     {% endif %}
 
     <div id="big-win-text" aria-hidden="true">¡GANASTE!</div>
-    {% if configuracion_ruleta.activa %}
+    {% if ruleta_activa %}
     <div id="roulette-promo-toast" x-data="{}" x-cloak aria-live="polite" aria-atomic="true">
         <button class="close-toast" type="button" aria-label="Cerrar" onclick="hideRoulettePromo()">&times;</button>
         <div class="icon-wrap">
@@ -379,6 +409,17 @@
         <div class="flex-1 min-w-0">
             <h4>¡Premios hoy!</h4>
             <p>Gira la ruleta y gana descuentos o regalos exclusivos. Tienes hasta <strong>3 intentos</strong> mientras la promoción esté activa.</p>
+            <!-- Contador de urgencia para el toast -->
+            <div class="mt-1" aria-live="polite">
+                <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-md"
+                     style="background:#fff; color: var(--brand-accent); border:1px solid rgba(255,255,255,.35);">
+                    <i class="fas fa-hourglass-half" aria-hidden="true"></i>
+                    <span id="roulette-countdown-text" class="font-bold tabular-nums">Termina en --:--:--</span>
+                </div>
+                <div class="w-full h-1.5 rounded mt-2" style="background: rgba(255,255,255,.35);">
+                    <div id="roulette-countdown-progress" class="h-full rounded" style="width:100%; background:#fff;"></div>
+                </div>
+            </div>
             <button class="promo-spin" type="button" onclick="openRouletteFromPromo()"><i class="fas fa-bolt"></i> GIRAR</button>
         </div>
     </div>
@@ -398,7 +439,7 @@
     
     {% block extra_js %}{% endblock %}
     <script src="//unpkg.com/alpinejs" defer></script>
-    {% if configuracion_ruleta.activa %}
+    {% if ruleta_activa %}
     <script>
     (function(){
     // --- Identificador de usuario para aislar claves LS por cuenta ---
@@ -422,7 +463,9 @@
             if(!t) return;
             userClosedToast = true; t.classList.remove('show'); t.classList.add('hide');
         }
+        let promoExpired = false;
         window.openRouletteFromPromo = function(){
+            if(promoExpired){ return; }
             hideRoulettePromo();
             // Disparar apertura ruleta (desktop FAB o mobile button)
             const alpineRoot = document.querySelector('[x-data*="rouletteGame"]');
@@ -444,8 +487,74 @@
         document.addEventListener('DOMContentLoaded', function(){
             const t = document.getElementById('roulette-promo-toast');
             if(!t) return;
+            // Inicializar contador de urgencia del toast
+            const textEl = document.getElementById('roulette-countdown-text');
+            const progEl = document.getElementById('roulette-countdown-progress');
+            const spinBtn = t.querySelector('button.promo-spin');
+            let remaining = 0; let totalMs = null;
+            try {
+                const cfg = {{ roulette_config_json|safe }};
+                if(cfg && typeof cfg.remaining_seconds === 'number'){
+                    remaining = Math.max(0, cfg.remaining_seconds|0);
+                }
+                const fin = cfg && cfg.fecha_fin ? Date.parse(cfg.fecha_fin) : null;
+                const ini = cfg && cfg.fecha_inicio ? Date.parse(cfg.fecha_inicio) : null;
+                if(fin && ini && fin>ini){ totalMs = fin - ini; }
+            } catch(e) {}
+            function pad(n){ return String(n).padStart(2,'0'); }
+            function formatCountdown(sec){
+                if(!sec || sec<=0) return 'Finalizó';
+                let r = sec;
+                const d = Math.floor(r/86400); r%=86400;
+                const h = Math.floor(r/3600); r%=3600; const m = Math.floor(r/60); const s = r%60;
+                const hTot = d*24 + h;
+                return 'Termina en ' + pad(hTot)+':'+pad(m)+':'+pad(s);
+            }
+            function updateCountdown(){
+                if(textEl){ textEl.textContent = formatCountdown(remaining); }
+                if(progEl){
+                    let pct = 0;
+                    if(totalMs){ pct = Math.max(0, Math.min(100, Math.round((remaining*1000/totalMs)*100))); }
+                    else { pct = Math.max(0, Math.min(100, Math.round((remaining/(24*3600))*100))); }
+                    progEl.style.width = pct + '%';
+                }
+                if(remaining<=0){
+                    promoExpired = true;
+                    if(spinBtn){ spinBtn.disabled = true; spinBtn.style.opacity = '.6'; spinBtn.style.cursor='not-allowed'; spinBtn.innerHTML = '<i class="fas fa-flag-checkered"></i> FINALIZÓ'; }
+                    hideRoulettePromo();
+                    return false;
+                }
+                return true;
+            }
+            if(remaining>0){
+                updateCountdown();
+                const iv = setInterval(()=>{ remaining -= 1; if(!updateCountdown()){ clearInterval(iv); } }, 1000);
+            } else {
+                // Si no hay remaining > 0, considerar expirado (no mostrar)
+                promoExpired = true;
+            }
             if(shouldShow()){
-                setTimeout(()=>{ t.classList.add('show'); sessionStorage.setItem(SESSION_SHOWN_KEY,'1'); }, 650);
+                setTimeout(()=>{ if(!promoExpired){ t.classList.add('show'); sessionStorage.setItem(SESSION_SHOWN_KEY,'1'); } }, 650);
+            }
+            // Auto-compactar en móvil al hacer scroll
+            const isMobile = window.matchMedia('(max-width: 640px)').matches;
+            if(isMobile){
+                let lastY = window.scrollY;
+                const onScroll = ()=>{
+                    const cur = window.scrollY; const delta = cur - lastY; lastY = cur;
+                    if(delta > 4){ t.classList.add('compact'); } else if(delta < -4){ t.classList.remove('compact'); }
+                };
+                window.addEventListener('scroll', onScroll, {passive:true});
+                // Swipe para cerrar
+                let startY=null; let moved=false;
+                t.addEventListener('touchstart', e=>{ startY = e.touches[0].clientY; moved=false; }, {passive:true});
+                t.addEventListener('touchmove', e=>{
+                    if(startY==null) return; const diff = e.touches[0].clientY - startY; if(diff>14){ moved=true; t.style.transform = `translate(-50%, ${Math.min(60,diff)}px)`; }
+                }, {passive:true});
+                t.addEventListener('touchend', ()=>{
+                    if(moved){ hideRoulettePromo(); setTimeout(()=>{ t.style.transform='translateX(-50%)'; }, 400); }
+                    startY=null; moved=false;
+                });
             }
         });
     })();
@@ -798,6 +907,50 @@
                     if(this.attempts >= this.maxAttempts && !this.isAdmin){ this.hasPlayed = true; }
                     // Iniciar rotación de frases mientras no esté abierta la modal
                     this.cycleTaglines();
+                    // Si hay countdown, arrancar timer local decreciente
+                    if(this.config && typeof this.config.remaining_seconds === 'number' && this.config.remaining_seconds > 0){
+                        const tick=()=>{
+                            if(this.config.remaining_seconds>0){
+                                this.config.remaining_seconds -= 1;
+                            } else {
+                                this.isOpen = false; // cerrar cuando termine
+                            }
+                            setTimeout(tick, 1000);
+                        };
+                        setTimeout(tick, 1000);
+                    }
+                },
+                formatCountdown(total){
+                    if(!total || total<=0) return 'Finaliza pronto';
+                    const d = Math.floor(total/86400); total%=86400;
+                    const h = Math.floor(total/3600); total%=3600;
+                    const m = Math.floor(total/60); const s = total%60;
+                    const pad=n=>String(n).padStart(2,'0');
+                    let out='Termina en ';
+                    if(d>0) out += d + 'd ';
+                    out += pad(h)+':'+pad(m)+':'+pad(s);
+                    return out;
+                },
+                formatCountdownShort(total){
+                    if(!total || total<=0) return '00:00:00';
+                    let r = total;
+                    const d = Math.floor(r/86400); r%=86400;
+                    const h = Math.floor(r/3600); r%=3600;
+                    const m = Math.floor(r/60); const s = r%60;
+                    const pad=n=>String(n).padStart(2,'0');
+                    const hTot = d*24 + h;
+                    return pad(hTot)+':'+pad(m)+':'+pad(s);
+                },
+                parseISO(iso){ try{ return iso? Date.parse(iso) : null; }catch(e){ return null; } },
+                progressPercent(){
+                    const fin = this.parseISO(this.config.fecha_fin);
+                    const ini = this.parseISO(this.config.fecha_inicio);
+                    if(!fin){ return 0; }
+                    const total = (ini && fin) ? Math.max(1, fin - ini) : null;
+                    const remaining = Math.max(0, (this.config.remaining_seconds||0)) * 1000;
+                    if(total){ return Math.max(0, Math.min(100, Math.round((remaining/total)*100))); }
+                    const max = 24*3600*1000; // fallback
+                    return Math.max(0, Math.min(100, Math.round((remaining/max)*100)));
                 },
                 registerAttempt(){
                     if(this.isAdmin) return; // admins ilimitado
@@ -947,6 +1100,10 @@
 
                 async spin() {
                     if (this.isSpinning || (this.hasPlayed && !this.isAdmin)) return;
+                    if (this.config && typeof this.config.remaining_seconds === 'number' && this.config.remaining_seconds <= 0) {
+                        this.message = 'La promoción ha finalizado.';
+                        return;
+                    }
                     // Registrar intento inmediatamente
                     this.registerAttempt();
                     this.incTotalAttempts();

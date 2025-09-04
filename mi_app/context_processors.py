@@ -114,9 +114,21 @@ def common_context(request):
         premios_ruleta = list(config_ruleta.premios.filter(activo=True)[:8])
         premios_json = json.dumps([{'id': p.id, 'nombre': p.nombre} for p in premios_ruleta])
         
+        # Calcular segundos restantes si hay fecha_fin
+        remaining_seconds = None
+        try:
+            if getattr(config_ruleta, 'fecha_fin', None):
+                delta = (config_ruleta.fecha_fin - timezone.now()).total_seconds()
+                remaining_seconds = max(0, int(delta))
+        except Exception:
+            remaining_seconds = None
+
         config_json_data = {
             'titulo': config_ruleta.titulo,
-            'activa': config_ruleta.activa,
+            'activa': config_ruleta.is_active_now() if hasattr(config_ruleta, 'is_active_now') else config_ruleta.activa,
+            'fecha_inicio': config_ruleta.fecha_inicio.isoformat() if getattr(config_ruleta, 'fecha_inicio', None) else None,
+            'fecha_fin': config_ruleta.fecha_fin.isoformat() if getattr(config_ruleta, 'fecha_fin', None) else None,
+            'remaining_seconds': remaining_seconds,
             'sonido_giro_url': config_ruleta.sonido_giro.url if config_ruleta.sonido_giro else None,
             'sonido_premio_url': config_ruleta.sonido_premio.url if config_ruleta.sonido_premio else None,
         }
@@ -125,12 +137,14 @@ def common_context(request):
         context.update({
             'roulette_prizes_json': premios_json,
             'roulette_config_json': config_json,
+            'ruleta_activa': (config_ruleta.is_active_now() if hasattr(config_ruleta, 'is_active_now') else config_ruleta.activa),
         })
     else:
         # Si no hay ruleta, proveemos valores por defecto.
         context.update({
             'roulette_prizes_json': '[]',
             'roulette_config_json': '{}',
+            'ruleta_activa': False,
         })
 
     return context

@@ -4,14 +4,16 @@
 <header x-data="{ mobileMenuOpen: false }" style="background-color: rgba(var(--brand-primary-rgb, 249, 168, 212), 0.8);" class="backdrop-blur-sm sticky top-0 z-50 shadow-md relative">
     <div class="container mx-auto px-4">
     <div class="flex justify-between items-center h-20">
-            {% if configuracion_ruleta.activa %}
+            {% if ruleta_activa %}
             <!-- Botón Ruleta (móvil centrado arriba, desktop flotante) -->
-            <button @click="openRoulette && openRoulette()" id="roulette-fab-mobile" class="md:hidden premium-spin-btn absolute top-1 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full flex items-center justify-center text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-300/60 z-60" aria-label="Abrir Ruleta (Móvil)">
+            <button @click="openRoulette && openRoulette()" id="roulette-fab-mobile" :disabled="config && config.remaining_seconds <= 0" class="md:hidden premium-spin-btn absolute top-1 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full flex items-center justify-center text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-300/60 z-60" aria-label="Abrir Ruleta (Móvil)">
                 <div class="roulette-inner text-[1.5rem] relative">
                     <i class="fas fa-dice"></i>
                     <span class="roulette-tooltip">Gira y gana</span>
                     <div class="roulette-fab-callout hidden md:hidden"><i class="fas fa-bolt"></i><span>Gira y gana premios</span></div>
                 </div>
+                <!-- Mini contador de urgencia -->
+                <span class="fi-mini-countdown" x-show="config && config.remaining_seconds > 0" x-text="formatCountdownShort(config.remaining_seconds)" aria-live="polite"></span>
                 <span class="spark spark-1"></span>
                 <span class="spark spark-2"></span>
                 <span class="spark spark-3"></span>

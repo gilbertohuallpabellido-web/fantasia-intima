@@ -379,10 +379,14 @@ class PremioRuletaInline(admin.TabularInline):
 @admin.register(ConfiguracionRuleta)
 class ConfiguracionRuletaAdmin(SingletonModelAdmin):
     inlines = [PremioRuletaInline]
-    list_display = ('__str__', 'activa', 'titulo')
+    list_display = ('__str__', 'activa', 'titulo', 'fecha_inicio', 'fecha_fin')
     fieldsets = (
         (None, {
             'fields': ('activa', 'titulo')
+        }),
+        ('Ventana de tiempo (opcional)', {
+            'classes': ('collapse',),
+            'fields': ('fecha_inicio', 'fecha_fin')
         }),
         ('Sonidos (Opcional)', {
             'classes': ('collapse',),

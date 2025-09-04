@@ -319,6 +319,9 @@ class ConfiguracionRuleta(SingletonModel):
 # ... (código existente sin cambios)
     activa = models.BooleanField(default=False, help_text="Marca esta casilla para mostrar la ruleta en la web.")
     titulo = models.CharField(max_length=100, default="¡Gira y Gana!", help_text="El título que aparecerá en el pop-up de la ruleta (ej: 'Especial de Halloween').")
+    # Ventana de tiempo (opcional): si se establecen, la ruleta solo estará activa entre estas fechas
+    fecha_inicio = models.DateTimeField(null=True, blank=True, help_text="Inicio de la promoción de la ruleta (opcional)")
+    fecha_fin = models.DateTimeField(null=True, blank=True, help_text="Fin de la promoción de la ruleta (opcional)")
      # === INICIO DE LA MEJORA: Campos de archivo inteligentes para Cloudinary ===
     sonido_giro = CloudinaryField(
         'sonido_giro',
@@ -343,6 +346,18 @@ class ConfiguracionRuleta(SingletonModel):
 
     def __str__(self):
         return "Configuración de la Ruleta"
+
+    def is_active_now(self):
+        """Devuelve True si la ruleta está marcada como activa y además la hora actual
+        está dentro de [fecha_inicio, fecha_fin) cuando dichas fechas están definidas."""
+        if not self.activa:
+            return False
+        now = timezone.now()
+        if self.fecha_inicio and now < self.fecha_inicio:
+            return False
+        if self.fecha_fin and now >= self.fecha_fin:
+            return False
+        return True
 
 class PremioRuleta(models.Model):
 # ... (código existente sin cambios)
