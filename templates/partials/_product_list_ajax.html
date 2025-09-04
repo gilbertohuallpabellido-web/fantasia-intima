@@ -22,11 +22,11 @@ La vista 'catalogo_publico' pasa el contexto necesario ('productos', 'page_obj',
                 <!-- Contenedor relativo para la imagen y las etiquetas superpuestas -->
                 <div class="relative">
                     <!-- Imagen del Producto -->
-                    <div class="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-t-lg">
+            <div class="w-full overflow-visible md:overflow-hidden rounded-t-lg md:aspect-w-1 md:aspect-h-1">
                         {% if producto.imagen_principal %}
-                            <img src="{{ producto.imagen_principal.url }}" alt="{{ producto.nombre }}" loading="lazy" decoding="async" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300">
+                <img src="{{ producto.imagen_principal.url }}" alt="{{ producto.nombre }}" loading="lazy" decoding="async" class="w-full h-auto md:h-full object-contain md:object-cover object-center transition-transform duration-300 md:group-hover:scale-105">
                         {% else %}
-                            <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+                            <div class="w-full bg-gray-200 flex items-center justify-center py-8 md:py-0 md:h-full">
                                 <i class="fas fa-image text-gray-400 text-4xl"></i>
                             </div>
                         {% endif %}

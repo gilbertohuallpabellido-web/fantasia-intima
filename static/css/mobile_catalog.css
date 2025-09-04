@@ -55,8 +55,9 @@
   /* Grid producto: asegurar dos columnas compactas */
   #product-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem;padding-bottom:4.5rem;}
   .product-card{border-radius:12px;}
-  .product-card .aspect-w-1{aspect-ratio:1/1;}
-  .product-card img{aspect-ratio:1/1;object-fit:cover;}
+  /* Evitar recortes en móvil: no forzar cuadrado ni cover */
+  /* Si un contenedor usa clases md:aspect-*, eso aplica sólo en >= md */
+  .product-card img{width:100%;height:auto;object-fit:contain;}
   .product-card h3{font-size:.8rem;line-height:1.1;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:.25rem;}
   .product-card .product-description{display:none;}
   .product-card .product-price{font-size:.95rem;}
