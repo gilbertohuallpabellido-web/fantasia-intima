@@ -7,6 +7,9 @@
     {% block meta_viewport %}
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     {% endblock %}
+    {% if build_commit %}
+    <meta name="build-commit" content="{{ build_commit }}" />
+    {% endif %}
     <title>{% block title %}Fantasía Íntima{% endblock %}</title>
     <link rel="icon" href="{% static 'productos/logo.png' %}" type="image/png">
     
@@ -288,6 +291,11 @@
     
     <!-- Pie de Página y Elementos Flotantes -->
     {% include 'partials/_footer.html' %}
+    {% if build_commit %}
+    <div class="text-center text-gray-400 text-xs mt-2 mb-4 select-none" aria-hidden="true">
+        build {{ build_commit }}{% if build_branch %} ({{ build_branch }}){% endif %}
+    </div>
+    {% endif %}
 
     {% if ruleta_activa %}
     <!-- Botón Ruleta Desktop flotante (independiente del header) -->

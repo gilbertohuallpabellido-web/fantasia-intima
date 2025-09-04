@@ -1,5 +1,6 @@
 # mi_app/context_processors.py
 import json
+import os
 from .models import Categoria, ConfiguracionSitio, Pagina, ConfiguracionRuleta, ConfiguracionChatbot, Banner, Producto
 from django.urls import reverse
 from django.utils import timezone
@@ -34,6 +35,16 @@ def common_context(request):
         'configuracion_ruleta': config_ruleta,
         'chatbot_config': chatbot_config, # <-- Aquí está la nueva configuración
     }
+
+    # Sello de versión (para ver en producción qué build está activo)
+    try:
+        commit_full = os.environ.get('RENDER_GIT_COMMIT') or os.environ.get('GIT_COMMIT') or os.environ.get('COMMIT_SHA') or ''
+        branch = os.environ.get('RENDER_GIT_BRANCH') or os.environ.get('BRANCH') or ''
+        context['build_commit'] = (commit_full[:7] if commit_full else '')
+        context['build_branch'] = branch
+    except Exception:
+        context['build_commit'] = ''
+        context['build_branch'] = ''
 
     # === PROMOS: Selección rápida de 1 producto nueva colección y 1 oferta ===
     try:
