@@ -293,7 +293,7 @@
     {% include 'partials/_footer.html' %}
     {% if build_commit %}
     <div class="text-center text-gray-400 text-xs mt-2 mb-4 select-none" aria-hidden="true">
-        build {{ build_commit }}{% if build_branch %} ({{ build_branch }}){% endif %}
+        build {{ build_commit }}{% if build_branch %} ({{ build_branch }}){% endif %}{% if build_built_at %} · {{ build_built_at }} UTC{% endif %}
     </div>
     {% endif %}
 

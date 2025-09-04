@@ -1,6 +1,7 @@
 # mi_app/context_processors.py
 import json
 import os
+from pathlib import Path
 from .models import Categoria, ConfiguracionSitio, Pagina, ConfiguracionRuleta, ConfiguracionChatbot, Banner, Producto
 from django.urls import reverse
 from django.utils import timezone
@@ -40,11 +41,27 @@ def common_context(request):
     try:
         commit_full = os.environ.get('RENDER_GIT_COMMIT') or os.environ.get('GIT_COMMIT') or os.environ.get('COMMIT_SHA') or ''
         branch = os.environ.get('RENDER_GIT_BRANCH') or os.environ.get('BRANCH') or ''
+        built_at = ''
+        # Fallback: leer build_info.json en raíz del proyecto
+        if not commit_full:
+            try:
+                root = Path(__file__).resolve().parents[1]
+                info_path = root / 'build_info.json'
+                if info_path.exists():
+                    with open(info_path, 'r', encoding='utf-8') as f:
+                        info = json.load(f)
+                        commit_full = info.get('commit', '') or commit_full
+                        branch = info.get('branch', '') or branch
+                        built_at = info.get('built_at', '')
+            except Exception:
+                pass
         context['build_commit'] = (commit_full[:7] if commit_full else '')
         context['build_branch'] = branch
+        context['build_built_at'] = built_at
     except Exception:
         context['build_commit'] = ''
         context['build_branch'] = ''
+        context['build_built_at'] = ''
 
     # === PROMOS: Selección rápida de 1 producto nueva colección y 1 oferta ===
     try:
