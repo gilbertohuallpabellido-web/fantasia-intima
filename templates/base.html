@@ -499,11 +499,14 @@
             const textEl = document.getElementById('roulette-countdown-text');
             const progEl = document.getElementById('roulette-countdown-progress');
             const spinBtn = t.querySelector('button.promo-spin');
-            let remaining = 0; let totalMs = null;
+            let remaining = null; // null => sin fecha fin, no expira automáticamente
+            let totalMs = null;
             try {
                 const cfg = {{ roulette_config_json|safe }};
                 if(cfg && typeof cfg.remaining_seconds === 'number'){
                     remaining = Math.max(0, cfg.remaining_seconds|0);
+                } else {
+                    remaining = null;
                 }
                 const fin = cfg && cfg.fecha_fin ? Date.parse(cfg.fecha_fin) : null;
                 const ini = cfg && cfg.fecha_inicio ? Date.parse(cfg.fecha_inicio) : null;
@@ -511,6 +514,7 @@
             } catch(e) {}
             function pad(n){ return String(n).padStart(2,'0'); }
             function formatCountdown(sec){
+                if(sec === null) return 'Disponible';
                 if(!sec || sec<=0) return 'Finalizó';
                 let r = sec;
                 const d = Math.floor(r/86400); r%=86400;
@@ -521,12 +525,14 @@
             function updateCountdown(){
                 if(textEl){ textEl.textContent = formatCountdown(remaining); }
                 if(progEl){
-                    let pct = 0;
-                    if(totalMs){ pct = Math.max(0, Math.min(100, Math.round((remaining*1000/totalMs)*100))); }
-                    else { pct = Math.max(0, Math.min(100, Math.round((remaining/(24*3600))*100))); }
+                    let pct = 100;
+                    if(remaining !== null){
+                        if(totalMs){ pct = Math.max(0, Math.min(100, Math.round((remaining*1000/totalMs)*100))); }
+                        else { pct = Math.max(0, Math.min(100, Math.round((remaining/(24*3600))*100))); }
+                    }
                     progEl.style.width = pct + '%';
                 }
-                if(remaining<=0){
+                if(remaining !== null && remaining<=0){
                     promoExpired = true;
                     if(spinBtn){ spinBtn.disabled = true; spinBtn.style.opacity = '.6'; spinBtn.style.cursor='not-allowed'; spinBtn.innerHTML = '<i class="fas fa-flag-checkered"></i> FINALIZÓ'; }
                     hideRoulettePromo();
@@ -534,12 +540,13 @@
                 }
                 return true;
             }
-            if(remaining>0){
+            if(remaining !== null && remaining>0){
                 updateCountdown();
                 const iv = setInterval(()=>{ remaining -= 1; if(!updateCountdown()){ clearInterval(iv); } }, 1000);
             } else {
-                // Si no hay remaining > 0, considerar expirado (no mostrar)
-                promoExpired = true;
+                // Sin fecha fin: no expira automáticamente
+                promoExpired = false;
+                updateCountdown();
             }
             if(shouldShow()){
                 setTimeout(()=>{ if(!promoExpired){ t.classList.add('show'); sessionStorage.setItem(SESSION_SHOWN_KEY,'1'); } }, 650);
