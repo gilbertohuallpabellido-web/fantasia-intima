@@ -3,6 +3,39 @@
 
 {% block title %}Mi Carrito de Compras - {{ block.super }}{% endblock %}
 
+{% block extra_css %}
+<style>
+/* === Botones mejorados resumen de compra === */
+.fi-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:.65rem;padding:1.05rem 1.9rem;font-weight:700;border-radius:9999px;font-size:1.05rem;line-height:1;letter-spacing:.35px;cursor:pointer;user-select:none;overflow:hidden;isolation:isolate;transition:background .55s, box-shadow .4s, transform .22s, filter .4s; box-shadow:0 6px 18px -6px rgba(0,0,0,.25),0 2px 6px -2px rgba(0,0,0,.18);} 
+.fi-btn span{position:relative;z-index:2;display:inline-flex;align-items:center;gap:.55rem;}
+.fi-btn::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(135deg,rgba(255,255,255,.32),rgba(255,255,255,.06));opacity:.55;mix-blend-mode:overlay;pointer-events:none;transition:opacity .6s;}
+.fi-btn::after{content:"";position:absolute;top:0;left:-160%;width:160%;height:100%;background:linear-gradient(100deg,transparent 0%,rgba(255,255,255,.6) 44%,rgba(255,255,255,.9) 50%,rgba(255,255,255,.6) 56%,transparent 100%);transform:skewX(-18deg);opacity:0;transition:opacity .45s, left 1.15s;}
+.fi-btn:hover::after{left:-10%;opacity:1;}
+.fi-btn:active{transform:translateY(2px) scale(.97);box-shadow:0 4px 14px -6px rgba(0,0,0,.35),0 1px 4px -1px rgba(0,0,0,.25);} 
+.fi-btn:focus-visible{outline:2px solid #fff;outline-offset:3px;box-shadow:0 0 0 3px rgba(255,255,255,.9),0 0 0 6px var(--brand-accent,#e91e63);} 
+.fi-btn-primary{background:linear-gradient(140deg,var(--brand-accent,#ec1971) 0%,#f8459a 40%,#d01262 70%,#ff4fa3 100%);background-size:180% 180%;animation:fiGrad 6s ease-in-out infinite;color:#fff;}
+.fi-btn-primary:hover{filter:brightness(1.07);} 
+.fi-btn-whatsapp{background:linear-gradient(140deg,#08a344 0%,#11d35a 55%,#0bbf4d 90%);background-size:170% 170%;animation:fiGrad 7s linear infinite;color:#fff;}
+.fi-btn-whatsapp:hover{filter:brightness(1.08);} 
+.fi-btn-shadow-soft{box-shadow:0 8px 28px -8px rgba(0,0,0,.35),0 4px 12px -4px rgba(0,0,0,.25);} 
+.fi-btn[disabled],.fi-btn.disabled{filter:grayscale(.3) brightness(.85);cursor:not-allowed;opacity:.65;}
+.fi-btn-loading span{opacity:0;} 
+.fi-btn-loading::after{left:0;animation:fiBtnLoading 1.1s linear infinite;opacity:1;background:linear-gradient(90deg,rgba(255,255,255,.1),rgba(255,255,255,.8),rgba(255,255,255,.1));}
+@keyframes fiBtnLoading{0%{transform:translateX(-100%);}100%{transform:translateX(100%);} }
+@keyframes fiGrad{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+/* Ripple */
+.fi-btn .fi-ripple{position:absolute;border-radius:50%;transform:scale(0);animation:fiRipple .6s ease-out;pointer-events:none;background:rgba(255,255,255,.5);mix-blend-mode:overlay;}
+@keyframes fiRipple{to{transform:scale(3);opacity:0;}}
+/* Nota confianza */
+.fi-trust-note{font-size:.7rem;letter-spacing:.6px;text-transform:uppercase;font-weight:600;opacity:.75;margin-top:.35rem;display:flex;align-items:center;gap:.35rem;justify-content:center;}
+.fi-trust-note i{font-size:.75rem;}
+/* Reduce motion */
+@media (prefers-reduced-motion:reduce){.fi-btn,.fi-btn-primary,.fi-btn-whatsapp{animation:none!important;transition:background .3s,box-shadow .3s,transform .2s;} }
+/* Compactar en móvil */
+@media (max-width:640px){.fi-btn{padding:1rem 1.4rem;font-size:1.02rem;}}
+</style>
+{% endblock %}
+
 {% block breadcrumbs %}
 <nav class="text-sm text-gray-500" aria-label="Breadcrumb">
     <ol class="list-none p-0 inline-flex">
@@ -92,13 +125,13 @@
                         <span>Total:</span>
                         <span style="color: var(--brand-accent);" id="total-price-display">S/{{ total_price|floatformat:2 }}</span>
                     </div>
-                    <a href="{% url 'checkout_carrito' %}" class="inline-block w-full text-center text-white font-bold text-xl py-4 px-6 rounded-full shadow-lg" style="background-color: var(--brand-accent);">
-                        Proceder al Pago
+                    <a href="{% url 'checkout_carrito' %}" class="fi-btn fi-btn-primary w-full fi-btn-shadow-soft" aria-label="Proceder al pago seguro">
+                        <span><i class="fas fa-lock text-sm opacity-90"></i> Proceder al Pago</span>
                     </a>
-                    <button id="whatsapp-btn" onclick="generateWhatsAppOrder()" class="inline-flex items-center justify-center w-full text-center bg-green-500 text-white font-bold text-xl py-4 px-6 rounded-full shadow-lg">
-                        <i class="fab fa-whatsapp mr-3"></i>
-                        Pedir por WhatsApp
+                    <button id="whatsapp-btn" onclick="generateWhatsAppOrder()" class="fi-btn fi-btn-whatsapp w-full fi-btn-shadow-soft" type="button" aria-label="Pedir por WhatsApp">
+                        <span><i class="fab fa-whatsapp text-lg"></i> Pedir por WhatsApp</span>
                     </button>
+                    <div class="fi-trust-note text-gray-600"><i class="fas fa-shield-alt"></i> Pago 100% Seguro • Atención Privada</div>
                 </div>
             </div>
         </div>
@@ -337,5 +370,23 @@
         }
         showModal('error-modal');
     }
+    // Ripple efecto accesible (ignora usuarios con preferencia reduce-motion)
+    (function(){
+        const prefersReduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if(prefersReduce) return; 
+        document.addEventListener('pointerdown', e => {
+            const btn = e.target.closest('.fi-btn');
+            if(!btn) return;
+            const rect = btn.getBoundingClientRect();
+            const ripple = document.createElement('span');
+            ripple.className='fi-ripple';
+            const size = Math.max(rect.width, rect.height);
+            ripple.style.width=ripple.style.height=size+'px';
+            ripple.style.left=(e.clientX - rect.left - size/2)+'px';
+            ripple.style.top=(e.clientY - rect.top - size/2)+'px';
+            btn.appendChild(ripple);
+            setTimeout(()=>{ripple.remove();},600);
+        });
+    })();
 </script>
 {% endblock %}

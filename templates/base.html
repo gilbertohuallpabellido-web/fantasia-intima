@@ -526,9 +526,9 @@
             if(pos==='bottom-left'){ style = `bottom:${margin+96}px; left:${margin}px;`; origin='bottom left'; entry='translate(-18px,18px) scale(.85) rotate(4deg)'; }
             if(pos==='bottom-right'){ style = `bottom:${margin+96}px; right:${margin}px;`; origin='bottom right'; entry='translate(18px,18px) scale(.85) rotate(-4deg)'; }
             if(pos==='center'){ style = `top:50%; left:50%;`; origin='center'; entry='translate(-50%,-50%) scale(.8) rotate(-2deg)'; }
-            return `<div id='${id}' data-pos='${pos}' class="fi-promo-popup group pointer-events-auto select-none overflow-hidden backdrop-blur-sm bg-gradient-to-br from-pink-600 via-rose-600 to-fuchsia-600 text-white shadow-[0_18px_48px_-12px_rgba(0,0,0,.55)] border border-white/15 ring-1 ring-white/10" style="${style} opacity:0; transform:${entry}; transform-origin:${origin};">
-                <div class='pulse-ring'></div><div class='shimmer'></div>
-                <button type='button' aria-label='Cerrar' data-close class='absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-white/15 hover:bg-white/30 flex items-center justify-center text-white text-sm font-bold backdrop-blur-sm transition'>×</button>
+            return `<div id='${id}' data-pos='${pos}' class="fi-promo-popup group pointer-events-auto select-none overflow-hidden backdrop-blur-sm bg-gradient-to-br from-pink-600 via-rose-600 to-fuchsia-600 text-white shadow-[0_18px_48px_-12px_rgba(0,0,0,.55)] border border-white/15 ring-1 ring-white/10" style="${style} opacity:0; transform:${entry}; transform-origin:${origin}; z-index:9999;">
+                <div class='pulse-ring' style="pointer-events:none;"></div><div class='shimmer' style="pointer-events:none;"></div>
+                <button type='button' aria-label='Cerrar' data-close class='fi-promo-close absolute top-1.5 right-1.5 w-8 h-8 rounded-full bg-white/25 hover:bg-white/40 flex items-center justify-center text-white text-base font-bold backdrop-blur-sm transition focus:outline-none focus:ring-2 focus:ring-white/70' style="z-index:20;">×</button>
                 <div class='flex gap-3 pr-2'>
                   <div class='img-wrap floaty w-20 h-24 ring-2 ring-white/30 shadow-inner'>${inner.match(/<div class=\"promo-card[\s\S]*?<\/div>\s*<\/div>/)? '' : ''}</div>
                   <div class='flex-1 min-w-0 relative'>${inner}</div>
