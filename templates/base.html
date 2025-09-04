@@ -378,7 +378,7 @@
         </div>
         <div class="flex-1 min-w-0">
             <h4>¡Premios hoy!</h4>
-            <p>Gira ahora la ruleta y descubre si te llevas descuentos o regalos exclusivos. ¡Sólo 1 intento diario!</p>
+            <p>Gira la ruleta y gana descuentos o regalos exclusivos. Tienes hasta <strong>3 intentos</strong> mientras la promoción esté activa.</p>
             <button class="promo-spin" type="button" onclick="openRouletteFromPromo()"><i class="fas fa-bolt"></i> GIRAR</button>
         </div>
     </div>
@@ -587,6 +587,8 @@
             const dontCount = !!opts.dontCount; // si true no suma al contador
             // En modo infinito ignoramos persistencias previas: no early returns por shownFlags o session
             if(!ignoreCooldown && !canShow()) { if(DEBUG_PROMO) console.log('[PROMO] cooldown'); return; }
+            // Asegurar un solo popup (elimina anteriores no persistentes)
+            try { document.querySelectorAll('.fi-promo-popup').forEach(p=>{ if(!p.dataset.persist) p.remove(); }); } catch(e){}
             let type; let prod=null;
             if(forcedType==='contact'){
                 type='contact';
@@ -624,22 +626,27 @@
             const LS_LAST_ABS='fiPromoLastShownAbs';
             const LS_IDX='fiPromoSeqIdx';
             const interval = promoConfig.cooldownMs; // 30000 ms
+            let nextPlannedTs = 0; // timestamp del próximo popup programado
             let seqIdx = parseInt(localStorage.getItem(LS_IDX)||'0',10) || 0;
             function nextKind(){ const item = baseSeq[seqIdx % baseSeq.length]; seqIdx++; try{localStorage.setItem(LS_IDX, String(seqIdx));}catch(e){} return item; }
             function doShow(){
                 const item = nextKind();
                 showPopup(item.k, item.forced, {ignoreCooldown:true});
                 try{ localStorage.setItem(LS_LAST_ABS, Date.now().toString()); }catch(e){}
+                nextPlannedTs = Date.now() + interval;
                 schedule();
             }
             function schedule(){
                 const lastTs = parseInt(localStorage.getItem(LS_LAST_ABS)||'0',10);
                 const now = Date.now();
-                const elapsed = now - lastTs;
-                const remaining = lastTs ? Math.max(0, interval - elapsed) : 0; // si no existe, dispara inmediato
-                if(DEBUG_PROMO) console.log('[PROMO] schedule elapsed', elapsed, 'remaining', remaining);
+                if(!nextPlannedTs){
+                    nextPlannedTs = lastTs ? (lastTs + interval) : now; // si no hay histórico dispara rápido
+                }
+                let remaining = Math.max(0, nextPlannedTs - now);
+                if(DEBUG_PROMO) console.log('[PROMO] schedule remaining', remaining, 'nextPlannedTs', nextPlannedTs);
                 clearTimeout(schedule._t);
                 schedule._t = setTimeout(doShow, remaining);
+                schedule._remaining = null; // limpiamos estado de pausa
             }
             // Si nunca se mostró, simular que fue hace (interval) para disparar rápido tras breve gracia
             if(!localStorage.getItem(LS_LAST_ABS)){
@@ -647,6 +654,32 @@
             }
             // Pequeño retraso inicial suave (1s) para no irrumpir al milisegundo
             setTimeout(schedule, 1000);
+            // Pausa / reanuda en cambio de visibilidad (evita ráfaga tras volver)
+            document.addEventListener('visibilitychange', ()=>{
+                if(document.hidden){
+                    if(schedule._t){
+                        clearTimeout(schedule._t);
+                        schedule._t = null;
+                        const rem = Math.max(0, nextPlannedTs - Date.now());
+                        schedule._remaining = rem;
+                        if(DEBUG_PROMO) console.log('[PROMO] pausa, remaining', rem);
+                    }
+                } else {
+                    if(schedule._remaining != null){
+                        let rem = schedule._remaining;
+                        // Evita disparo instantáneo (sensación brusca)
+                        if(rem < 800) rem = 800;
+                        nextPlannedTs = Date.now() + rem;
+                        clearTimeout(schedule._t);
+                        schedule._t = setTimeout(()=>{ schedule._remaining=null; doShow(); }, rem);
+                        if(DEBUG_PROMO) console.log('[PROMO] resume, nuevo rem', rem);
+                    } else {
+                        // Si no había remaining (ej: larga suspensión), recalcula
+                        nextPlannedTs = Date.now() + interval;
+                        schedule();
+                    }
+                }
+            });
         });
         // Exit intent (desktop). Detectar mouse hacia top.
     // Exit intent (desktop): salida por borde superior

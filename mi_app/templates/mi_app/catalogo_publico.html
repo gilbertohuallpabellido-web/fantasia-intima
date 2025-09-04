@@ -23,6 +23,142 @@
     }
 })();
 </script>
+<script>
+// ================= REGLA ÚNICA DE RESALTADO =================
+// Comportamiento:
+//  - Sin categoria (?categoria ausente): resalta "Todos" en chips y enlace "Todos" en sidebar/panel.
+//  - Categoria raíz seleccionada: resalta sólo esa raíz (chips + sidebar/panel).
+//  - Subcategoría seleccionada: chips muestran resaltada la raíz; en sidebar/panel se resalta SOLO la subcategoría.
+(function(){
+    const ACTIVE_BG = 'rgba(var(--brand-primary-rgb,255,105,180),0.18)';
+    const ACTIVE_BORDER = '1px solid var(--brand-accent)';
+    const ACTIVE_COLOR = 'var(--brand-accent)';
+    // Contador de reintentos para casos donde el mapa aún no está listo
+    const pendingRetries = {};
+
+    function resetLinks(sel){
+        document.querySelectorAll(sel).forEach(a=>{
+            a.classList.remove('fi-active-cat','chip-active');
+            // Siempre limpiar estilos de highlight (dinámicos o servidor) para que no queden residuos
+            a.style.backgroundColor='';
+            a.style.border='';
+            a.style.color='';
+            a.style.fontWeight='';
+            delete a.dataset._dyn;
+            // Quitar utilidades tailwind usadas en render inicial para marcar activo
+            a.classList.remove('bg-[rgba(var(--brand-primary-rgb),0.15)]','border-[var(--brand-accent)]','text-[var(--brand-accent)]');
+        });
+    }
+
+    function styleActive(a, isChip){
+        a.classList.add(isChip? 'chip-active':'fi-active-cat');
+        a.dataset._dyn='1';
+        a.style.backgroundColor = ACTIVE_BG;
+        a.style.border = ACTIVE_BORDER;
+        a.style.color = ACTIVE_COLOR;
+        a.style.fontWeight = '600';
+    }
+
+    function getRoot(slug){
+        if(!slug) return '';
+        const map = window.__SUBCAT_PARENT_MAP || {};
+        if(map[slug]) return map[slug];
+        // Fallback DOM: localizar root a partir de la estructura del sidebar
+        try {
+            const subA = document.querySelector(`#filters-sidebar a.js-category-link[data-value="${slug}"]`) || document.querySelector(`#mobile-filters-content a.js-category-link[data-value="${slug}"]`);
+            if(subA){
+                const outerLi = subA.closest('li')?.closest('ul')?.closest('li');
+                const rootA = outerLi ? outerLi.querySelector(':scope > a.js-category-link') : null;
+                const rootSlug = rootA?.dataset.value || slug;
+                if(rootSlug && rootSlug !== slug){
+                    window.__SUBCAT_PARENT_MAP = window.__SUBCAT_PARENT_MAP || {};
+                    window.__SUBCAT_PARENT_MAP[slug] = rootSlug;
+                    return rootSlug;
+                }
+            }
+        } catch(e){ console.debug('fallback root error', e); }
+        return slug;
+    }
+
+    function applyCategoryHighlight(slug){
+        const isSub = slug && (window.__SUBCAT_PARENT_MAP||{})[slug];
+        const root = getRoot(slug||'');
+        // Si esperamos un root pero el mapa todavía está vacío, reintentar ligeramente después
+        if(slug && !root && Object.keys(window.__SUBCAT_PARENT_MAP||{}).length===0){
+            if((pendingRetries[slug]||0) < 5){
+                pendingRetries[slug] = (pendingRetries[slug]||0)+1;
+                return setTimeout(()=>applyCategoryHighlight(slug), 50);
+            }
+        }
+        if(slug){ console.debug('[highlight] slug:', slug, 'root:', root, 'isSub:', !!isSub); }
+
+        // Chips (sólo raíz o Todos)
+        resetLinks('#mobile-category-chips a.js-category-link');
+        const chipNodes = document.querySelectorAll('#mobile-category-chips a.js-category-link');
+        let chipHighlighted = false;
+        chipNodes.forEach(a=>{
+            const val = a.dataset.value || '';
+            if(val === root){ styleActive(a, true); chipHighlighted = true; }
+        });
+        // Refuerzo sin CSS.escape (compatibilidad): segunda pasada si es subcat y aún no se resaltó
+        if(isSub && root && !chipHighlighted){
+            chipNodes.forEach(a=>{ if(!chipHighlighted && (a.dataset.value||'')===root){ styleActive(a,true); chipHighlighted=true; } });
+        }
+
+        // Sidebar + Panel (root y subcategorías)
+        resetLinks('#filters-sidebar a.js-category-link, #mobile-filters-content a.js-category-link');
+        const all = document.querySelectorAll('#filters-sidebar a.js-category-link, #mobile-filters-content a.js-category-link');
+        all.forEach(a=>{
+            const val = a.dataset.value || '';
+            // Caso Todos
+            if(!slug && val===''){ styleActive(a,false); return; }
+            // Caso raíz seleccionada
+            if(!isSub && slug && val===slug){ styleActive(a,false); return; }
+            // Caso subcategoría: sólo la subcat
+            if(isSub && val===slug){ styleActive(a,false); return; }
+        });
+    }
+
+    // Exponer (sustituye versiones previas)
+    window.setActiveCategory = applyCategoryHighlight;
+
+    function syncFromURL(){
+        const slug = new URLSearchParams(location.search).get('categoria') || '';
+        applyCategoryHighlight(slug);
+    }
+
+    document.addEventListener('DOMContentLoaded', syncFromURL);
+    window.addEventListener('popstate', syncFromURL);
+
+    // Delegar clicks en chips
+    const chipsBar = document.getElementById('mobile-category-chips');
+    if(chipsBar){
+        chipsBar.addEventListener('click', e=>{
+            const a = e.target.closest('a.js-category-link'); if(!a) return;
+            applyCategoryHighlight(a.dataset.value||'');
+        });
+    }
+
+    // Hook tras AJAX (si updateProducts existe)
+    if(typeof updateProducts==='function' && !window.__highlightWrapped){
+        const original = updateProducts; window.__highlightWrapped=true;
+        window.updateProducts = async function(){
+            const r = await original.apply(this, arguments);
+            syncFromURL();
+            return r;
+        };
+    }
+
+})();
+</script>
+<style>
+/* Refuerzo estilo chip activo (en caso de que Tailwind purge elimine variantes) */
+#mobile-category-chips a.chip-active{
+    background-color: rgba(var(--brand-primary-rgb,255,105,180),0.18) !important;
+    border:1px solid var(--brand-accent) !important;
+    color: var(--brand-accent) !important;
+}
+</style>
 
 <script>
 // Forzar navegación completa en banner (por si algún handler global intercepta)
@@ -48,7 +184,7 @@ document.addEventListener('click', function(e){
 {% if banners_activos and banners_activos|length > 0 %}
     {% with b=banners_activos.0 %}
     <section 
-        class="hero-animate relative w-full h-56 sm:h-72 md:h-80 flex items-center justify-center text-white bg-gray-400"
+        class="hero-animate hero-banner relative w-full flex items-center justify-center text-white bg-gray-400"
         style="background-image: url('{{ b.imagen_url }}'); background-size: cover; background-position: center;"
         role="img"
         aria-label="{{ b.titulo }}">
@@ -77,7 +213,7 @@ document.addEventListener('click', function(e){
     </section>
     {% endwith %}
 {% else %}
-    <section class="hero-animate hero-banner relative w-full h-64 sm:h-80 flex items-center justify-center text-white">
+    <section class="hero-animate hero-banner relative w-full flex items-center justify-center text-white">
         <div class="hero-overlay absolute inset-0 bg-black/30"></div>
         <div class="hero-content relative text-center p-4">
             <h1 class="hero-title text-3xl sm:text-5xl md:text-6xl font-brand drop-shadow-lg leading-tight">Nueva Colección</h1>
@@ -120,9 +256,47 @@ document.addEventListener('click', function(e){
         window.addEventListener('scroll', onScroll, {passive:true});
     })();
     </script>
+    <script>
+    // Construir mapa subcategoria->padre vía DOM (evita inyectar template tags en JS)
+    window.__SUBCAT_PARENT_MAP = window.__SUBCAT_PARENT_MAP || {};
+    document.addEventListener('DOMContentLoaded', function(){
+        try {
+            const sidebar = document.getElementById('filters-sidebar');
+            if(!sidebar) return;
+            const rootItems = sidebar.querySelectorAll('> ul > li');
+            rootItems.forEach(rootLi => {
+                const rootA = rootLi.querySelector(':scope > a.js-category-link');
+                if(!rootA) return;
+                const rootSlug = rootA.dataset.value || '';
+                // Subcategorías dentro de este li
+                const subLinks = rootLi.querySelectorAll('ul li a.js-category-link');
+                subLinks.forEach(subA => {
+                    const subSlug = subA.dataset.value;
+                    if(subSlug) window.__SUBCAT_PARENT_MAP[subSlug] = rootSlug;
+                });
+            });
+            // Reaplicar estado activo con posible información de padres
+            const params = new URLSearchParams(window.location.search);
+            if(window.setActiveCategory){ window.setActiveCategory(params.get('categoria')||''); }
+        } catch(e){ console.debug('MAP SUBCAT build error', e); }
+
+        // Forzar resaltado inmediato al pulsar "Todos" en chips móviles
+        const chipsBar = document.getElementById('mobile-category-chips');
+        if(chipsBar){
+            chipsBar.addEventListener('click', function(ev){
+                const link = ev.target.closest('a.js-category-link');
+                if(!link) return;
+                if((link.dataset.value||'')===''){
+                    // Pequeño timeout para asegurar que otros handlers terminen
+                    setTimeout(()=>{ if(window.setActiveCategory) window.setActiveCategory(''); }, 10);
+                }
+            });
+        }
+    });
+    </script>
     <div class="lg:hidden mt-4 px-1" id="mobile-category-chips">
         <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2" style="scroll-snap-type:x proximity;">
-            <a href="{% url 'catalogo_publico' %}#product-list-section" class="shrink-0 px-4 py-2 rounded-full text-sm font-semibold border transition-colors scroll-snap-align-start {% if not filtros_activos.categoria %}bg-[rgba(var(--brand-primary-rgb),0.15)] border-[var(--brand-accent)] text-[var(--brand-accent)]{% else %}text-[var(--brand-text)] border-gray-300{% endif %}" data-filter="categoria" data-value="" onclick="handleFilterClick(event)">Todos</a>
+            <a href="{% url 'catalogo_publico' %}#product-list-section" class="js-category-link shrink-0 px-4 py-2 rounded-full text-sm font-semibold border transition-colors scroll-snap-align-start text-[var(--brand-text)] border-gray-300" data-filter="categoria" data-value="" onclick="handleFilterClick(event)">Todos</a>
             {% for cat in categorias_menu %}
                 <a href="?categoria={{ cat.slug }}#product-list-section" class="shrink-0 px-4 py-2 rounded-full text-sm font-semibold border transition-colors scroll-snap-align-start js-category-link {% if filtros_activos.categoria == cat.slug %}bg-[rgba(var(--brand-primary-rgb),0.15)] border-[var(--brand-accent)] text-[var(--brand-accent)]{% else %}text-[var(--brand-text)] border-gray-300{% endif %}" data-filter="categoria" data-value="{{ cat.slug }}" onclick="handleFilterClick(event)">{{ cat.nombre }}</a>
             {% endfor %}
@@ -196,8 +370,7 @@ document.addEventListener('click', function(e){
             <li>
                 <a 
                     href="{% url 'catalogo_publico' %}#product-list-section"
-                    class="js-category-link block px-3 py-2 rounded-lg text-lg font-bold shadow-sm transition-all hover:underline"
-                    style="color: var(--brand-accent); {% if not filtros_activos.categoria %}background-color: rgba(var(--brand-primary), 0.2); border: 1px solid var(--brand-primary);{% endif %}"
+                    class="js-category-link block px-3 py-2 rounded-lg text-lg font-bold shadow-sm transition-all hover:underline text-[var(--brand-accent)]"
                     data-filter="categoria" data-value="" onclick="handleFilterClick(event)">
                     Todos
                 </a>
@@ -206,8 +379,7 @@ document.addEventListener('click', function(e){
                 <li>
                     <a 
                         href="?categoria={{ cat.slug }}#product-list-section"
-                        class="js-category-link block px-3 py-2 rounded-lg text-lg font-bold shadow-sm transition-all hover:underline"
-                        style="color: var(--brand-accent); {% if filtros_activos.categoria == cat.slug %}background-color: rgba(var(--brand-primary), 0.2); border: 1px solid var(--brand-primary);{% endif %}"
+                        class="js-category-link block px-3 py-2 rounded-lg text-lg font-bold shadow-sm transition-all hover:underline text-[var(--brand-accent)]"
                         data-filter="categoria" data-value="{{ cat.slug }}" onclick="handleFilterClick(event)">
                         {{ cat.nombre }}
                     </a>
@@ -218,8 +390,7 @@ document.addEventListener('click', function(e){
                                 <li>
                                     <a 
                                         href="?categoria={{ subcat.slug }}#product-list-section"
-                                        class="js-category-link block px-2 py-1 rounded text-base transition-all"
-                                        style="color: var(--brand-text); {% if filtros_activos.categoria == subcat.slug %}background-color: rgba(var(--brand-primary), 0.2); color: var(--brand-accent); font-weight: 600;{% endif %}"
+                                        class="js-category-link block px-2 py-1 rounded text-base transition-all text-[var(--brand-text)]"
                                         data-filter="categoria" data-value="{{ subcat.slug }}" onclick="handleFilterClick(event)">
                                         {{ subcat.nombre }}
                                     </a>
@@ -264,9 +435,9 @@ document.addEventListener('click', function(e){
                 <span class="urgency-msg ml-1 text-[9px] sm:text-[10px] font-bold tracking-wide uppercase hidden"></span>
             </span>
         </div>
-        <div class="products-header flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-            <h2 id="products-heading" class="text-4xl font-brand" style="color: var(--brand-text);" tabindex="-1">Nuestros Productos</h2>
-            <div class="flex items-center gap-4">
+    <div class="products-header flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+            <h2 id="products-heading" class="text-4xl font-brand w-full" style="color: var(--brand-text);" tabindex="-1">Nuestros Productos</h2>
+            <div class="flex items-center gap-4 w-full sm:w-auto justify-start sm:justify-end">
                 <label for="sort-by" class="font-semibold whitespace-nowrap">Ordenar por:</label>
                 <select id="sort-by" name="orden" class="rounded-full border-gray-300 shadow-sm" style="--tw-ring-color: var(--brand-accent);">
                     <option value="default" {% if not filtros_activos.orden or filtros_activos.orden == 'default' %}selected{% endif %}>Relevancia</option>
@@ -274,6 +445,7 @@ document.addEventListener('click', function(e){
                     <option value="price-desc" {% if filtros_activos.orden == 'price-desc' %}selected{% endif %}>Precio: Mayor a Menor</option>
                 </select>
             </div>
+            <!-- Contador móvil sticky vuelve al header original; duplicado eliminado -->
         </div>
             <!-- Offset dinámico eliminado: se quita espacio adicional superior -->
 
@@ -391,7 +563,12 @@ document.addEventListener('DOMContentLoaded', function(){
             })();
             if(window.innerWidth < 640){ setTimeout(()=>{ const section = document.querySelector('#product-list-section'); if(section){ section.scrollIntoView({behavior:'smooth', block:'start'}); } }, 50); }
             // initQuickAdd() eliminado (ya no usamos botón de añadir rápido aquí)
-            prefetchNextPage();
+            // Evitar error si la función de prefetch no está definida
+            if (typeof prefetchNextPage === 'function') {
+                prefetchNextPage();
+            }
+            // Refuerzo: re-sincronizar resaltado tras carga (por si wrapper no se montó aún)
+            try { const p=new URL(url, window.location.origin); const slug=p.searchParams.get('categoria')||''; if(window.setActiveCategory) window.setActiveCategory(slug); } catch(e){}
         } catch (error) {
             console.error('Error al actualizar los productos:', error);
             productListContainer.innerHTML = '<p class="text-center text-red-500 py-10">Hubo un error al cargar los productos.</p>';
@@ -430,6 +607,7 @@ document.addEventListener('DOMContentLoaded', function(){
         }
         
         handleStateChange(params);
+    // (Resaltado gestionado por regla única)
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -508,6 +686,46 @@ document.addEventListener('DOMContentLoaded', function(){
         setActiveCategory(initParams.get('categoria')||'');
     updateMobileProductsCounter();
     });
+</script>
+<script>
+// ==== Stubs / Utilidades de respaldo para evitar errores en móvil ====
+// Algunas funciones eran llamadas pero no estaban definidas en ningún script
+// global, provocando ReferenceError y disparando el catch que muestra:
+// "Hubo un error al cargar los productos." al filtrar.
+(function(){
+    // Marcar categoría activa en sidebar y chips móviles
+    // (setActiveCategory definido en regla única superior; no redefinir)
+
+    // Mostrar estado de "cargando" en el contador móvil (placeholder simple)
+    if (typeof window.setMobileCounterLoading !== 'function') {
+        window.setMobileCounterLoading = function(){
+            const pill = document.getElementById('matched-counter-pill');
+            if(pill){ pill.classList.add('opacity-60'); }
+            setTimeout(()=>{ if(pill) pill.classList.remove('opacity-60'); }, 600);
+        };
+    }
+
+    // Recalcular contador de productos (mobile & desktop)
+    if (typeof window.updateMobileProductsCounter !== 'function') {
+        window.updateMobileProductsCounter = function(){
+            try {
+                const count = document.querySelectorAll('#product-list-section .product-card').length;
+                const pill = document.getElementById('matched-counter-pill');
+                if(pill){
+                    const numEl = pill.querySelector('.counter-number');
+                    if(numEl) numEl.textContent = count;
+                    pill.setAttribute('data-matched-count', count);
+                    if(typeof window.updateUrgencyPill === 'function'){ window.updateUrgencyPill(count); }
+                }
+            } catch(e){ console.debug('updateMobileProductsCounter stub error', e); }
+        };
+    }
+
+    // Prefetch de la siguiente página de paginación (stub no-op para ahora)
+    if (typeof window.prefetchNextPage !== 'function') {
+        window.prefetchNextPage = function(){ /* no-op stub */ };
+    }
+})();
 </script>
         <script>
         // --- UX móvil: panel off-canvas filtros y chips ---
@@ -664,26 +882,46 @@ document.addEventListener('DOMContentLoaded', function(){
 <script>
 // Función global para mensaje de urgencia SOLO móvil (revisada)
 window.updateUrgencyPill = function(count){
-  const pill=document.getElementById('matched-counter-pill');
-  if(!pill) return; const msgEl=pill.querySelector('.urgency-msg');
-  const w = window.innerWidth || document.documentElement.clientWidth || screen.width;
-  // Mostrar solo móvil <= 768 para mayor tolerancia
-  if(w>768){ pill.classList.remove('urgency','urgency-hot'); if(msgEl){msgEl.classList.add('hidden'); msgEl.textContent='';} return; }
-  let text=''; let mode='';
-  if(count>0 && count<=4){ text='¡Últimas unidades!'; mode='hot'; }
-  else if(count>0 && count<=8){ text='Stock limitado'; mode='warn'; }
-  else if(count===0){ text='Sin stock'; mode='warn'; }
-  if(text){ msgEl.textContent=text; msgEl.classList.remove('hidden'); pill.classList.add('urgency'); if(mode==='hot') pill.classList.add('urgency-hot'); else pill.classList.remove('urgency-hot'); }
-  else { if(msgEl){ msgEl.classList.add('hidden'); msgEl.textContent=''; } pill.classList.remove('urgency','urgency-hot'); }
+    ['matched-counter-pill','matched-counter-pill-mobile'].forEach(id=>{
+        const pill=document.getElementById(id); if(!pill) return;
+        const msgEl=pill.querySelector('.urgency-msg');
+        const w = window.innerWidth || document.documentElement.clientWidth || screen.width;
+        // Solo mostrar mensaje de urgencia en móvil (<=768)
+        if(w>768 && id==='matched-counter-pill-mobile'){ return; }
+        if(w>768 && id==='matched-counter-pill'){ // desktop: mantener comportamiento original (podrías decidir ocultar también)
+            if(msgEl){msgEl.classList.add('hidden'); msgEl.textContent='';}
+            pill.classList.remove('urgency','urgency-hot'); return;
+        }
+        let text=''; let mode='';
+        if(count>0 && count<=4){ text='¡Últimas unidades!'; mode='hot'; }
+        else if(count>0 && count<=8){ text='Stock limitado'; mode='warn'; }
+        else if(count===0){ text='Sin stock'; mode='warn'; }
+        if(text){
+            if(msgEl){ msgEl.textContent=text; msgEl.classList.remove('hidden'); }
+            pill.classList.add('urgency');
+            if(mode==='hot') pill.classList.add('urgency-hot'); else pill.classList.remove('urgency-hot');
+        } else {
+            if(msgEl){ msgEl.classList.add('hidden'); msgEl.textContent=''; }
+            pill.classList.remove('urgency','urgency-hot');
+        }
+    });
 };
 // Inicial en carga + fallback diferido
-function __initUrgency(){ const pill=document.getElementById('matched-counter-pill'); if(pill){ const c=parseInt(pill.getAttribute('data-matched-count')|| pill.querySelector('.counter-number')?.textContent ||'0'); window.updateUrgencyPill(c); pill.classList.remove('needs-urgency-eval'); } }
+function __initUrgency(){
+    const mainPill=document.getElementById('matched-counter-pill');
+    const mobilePill=document.getElementById('matched-counter-pill-mobile');
+    const apply=(pill)=>{ if(!pill) return; const c=parseInt(pill.getAttribute('data-matched-count')|| pill.querySelector('.counter-number')?.textContent ||'0'); window.updateUrgencyPill(c); pill.classList.remove('needs-urgency-eval'); };
+    apply(mainPill); apply(mobilePill);
+    // Sincronizar números si existen ambos
+    if(mainPill && mobilePill){ const val = mainPill.querySelector('.counter-number')?.textContent; if(val) mobilePill.querySelector('.counter-number').textContent=val; }
+}
 document.addEventListener('DOMContentLoaded',()=>{ setTimeout(__initUrgency,10); setTimeout(__initUrgency,500); });
 // Observer por si AJAX cambia el número y no se disparó update
-(function(){ const pill=document.getElementById('matched-counter-pill'); if(!pill) return; const num=pill.querySelector('.counter-number'); if(!num) return; const obs=new MutationObserver(()=>{ const c=parseInt(num.textContent||'0'); window.updateUrgencyPill(c); }); obs.observe(num,{childList:true,subtree:true}); })();
+// Eliminados observers recursivos para evitar loop; sincronización se hará explícitamente al actualizar productos.
 // Re-evaluar al redimensionar
-window.addEventListener('resize',()=>{ const pill=document.getElementById('matched-counter-pill'); if(pill){ const c=parseInt(pill.getAttribute('data-matched-count')||pill.querySelector('.counter-number')?.textContent||'0'); window.updateUrgencyPill(c); } });
+window.addEventListener('resize',()=>{ ['matched-counter-pill','matched-counter-pill-mobile'].forEach(id=>{ const pill=document.getElementById(id); if(pill){ const c=parseInt(pill.getAttribute('data-matched-count')||pill.querySelector('.counter-number')?.textContent||'0'); window.updateUrgencyPill(c); } }); });
 </script>
+<!-- Bloque duplicado de resaltado coherente eliminado (regla única ya definida arriba) -->
 <!-- 
   =======================================================================
   MEJORAS Y OPTIMIZACIONES VARIAS

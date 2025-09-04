@@ -1,11 +1,23 @@
 /* Optimización catálogo móvil */
 @media (max-width:640px){
   /* Hero */
-  .catalog-page .hero-banner, .catalog-page .hero-banner.relative{height:52vh;min-height:320px;margin-bottom:.35rem;}
-  .catalog-page .hero-banner h1{font-size:1.9rem;line-height:1.15;margin-bottom:.25rem;}
-  .catalog-page .hero-banner p{margin-top:.15rem;font-size:.9rem;}
-  .catalog-page .hero-banner a.banner-cta,
-  .catalog-page .hero-banner a.js-category-link{padding:.55rem 1.35rem;font-size:.9rem;margin-top:.75rem;}
+  /* Ajuste 2: aún más compacto (usuario reporta que ocupa medio viewport) */
+  .catalog-page .hero-banner, .catalog-page .hero-banner.relative,
+  .hero-banner{height:24vh!important;min-height:150px;margin-bottom:.2rem;}
+  /* Mantener banner bajo pero sin achicar excesivamente la tipografía */
+  /* Escalado 1.3x solicitado */
+  .hero-banner .hero-title{font-size:2.15rem;line-height:1.12;margin-bottom:.16rem;letter-spacing:.68px;}
+  .hero-banner .hero-sub{margin-top:.05rem;font-size:1.17rem;line-height:1.18;letter-spacing:.55px;}
+  /* Botón escalado: reducir padding vertical para no aumentar grosor */
+  .hero-banner .hero-cta{padding:.18rem .8rem!important;font-size:1.06rem;margin-top:.32rem;letter-spacing:.56px;width:auto;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;line-height:1.05;border-radius:999px;}
+  /* Countdown más compacto y reposicionado para no empujar contenido */
+  /* Más espacio visual entre botón y countdown */
+  /* Separación extra: bajar countdown para que no se pegue al botón */
+  .hero-banner .hero-countdown-wrapper{position:absolute;left:50%;bottom:-.55rem;transform:translateX(-50%) scale(.58);margin-top:0;}
+  .hero-banner .countdown-badge{gap:.3rem!important;white-space:nowrap;align-items:center;}
+  .hero-banner .countdown-badge .countdown{font-size:1.17rem;padding:.18rem .55rem;line-height:1;}
+  .hero-banner .countdown-label{padding:2px 6px!important;font-size:.75rem;line-height:1;letter-spacing:.28px;white-space:nowrap;}
+  .hero-banner .hero-content{padding:.4rem .6rem 1.15rem;display:flex;flex-direction:column;align-items:center;justify-content:center;}
   .countdown-badge{margin-top:.35rem!important;}
 
   /* Chips sticky */
@@ -16,7 +28,15 @@
   #mobile-category-chips:after{right:0;background:linear-gradient(-90deg,#fff,rgba(255,255,255,0));}
 
   /* Contador sticky bajo chips */
-  #banner-context-header{position:sticky;top:54px;z-index:25;margin-top:0;margin-bottom:.4rem;}
+  /* Header contextual sobre listado: espacio reducido */
+  #banner-context-header{position:sticky;top:70px;z-index:25;margin-top:.18rem;margin-bottom:.15rem;padding-top:.30rem!important;padding-bottom:.15rem!important;}
+  #banner-context-header #matched-counter-pill{transform:translateY(-30px);} /* subido 30px */
+  /* Estado sticky: sólo baja el pill (no el header) para evitar solaparse y sin crear franja */
+  #banner-context-header #matched-counter-pill{transform:translateY(0);transition:transform .18s ease;} /* base */
+  #banner-context-header.is-stuck #matched-counter-pill{transform:translateY(22px);} /* desplaza sólo el pill cuando sticky */
+  #banner-context-header.is-stuck{margin-bottom:.2rem!important;padding-top:.3rem!important;} /* sin aumentar altura grande */
+  /* Urgency msg alineada */
+  #banner-context-header #matched-counter-pill .urgency-msg{position:relative;top:-2px;}
   #banner-context-header .rounded-2xl{padding:.5rem .7rem!important;border-radius:16px;}
   #matched-counter-pill.counter-pill{background:#fff;border:1px solid rgba(var(--brand-primary-rgb,249,168,212),0.8);padding:.35rem .55rem;border-radius:999px;box-shadow:0 2px 4px rgba(0,0,0,.05);font-weight:600;}
   #matched-counter-pill .counter-number{font-size:.85rem;}
@@ -27,8 +47,8 @@
   @keyframes pulseUrg{0%,100%{box-shadow:0 0 0 0 rgba(255,99,160,.45);}50%{box-shadow:0 0 0 6px rgba(255,99,160,0);} }
 
   /* Header productos */
-  .products-header{margin-bottom:.65rem!important;gap:.5rem!important;}
-  .products-header h2{font-size:1.65rem;line-height:1.1; margin-bottom:0;}
+  .products-header{margin-top:0!important;margin-bottom:.6rem!important;gap:.5rem!important;}
+  .products-header h2{font-size:1.65rem;line-height:1.1;margin-top:0!important;margin-bottom:0;}
   .products-header select{height:34px;padding:.25rem .75rem;font-size:.75rem;}
   .products-header label{font-size:.7rem;}
 
