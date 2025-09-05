@@ -69,7 +69,7 @@
             const subA = document.querySelector(`#filters-sidebar a.js-category-link[data-value="${slug}"]`) || document.querySelector(`#mobile-filters-content a.js-category-link[data-value="${slug}"]`);
             if(subA){
                 const outerLi = subA.closest('li')?.closest('ul')?.closest('li');
-                const rootA = outerLi ? outerLi.querySelector(':scope > a.js-category-link') : null;
+                const rootA = outerLi ? (outerLi.querySelector(':scope > div > a.js-category-link') || outerLi.querySelector(':scope > a.js-category-link')) : null;
                 const rootSlug = rootA?.dataset.value || slug;
                 if(rootSlug && rootSlug !== slug){
                     window.__SUBCAT_PARENT_MAP = window.__SUBCAT_PARENT_MAP || {};
@@ -107,8 +107,8 @@
         }
 
         // Sidebar + Panel (root y subcategorías)
-        resetLinks('#filters-sidebar a.js-category-link, #mobile-filters-content a.js-category-link');
-        const all = document.querySelectorAll('#filters-sidebar a.js-category-link, #mobile-filters-content a.js-category-link');
+    resetLinks('#filters-sidebar a.js-category-link, #mobile-filters-content a.js-category-link, #header-categories-nav a.js-category-link');
+    const all = document.querySelectorAll('#filters-sidebar a.js-category-link, #mobile-filters-content a.js-category-link, #header-categories-nav a.js-category-link');
         all.forEach(a=>{
             const val = a.dataset.value || '';
             // Caso Todos
@@ -155,6 +155,12 @@
 <style>
 /* Refuerzo estilo chip activo (en caso de que Tailwind purge elimine variantes) */
 #mobile-category-chips a.chip-active{
+    background-color: rgba(var(--brand-primary-rgb,255,105,180),0.18) !important;
+    border:1px solid var(--brand-accent) !important;
+    color: var(--brand-accent) !important;
+}
+/* Estilo activo para barra desktop en header */
+#header-categories-nav a.fi-active-cat{
     background-color: rgba(var(--brand-primary-rgb,255,105,180),0.18) !important;
     border:1px solid var(--brand-accent) !important;
     color: var(--brand-accent) !important;
@@ -213,21 +219,6 @@ document.addEventListener('click', function(e){
         </div>
     </section>
     {% endwith %}
-{% else %}
-    <section class="hero-animate hero-banner relative w-full flex items-center justify-center text-white">
-        <div class="hero-overlay absolute inset-0 bg-black/30"></div>
-        <div class="hero-content relative text-center p-4">
-            <h1 class="hero-title text-3xl sm:text-5xl md:text-6xl font-brand drop-shadow-lg leading-tight">{{ "Nueva Colección"|wrap_emojis }}</h1>
-            <p class="hero-sub mt-2 text-lg sm:text-xl drop-shadow-md">{{ "Descubre la sensualidad en cada detalle"|wrap_emojis }}</p>
-            <a 
-                href="?categoria=nueva_coleccion#product-list-section" 
-                class="js-category-link hero-cta mt-6 inline-block text-white font-bold py-3 px-8 rounded-full text-lg hover:bg-opacity-90 transform hover:scale-105 transition-all"
-                data-filter="categoria" data-value="nueva_coleccion" onclick="handleFilterClick(event)"
-                style="background-color: var(--brand-accent);">
-                Ver ahora
-            </a>
-        </div>
-    </section>
 {% endif %}
     <!-- Barra de chips categorías (solo móvil) -->
     <script>
@@ -258,6 +249,55 @@ document.addEventListener('click', function(e){
     })();
     </script>
     <script>
+    // Dropdown de subcategorías en barra de escritorio
+    document.addEventListener('DOMContentLoaded', function(){
+        const bar = document.getElementById('desktop-categories-bar');
+        if(!bar) return;
+        // Toggle desplegables
+        bar.querySelectorAll('.header-subcat-toggle').forEach(btn => {
+            btn.addEventListener('click', function(e){
+                e.preventDefault();
+                e.stopPropagation();
+                const li = btn.closest('li');
+                const id = btn.getAttribute('aria-controls');
+                const menu = id ? document.getElementById(id) : null;
+                if(!menu) return;
+                const willShow = menu.classList.contains('hidden');
+                // Cerrar otros
+                bar.querySelectorAll('.header-subcat-list').forEach(ul=>{
+                    if(ul!==menu){ ul.classList.add('hidden'); }
+                });
+                bar.querySelectorAll('.header-subcat-toggle[aria-expanded="true"]').forEach(t=>{ if(t!==btn) t.setAttribute('aria-expanded','false'); });
+                menu.classList.toggle('hidden');
+                btn.setAttribute('aria-expanded', willShow ? 'true' : 'false');
+                const icon = btn.querySelector('i'); if(icon){ icon.style.transform = willShow ? 'rotate(180deg)' : 'rotate(0deg)'; icon.style.transition='transform .2s'; }
+            });
+        });
+        // Cerrar al hacer click fuera
+        document.addEventListener('click', function(e){
+            if(!bar.contains(e.target)){
+                bar.querySelectorAll('.header-subcat-list').forEach(ul=>ul.classList.add('hidden'));
+                bar.querySelectorAll('.header-subcat-toggle').forEach(btn=>{ btn.setAttribute('aria-expanded','false'); const ic=btn.querySelector('i'); if(ic){ ic.style.transform='rotate(0deg)'; }});
+            }
+        });
+        // Abrir el dropdown del root activo (si subcategoría activa)
+        const params = new URLSearchParams(location.search);
+        const slug = params.get('categoria') || '';
+        if(slug){
+            // buscar el menú cuyo data-parent corresponda a root
+            const map = window.__SUBCAT_PARENT_MAP || {};
+            const root = map[slug] || slug;
+            const menu = bar.querySelector(`.header-subcat-list[data-parent="${root}"]`);
+            const btn = menu ? bar.querySelector(`.header-subcat-toggle[aria-controls="${menu.id}"]`) : null;
+            if(menu && btn){
+                menu.classList.remove('hidden');
+                btn.setAttribute('aria-expanded','true');
+                const ic=btn.querySelector('i'); if(ic){ ic.style.transform='rotate(180deg)'; ic.style.transition='transform .2s'; }
+            }
+        }
+    });
+    </script>
+    <script>
     // Construir mapa subcategoria->padre vía DOM (evita inyectar template tags en JS)
     window.__SUBCAT_PARENT_MAP = window.__SUBCAT_PARENT_MAP || {};
     document.addEventListener('DOMContentLoaded', function(){
@@ -266,7 +306,8 @@ document.addEventListener('click', function(e){
             if(!sidebar) return;
             const rootItems = sidebar.querySelectorAll('> ul > li');
             rootItems.forEach(rootLi => {
-                const rootA = rootLi.querySelector(':scope > a.js-category-link');
+                // Soportar anchor directo o dentro de un contenedor div
+                const rootA = rootLi.querySelector(':scope > div > a.js-category-link, :scope > a.js-category-link');
                 if(!rootA) return;
                 const rootSlug = rootA.dataset.value || '';
                 // Subcategorías dentro de este li
@@ -292,6 +333,55 @@ document.addEventListener('click', function(e){
                     setTimeout(()=>{ if(window.setActiveCategory) window.setActiveCategory(''); }, 10);
                 }
             });
+        }
+    });
+    </script>
+    <script>
+    // Subcategorías colapsables (desktop): toggle con botón y auto-expandir categoría activa
+    document.addEventListener('DOMContentLoaded', function(){
+        const sidebar = document.getElementById('filters-sidebar');
+        if(!sidebar) return;
+
+        sidebar.querySelectorAll('.subcat-toggle').forEach(btn => {
+            btn.addEventListener('click', function(e){
+                e.preventDefault();
+                e.stopPropagation();
+                // Preferir buscar relativo al grupo para mayor robustez
+                const groupLi = btn.closest('li.cat-group');
+                let ul = groupLi ? groupLi.querySelector('ul.subcat-list') : null;
+                if(!ul){
+                    const targetId = btn.getAttribute('data-target');
+                    ul = targetId ? document.getElementById(targetId) : null;
+                }
+                if(!ul) return;
+                const willShow = ul.classList.contains('hidden');
+                ul.classList.toggle('hidden');
+                btn.setAttribute('aria-expanded', willShow ? 'true' : 'false');
+                const icon = btn.querySelector('i');
+                if(icon){ icon.style.transform = willShow ? 'rotate(180deg)' : 'rotate(0deg)'; icon.style.transition='transform .2s'; }
+            });
+        });
+
+        // Auto expandir si hay ?categoria= activa
+        const params = new URLSearchParams(location.search);
+        const slug = params.get('categoria') || '';
+        if(!slug) return;
+
+        // Si es root, expandir su lista; si es subcat, encontrar su lista y expandir
+        let rootSlug = '';
+        if(sidebar.querySelector(`li.cat-group[data-root-slug="${slug}"]`)){
+            rootSlug = slug;
+        } else {
+            const list = Array.from(sidebar.querySelectorAll('ul.subcat-list')).find(ul => ul.querySelector(`a.js-category-link[data-value="${slug}"]`));
+            if(list){ rootSlug = list.getAttribute('data-parent') || ''; }
+        }
+        if(rootSlug){
+            const ul = sidebar.querySelector(`ul.subcat-list[data-parent="${rootSlug}"]`);
+            if(ul && ul.classList.contains('hidden')){
+                ul.classList.remove('hidden');
+                const btn = sidebar.querySelector(`.subcat-toggle[data-target="${ul.id}"]`);
+                if(btn){ btn.setAttribute('aria-expanded','true'); const icon=btn.querySelector('i'); if(icon){ icon.style.transform='rotate(180deg)'; icon.style.transition='transform .2s'; } }
+            }
         }
     });
     </script>
@@ -362,7 +452,7 @@ document.addEventListener('click', function(e){
       SIDEBAR DE FILTROS Y CATEGORÍAS
       =================================
     -->
-    <aside id="filters-sidebar" class="hidden lg:block w-full lg:w-72 bg-white shadow-lg rounded-2xl p-6 border lg:sticky top-4 h-max" style="border-color: rgba(var(--brand-primary-rgb), 0.3);">
+    <aside id="filters-sidebar" class="hidden w-full lg:w-72 bg-white shadow-lg rounded-2xl p-6 border lg:sticky top-4 h-max" style="border-color: rgba(var(--brand-primary-rgb), 0.3);">
         <h3 class="font-extrabold text-2xl mb-6 tracking-wide flex items-center gap-2" style="color: var(--brand-accent);">
             <i class="fas fa-list"></i> Categorías
         </h3>
@@ -377,16 +467,22 @@ document.addEventListener('click', function(e){
                 </a>
             </li>
             {% for cat in categorias_menu %}
-                <li>
-                    <a 
-                        href="?categoria={{ cat.slug }}#product-list-section"
-                        class="js-category-link block px-3 py-2 rounded-lg text-lg font-bold shadow-sm transition-all hover:underline text-[var(--brand-accent)]"
-                        data-filter="categoria" data-value="{{ cat.slug }}" onclick="handleFilterClick(event)">
-                        {{ cat.nombre }}
-                    </a>
-                    
+                <li class="cat-group" data-root-slug="{{ cat.slug }}">
+                    <div class="flex items-center justify-between gap-2">
+                        <a 
+                            href="?categoria={{ cat.slug }}#product-list-section"
+                            class="js-category-link block flex-1 px-3 py-2 rounded-lg text-lg font-bold shadow-sm transition-all hover:underline text-[var(--brand-accent)]"
+                            data-filter="categoria" data-value="{{ cat.slug }}" onclick="handleFilterClick(event)">
+                            {{ cat.nombre }}
+                        </a>
+                        {% if cat.children.all %}
+                        <button type="button" class="subcat-toggle shrink-0 w-9 h-9 inline-flex items-center justify-center rounded-lg border text-[var(--brand-accent)] border-pink-200 hover:bg-pink-50 transition relative z-10" aria-label="Mostrar subcategorías" aria-expanded="false" aria-controls="subcat-{{ cat.id }}" data-target="subcat-{{ cat.id }}">
+                            <i class="fas fa-chevron-down text-sm"></i>
+                        </button>
+                        {% endif %}
+                    </div>
                     {% if cat.children.all %}
-                        <ul class="ml-4 mt-2 space-y-1 pl-3" style="border-left: 2px solid var(--brand-primary);">
+                        <ul id="subcat-{{ cat.id }}" class="subcat-list ml-4 mt-2 space-y-1 pl-3 hidden" data-parent="{{ cat.slug }}" style="border-left: 2px solid var(--brand-primary);">
                             {% for subcat in cat.children.all %}
                                 <li>
                                     <a 
@@ -425,7 +521,7 @@ document.addEventListener('click', function(e){
     -->
     <main class="flex-1">
         {# Header contextual simplificado (SUBIDO encima del título) #}
-    <div id="banner-context-header" class="hidden md:flex sticky z-40 bg-white/90 backdrop-blur border-b border-pink-200 shadow-sm px-4 sm:px-6 py-2 items-center gap-3 top-[82px] md:top-[84px]" style="top:82px;">
+    <div id="banner-context-header" class="hidden md:flex z-40 bg-white/90 backdrop-blur border-b border-pink-200 shadow-sm px-4 sm:px-6 py-2 items-center gap-3">
             {% if banner and not producto_unico and mostrar_titulo_banner %}
                 <h3 class="text-base sm:text-lg font-extrabold font-brand" style="color: var(--brand-accent);">{{ banner.titulo }}</h3>
             {% endif %}
@@ -454,6 +550,12 @@ document.addEventListener('click', function(e){
                     <option value="price-asc" {% if filtros_activos.orden == 'price-asc' %}selected{% endif %}>Precio: Menor a Mayor</option>
                     <option value="price-desc" {% if filtros_activos.orden == 'price-desc' %}selected{% endif %}>Precio: Mayor a Menor</option>
                 </select>
+                <!-- Filtro de precio compacto (solo desktop) -->
+                <form id="price-form-desktop" class="hidden lg:flex items-center gap-2 ml-2">
+                    <input type="number" name="precio_min" placeholder="Mín" value="{{ filtros_activos.precio_min|default:'' }}" class="w-24 rounded border px-2 py-1" />
+                    <input type="number" name="precio_max" placeholder="Máx" value="{{ filtros_activos.precio_max|default:'' }}" class="w-24 rounded border px-2 py-1" />
+                    <button type="submit" class="rounded px-3 py-1 text-white text-sm" style="background-color: var(--brand-accent);">Aplicar</button>
+                </form>
             </div>
             <!-- Contador móvil sticky vuelve al header original; duplicado eliminado -->
         </div>
@@ -461,7 +563,7 @@ document.addEventListener('click', function(e){
 
         <div id="product-list-section" aria-live="polite" aria-busy="false">
             <template id="list-skeleton">
-              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
                 {% for i in '12345678' %}
                 <div class="skeleton-card relative rounded-xl overflow-hidden bg-white shadow-sm">
                   <div class="skeleton-img shimmer"></div>
@@ -627,8 +729,10 @@ document.addEventListener('DOMContentLoaded', function(){
         productListContainer = document.getElementById('product-list-section');
         skeleton = document.getElementById('list-skeleton');
 
-        const sortBySelect = document.getElementById('sort-by');
-        const priceForm = document.getElementById('price-form');
+    const sortBySelect = document.getElementById('sort-by');
+    const priceForm = document.getElementById('price-form');
+    const priceFormDesktop = document.getElementById('price-form-desktop');
+    const headerNav = document.getElementById('header-categories-nav');
 
         // Handler común de orden (funciona en ambos modos)
         if (sortBySelect) {
@@ -648,28 +752,47 @@ document.addEventListener('DOMContentLoaded', function(){
         // Si modo banner filtrado: no configurar AJAX adicional para mantener estado coherente
         if (window.BANNER_FILTERED) {
             console.debug('Banner-filtered mode: handlers AJAX desactivados (orden hace full reload)');
-            if (priceForm) {
-                priceForm.addEventListener('submit', (e)=>{
+            if (priceForm || priceFormDesktop) {
+                const handler = (e, formEl)=>{
                     e.preventDefault();
-                    const formData = new FormData(priceForm);
+                    const formData = new FormData(formEl);
                     const params = new URLSearchParams(window.location.search);
                     params.set('precio_min', formData.get('precio_min') || '');
                     params.set('precio_max', formData.get('precio_max') || '');
                     window.location.href = `${window.location.pathname}?${params.toString()}#product-list-section`;
-                });
+                };
+                if(priceForm){ priceForm.addEventListener('submit', (e)=>handler(e, priceForm)); }
+                if(priceFormDesktop){ priceFormDesktop.addEventListener('submit', (e)=>handler(e, priceFormDesktop)); }
             }
             return;
         }
 
         // --- Modo normal (AJAX) ---
-        if (priceForm) {
-            priceForm.addEventListener('submit', (e) => {
+        const bindAjaxPrice = (formEl)=>{
+            if(!formEl) return;
+            formEl.addEventListener('submit', (e) => {
                 e.preventDefault();
-                const formData = new FormData(priceForm);
+                const formData = new FormData(formEl);
                 const params = new URLSearchParams(window.location.search);
                 params.set('precio_min', formData.get('precio_min') || '');
                 params.set('precio_max', formData.get('precio_max') || '');
-                handleStateChange(params, e.currentTarget.querySelector('button'));
+                handleStateChange(params, formEl.querySelector('button'));
+            });
+        };
+        bindAjaxPrice(priceForm);
+        bindAjaxPrice(priceFormDesktop);
+
+        // Interceptar clics en el header (categorías) cuando estamos en catálogo
+        if(headerNav && !window.BANNER_FILTERED){
+            headerNav.addEventListener('click', (e)=>{
+                const a = e.target.closest('a.js-category-link');
+                if(!a) return;
+                e.preventDefault();
+                const filterType = a.dataset.filter;
+                const filterValue = a.dataset.value;
+                const params = new URLSearchParams(window.location.search);
+                if (filterValue) params.set(filterType, filterValue); else params.delete(filterType);
+                handleStateChange(params);
             });
         }
 
@@ -786,13 +909,54 @@ document.addEventListener('DOMContentLoaded', function(){
             const clearBtn = document.getElementById('clear-filters-btn');
             const applyBtn = document.getElementById('apply-filters-btn');
             if(sidebar && target){ target.innerHTML = sidebar.innerHTML; }
-            function open(){ panel.classList.remove('hidden'); document.documentElement.classList.add('overflow-hidden'); }
+
+            function expandActiveInPanel(){
+                if(!target) return;
+                const params = new URLSearchParams(location.search);
+                const slug = params.get('categoria') || '';
+                if(!slug) return;
+                let rootSlug = '';
+                if(target.querySelector(`li.cat-group[data-root-slug="${slug}"]`)){
+                    rootSlug = slug;
+                } else {
+                    const list = Array.from(target.querySelectorAll('ul.subcat-list')).find(ul => ul.querySelector(`a.js-category-link[data-value="${slug}"]`));
+                    if(list){ rootSlug = list.getAttribute('data-parent') || ''; }
+                }
+                if(rootSlug){
+                    const ul = target.querySelector(`ul.subcat-list[data-parent="${rootSlug}"]`);
+                    if(ul){
+                        ul.classList.remove('hidden');
+                        const btn = target.querySelector(`.subcat-toggle[aria-controls="${ul.id}"]`);
+                        if(btn){ btn.setAttribute('aria-expanded','true'); const icon=btn.querySelector('i'); if(icon){ icon.style.transform='rotate(180deg)'; icon.style.transition='transform .2s'; } }
+                    }
+                }
+            }
+
+            function open(){ panel.classList.remove('hidden'); document.documentElement.classList.add('overflow-hidden'); expandActiveInPanel(); }
             function close(){ panel.classList.add('hidden'); document.documentElement.classList.remove('overflow-hidden'); }
             openBtn.addEventListener('click', open);
             backdrop && backdrop.addEventListener('click', close);
             closeBtn && closeBtn.addEventListener('click', close);
                 target && target.addEventListener('click', e=>{ if(e.target.closest("a,button[type='submit']")){ setTimeout(close, 200); } });
             document.addEventListener('keydown', e=>{ if(e.key==='Escape' && !panel.classList.contains('hidden')) close(); });
+
+            // Delegación: toggle de subcategorías con flechita en el panel móvil
+            if(target){
+                target.addEventListener('click', function(e){
+                    const btn = e.target.closest('.subcat-toggle');
+                    if(!btn || !target.contains(btn)) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const groupLi = btn.closest('li.cat-group');
+                    const ul = groupLi ? groupLi.querySelector('ul.subcat-list') : null;
+                    if(!ul) return;
+                    const willShow = ul.classList.contains('hidden');
+                    ul.classList.toggle('hidden');
+                    btn.setAttribute('aria-expanded', willShow ? 'true' : 'false');
+                    const icon = btn.querySelector('i');
+                    if(icon){ icon.style.transform = willShow ? 'rotate(180deg)' : 'rotate(0deg)'; icon.style.transition='transform .2s'; }
+                });
+            }
 
             // --- Construir chips de filtros activos ---
             function buildFilterChips(){

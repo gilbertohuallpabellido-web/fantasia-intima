@@ -3,45 +3,64 @@
 <!-- Se usa rgba() con la nueva variable --brand-primary-rgb para aplicar transparencia -->
 <header x-data="{ mobileMenuOpen: false }" style="background-color: rgba(var(--brand-primary-rgb, 249, 168, 212), 0.8);" class="backdrop-blur-sm sticky top-0 z-50 shadow-md relative">
     <div class="container mx-auto px-4">
-    <div class="flex justify-between items-center h-12 md:h-20">
-            {% if ruleta_activa %}
-            <!-- Botón Ruleta (móvil centrado arriba, desktop flotante) -->
-            <button @click="openRoulette && openRoulette()" id="roulette-fab-mobile" :disabled="config && config.remaining_seconds <= 0" class="md:hidden premium-spin-btn absolute top-1 left-1/2 -translate-x-1/2 w-10 h-10 md:w-14 md:h-14 rounded-full flex items-center justify-center text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-300/60 z-60" aria-label="Abrir Ruleta (Móvil)">
-                <div class="roulette-inner text-[1.25rem] md:text-[1.5rem] relative">
-                    <i class="fas fa-dice"></i>
-                    <span class="roulette-tooltip">Gira y gana</span>
-                    <!-- Callout móvil desactivado para no tapar UI; el callout desktop se maneja por CSS -->
-                </div>
-                <!-- Mini contador de urgencia -->
-                <span class="fi-mini-countdown" x-show="config && config.remaining_seconds > 0" x-text="formatCountdownShort(config.remaining_seconds)" aria-live="polite"></span>
-                <span class="spark spark-1"></span>
-                <span class="spark spark-2"></span>
-                <span class="spark spark-3"></span>
-            </button>
-            {% endif %}
-            <!-- Logo -->
-            <a href="{% url 'index' %}" class="flex-shrink-0">
-                <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" class="h-9 md:h-14 w-auto" onerror="this.onerror=null;this.src='https://placehold.co/150x50/f9a8d4/ffffff?text=Logo';">
-            </a>
-
-            <!-- Navegación Principal (para pantallas grandes) -->
-            <nav class="hidden lg:flex items-center space-x-8">
-                <a href="{% url 'index' %}" style="color: var(--brand-text);" class="hover:opacity-75 font-semibold transition-colors">Inicio</a>
-                
-                <!-- CORRECCIÓN: Se usa la variable de color de acento -->
-                <a href="{% url 'catalogo_publico' %}?categoria=nueva_coleccion#product-list-section" class="js-category-link text-white px-4 py-2 rounded-full font-bold transition-all flex items-center gap-2 shadow-lg transform hover:scale-105" style="background-color: var(--brand-accent);">
-                    <i class="fas fa-star text-sm text-yellow-300"></i>
-                    <span>Nueva Colección</span>
+    <div class="header-row grid items-center py-1 md:py-2 grid-cols-[auto,1fr,auto] gap-x-3 md:gap-x-4">
+            <div class="flex items-center gap-2">
+                <!-- Logo -->
+                <a href="{% url 'index' %}" class="header-left flex-shrink-0">
+                    <img src="{% static 'productos/logo.png' %}" alt="Logo Fantasía Íntima" class="h-9 md:h-14 w-auto" onerror="this.onerror=null;this.src='https://placehold.co/150x50/f9a8d4/ffffff?text=Logo';">
                 </a>
+                {% if ruleta_activa %}
+                <!-- Botón Ruleta (móvil al lado derecho del logo) -->
+                <button @click="openRoulette && openRoulette()" id="roulette-fab-mobile" :disabled="config && config.remaining_seconds <= 0" class="md:hidden premium-spin-btn relative w-10 h-10 rounded-full flex items-center justify-center text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-300/60" aria-label="Abrir Ruleta (Móvil)">
+                    <div class="roulette-inner text-[1.25rem] relative">
+                        <i class="fas fa-dice"></i>
+                        <span class="roulette-tooltip">Gira y gana</span>
+                    </div>
+                    <span class="fi-mini-countdown" x-show="config && config.remaining_seconds > 0" x-text="formatCountdownShort(config.remaining_seconds)" aria-live="polite"></span>
+                    <span class="spark spark-1"></span>
+                    <span class="spark spark-2"></span>
+                    <span class="spark spark-3"></span>
+                </button>
+                {% endif %}
+            </div>
+
+            <!-- Navegación Principal (categorías en desktop) -->
+            <nav id="header-categories-nav" class="hidden lg:flex items-center justify-center gap-3 justify-self-center min-w-0" style="width: 100%; max-width: calc(100% - (var(--fi-side, 0px) * 2)); margin-inline: auto;">
+                <ul class="grid grid-flow-col grid-rows-2 auto-cols-max justify-center content-center gap-x-1 gap-y-1 px-1 py-1 rounded-xl mx-auto" style="background-color: rgba(255,255,255,0.12);">
+                    <li>
+                        <a href="{% url 'catalogo_publico' %}#product-list-section" class="js-category-link px-2.5 py-1 rounded-full text-[13px] font-semibold border transition-colors text-[var(--brand-text)] border-gray-300 hover:border-[var(--brand-accent)] hover:text-[var(--brand-accent)]" data-filter="categoria" data-value="">Todos</a>
+                    </li>
+                    {% for cat in categorias_menu %}
+                    <li class="relative group" data-root-slug="{{ cat.slug }}">
+                        <div class="flex items-center gap-1">
+                            <a href="{% url 'catalogo_publico' %}?categoria={{ cat.slug }}#product-list-section" class="js-category-link px-2.5 py-1 rounded-full text-[13px] font-semibold border transition-colors text-[var(--brand-text)] border-gray-300 hover:border-[var(--brand-accent)] hover:text-[var(--brand-accent)]" data-filter="categoria" data-value="{{ cat.slug }}">{{ cat.nombre }}</a>
+                            {% if cat.children.all %}
+                            <button type="button" class="header-subcat-toggle w-7 h-7 inline-flex items-center justify-center rounded-md border text-[var(--brand-accent)] border-pink-200 hover:bg-pink-50" aria-label="Mostrar subcategorías" aria-expanded="false" aria-controls="nav-subcat-{{ cat.id }}">
+                                <i class="fas fa-chevron-down text-[10px]"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                        {% if cat.children.all %}
+                        <ul id="nav-subcat-{{ cat.id }}" class="header-subcat-list hidden absolute left-0 top-full w-36 md:w-36 bg-white rounded-lg shadow-lg border border-pink-200 z-50 p-1.5" data-parent="{{ cat.slug }}">
+                            {% for subcat in cat.children.all %}
+                            <li>
+                <a href="{% url 'catalogo_publico' %}?categoria={{ subcat.slug }}#product-list-section" class="js-category-link block px-2.5 py-1.5 rounded-md text-sm text-[var(--brand-text)] hover:bg-pink-50" style="white-space: normal;" data-filter="categoria" data-value="{{ subcat.slug }}">{{ subcat.nombre }}</a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
             </nav>
 
             <!-- Barra de Búsqueda y Acciones de Usuario -->
-            <div class="flex items-center space-x-4">
+            <div class="header-right flex items-center space-x-4 flex-shrink-0 justify-self-end">
                 <!-- Barra de búsqueda -->
-                <form action="{% url 'catalogo_publico' %}" method="get" class="hidden md:block">
+        <form action="{% url 'catalogo_publico' %}" method="get" class="block">
                     <div class="relative">
-                        <input type="search" name="q" placeholder="Buscar productos..." value="{{ filtros_activos.q|default:'' }}" class="rounded-full py-2 pl-10 pr-4 w-64 border-gray-300 focus:ring-2 transition-all" style="--tw-ring-color: var(--brand-accent);">
-                        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="search" name="q" placeholder="Buscar..." value="{{ filtros_activos.q|default:'' }}" class="rounded-full py-1 md:py-2 pl-8 md:pl-10 pr-3 md:pr-4 w-28 sm:w-40 md:w-64 text-xs md:text-base border-gray-300 focus:ring-2 transition-all" style="--tw-ring-color: var(--brand-accent);">
+                        <i class="fas fa-search absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs md:text-base"></i>
                     </div>
                 </form>
 
@@ -49,8 +68,11 @@
                 <div class="hidden lg:flex items-center space-x-4">
                     {% if user.is_authenticated %}
                         <a href="{% url 'mi_cuenta' %}" class="flex items-center gap-2 font-semibold transition-colors" style="color: var(--brand-text);" onmouseover="this.style.color='var(--brand-accent)'" onmouseout="this.style.color='var(--brand-text)'" title="Mi Cuenta">
-                            <i class="fas fa-user-circle text-2xl"></i>
-                            <span class="hidden xl:inline">Hola, {{ user.first_name|default:user.username|truncatechars:10 }}</span>
+                            {% if user.profile.avatar %}
+                                <img src="{{ user.profile.avatar.url }}" alt="Avatar" class="w-8 h-8 rounded-full object-cover border-2" style="border-color: var(--brand-primary);">
+                            {% else %}
+                                <i class="fas fa-user-circle text-2xl"></i>
+                            {% endif %}
                         </a>
                         <form action="{% url 'logout' %}" method="post" class="inline">
                             {% csrf_token %}
@@ -82,11 +104,7 @@
 
     <!-- Menú Móvil -->
     <div x-show="mobileMenuOpen" @click.away="mobileMenuOpen = false" class="lg:hidden p-4 space-y-4" style="background-color: var(--brand-light-pink, #fffbff); border-top-color: var(--border-color, #fce7f3);">
-        <form action="{% url 'catalogo_publico' %}" method="get" class="md:hidden">
-            <input type="search" name="q" placeholder="Buscar..." value="{{ filtros_activos.q|default:'' }}" class="w-full rounded-full py-2 px-4 border-gray-300">
-        </form>
-        <a href="{% url 'index' %}" class="block font-semibold" style="color: var(--brand-text);">Inicio</a>
-        <a href="{% url 'catalogo_publico' %}?categoria=nueva_coleccion#product-list-section" class="js-category-link block font-bold" style="color: var(--brand-accent);">Nueva Colección</a>
+    <!-- Menú móvil: se removió Inicio y Nueva Colección -->
         <hr>
         {% if user.is_authenticated %}
             <a href="{% url 'mi_cuenta' %}" class="block font-semibold" style="color: var(--brand-text);">
@@ -112,3 +130,104 @@
         {% endif %}
     </div>
 </header>
+<script>
+// Dropdown categorías en header (desktop)
+document.addEventListener('DOMContentLoaded', function(){
+    const nav = document.getElementById('header-categories-nav');
+    if(!nav) return;
+    // Calcular padding simétrico para centrar nav entre logo y buscador
+    const row = document.querySelector('.header-row');
+    const left = document.querySelector('.header-left');
+    const right = document.querySelector('.header-right');
+    // Fijar altura temporal para evitar "salto" visual durante cálculos
+    if(row){ const h = row.getBoundingClientRect().height; row.style.minHeight = h + 'px'; }
+
+    function updateSafePadding(){
+        if(!row || !left || !right) return;
+        const styles = getComputedStyle(row);
+        const colGap = parseFloat(styles.columnGap || '0') || 0;
+        const leftW = left.getBoundingClientRect().width;
+        const rightW = right.getBoundingClientRect().width;
+        // Usar la distancia del LOGO para el centrado simétrico (pedido del usuario)
+        const sideRaw = leftW + colGap; // espacio seguro a ambos lados basado en logo
+    // Clamp: asegurar mínimo y un máximo razonable para no encoger el nav en pantallas grandes
+    const side = Math.min(Math.max(sideRaw, 100), 280);
+        const prev = parseFloat((getComputedStyle(row).getPropertyValue('--fi-side')||'0').replace('px','')) || 0;
+        if(Math.abs(prev - side) > 1){
+            row.style.setProperty('--fi-side', side + 'px');
+        }
+    }
+    function onResize(){ updateSafePadding(); }
+    // Ejecutar cálculo tras carga de fuentes para evitar "reflujo" visible
+    const runAll = ()=>{ onResize(); if(row){ row.style.minHeight=''; } };
+    if(document.fonts && document.fonts.ready){
+        document.fonts.ready.then(runAll);
+    } else {
+        // fallback inmediato
+        runAll();
+    }
+    // Recalcular al cambiar tamaño (con debounce por frame)
+    let rAF;
+    window.addEventListener('resize', ()=>{
+        cancelAnimationFrame(rAF);
+        rAF = requestAnimationFrame(onResize);
+    });
+    // Recalcular tras carga completa por seguridad (sin forzar varias veces)
+    window.addEventListener('load', ()=>{ onResize(); });
+    // Recalcular si cambian tamaños internos (logo/buscador) por fuente/carga diferida
+    if('ResizeObserver' in window){
+        const ro = new ResizeObserver(()=>{
+            cancelAnimationFrame(rAF);
+            rAF = requestAnimationFrame(onResize);
+        });
+        ro.observe(left);
+        ro.observe(right);
+    }
+    // Mostrar en hover (desktop UX)
+    nav.querySelectorAll('li.group').forEach(li=>{
+        li.addEventListener('mouseenter', ()=>{
+            const ul = li.querySelector('.header-subcat-list'); if(ul){ ul.classList.remove('hidden'); }
+            const btn = li.querySelector('.header-subcat-toggle'); if(btn){ btn.setAttribute('aria-expanded','true'); const ic=btn.querySelector('i'); if(ic) ic.style.transform='rotate(180deg)'; }
+        });
+        li.addEventListener('mouseleave', ()=>{
+            const ul = li.querySelector('.header-subcat-list'); if(ul){ ul.classList.add('hidden'); }
+            const btn = li.querySelector('.header-subcat-toggle'); if(btn){ btn.setAttribute('aria-expanded','false'); const ic=btn.querySelector('i'); if(ic) ic.style.transform='rotate(0deg)'; }
+        });
+    });
+    // Toggle por click (por si no hay hover)
+    nav.querySelectorAll('.header-subcat-toggle').forEach(btn=>{
+        btn.addEventListener('click', function(e){
+            e.preventDefault(); e.stopPropagation();
+            const id = btn.getAttribute('aria-controls'); const menu = id && document.getElementById(id);
+            if(!menu) return;
+            const willShow = menu.classList.contains('hidden');
+            nav.querySelectorAll('.header-subcat-list').forEach(ul=>{ if(ul!==menu) ul.classList.add('hidden'); });
+            nav.querySelectorAll('.header-subcat-toggle[aria-expanded="true"]').forEach(t=>{ if(t!==btn) t.setAttribute('aria-expanded','false'); });
+            menu.classList.toggle('hidden');
+            btn.setAttribute('aria-expanded', willShow ? 'true' : 'false');
+            const ic=btn.querySelector('i'); if(ic){ ic.style.transform = willShow ? 'rotate(180deg)' : 'rotate(0deg)'; ic.style.transition='transform .2s'; }
+        });
+    });
+    // Cerrar al hacer click fuera
+    document.addEventListener('click', function(e){ if(!nav.contains(e.target)){ nav.querySelectorAll('.header-subcat-list').forEach(ul=>ul.classList.add('hidden')); nav.querySelectorAll('.header-subcat-toggle').forEach(btn=>{ btn.setAttribute('aria-expanded','false'); const ic=btn.querySelector('i'); if(ic) ic.style.transform='rotate(0deg)'; }); }});
+});
+</script>
+<style>
+/* Header categories: sin scroll horizontal; flex-wrap en 1-2 filas según espacio */
+#header-categories-nav{ overflow: visible; }
+.header-row{ position: relative; /* para cálculos y variables */ }
+/* Fijar tipografía del menú a fuente de sistema para evitar reflujo por carga de webfonts */
+#header-categories-nav{ font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans", "Liberation Sans", sans-serif !important; font-synthesis-weight: none; }
+/* Forzar exactamente dos filas visuales en la lista del header */
+#header-categories-nav > ul{ grid-auto-flow: column; grid-template-rows: repeat(2, auto); }
+#header-categories-nav > ul > li{ white-space: nowrap; }
+#header-categories-nav > ul{ max-height: calc(2 * 2rem + 6px); overflow: visible; }
+/* Densidad adaptable: 2 filas sin animaciones visibles */
+#header-categories-nav .js-category-link{ transition: none !important; }
+#header-categories-nav.compact ul{ gap: 0.25rem; }
+#header-categories-nav.compact .js-category-link{ padding: 0.25rem 0.5rem !important; }
+#header-categories-nav.compact .header-subcat-toggle{ width: 1.5rem; height: 1.5rem; }
+#header-categories-nav.ultra ul{ gap: 0.125rem; }
+#header-categories-nav.ultra .js-category-link{ padding: 0.2rem 0.4rem !important; font-size: 12px !important; }
+#header-categories-nav.ultra .header-subcat-toggle{ width: 1.25rem; height: 1.25rem; }
+</style>
