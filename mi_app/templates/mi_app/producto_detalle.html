@@ -85,7 +85,7 @@
     /* ======= Mejoras Mobile ======= */
     @media (max-width: 640px) {
     .product-detail-card { padding: .55rem .6rem .9rem; gap:.5rem; }
-    .product-detail-wrapper { padding-bottom: 4.8rem; }
+    .product-detail-wrapper { padding-bottom: 1.2rem; }
     :root{ --pd-font: 1rem; }
     /* Título = Precio (mismo tamaño) */
     .mobile-title { font-size: var(--pd-font) !important; line-height: 1.1; margin-bottom:.08rem; letter-spacing:.15px; }
@@ -104,10 +104,12 @@
     .color-selector { width:1.2rem; height:1.2rem; border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.09); }
         .color-selector.selected { transform: scale(1.15); box-shadow:0 0 0 2px var(--brand-accent, #e91e63),0 0 0 1px #fff inset; }
         .price-pill { backdrop-filter:blur(4px); }
-    /* Botón fijo más corto (alto y largo) y centrado */
-    .add-to-cart-main { position: fixed; left: 50%; right: auto; transform: translateX(-50%); width: min(72%, 240px); bottom: calc(.35rem + env(safe-area-inset-bottom)); z-index: 40; box-shadow: 0 5px 12px -10px rgba(var(--brand-primary-rgb, 233,30,99), .45); border-radius: 9999px; font-size:.78rem; padding:.38rem .68rem; white-space: nowrap; }
+    /* Acciones en fila: cantidad + botón (solo móvil) */
+    .actions-row { display:flex; align-items:center; gap:.55rem; margin-bottom:.6rem; }
+    .quantity-row { margin-bottom: 0; flex: 1 1 auto; }
+    .add-to-cart-main { position: static; transform:none; width:auto; flex:0 0 auto; box-shadow: 0 5px 12px -10px rgba(var(--brand-primary-rgb, 233,30,99), .45); border-radius: 9999px; font-size:.78rem; padding:.42rem .72rem; white-space: nowrap; }
     .add-to-cart-main i{ margin-right:.28rem !important; }
-        .add-to-cart-main:active { transform: scale(.97); }
+        .add-to-cart-main:active { transform:none; }
     [data-stock-message] span { display:inline-block; padding:.25rem .55rem; border-radius:9999px; font-size:.6rem; letter-spacing:.45px; }
         [data-stock-message] .text-gray-500 { background:#f3f4f6; }
     }
@@ -218,29 +220,31 @@
                 <input type="hidden" name="variant_id" id="variant_id-{{ producto.id }}" value="{% if producto.variantes.first %}{{ producto.variantes.first.pk }}{% endif %}">
                 
                 {% with stock_inicial=producto.variantes.first.stock|default:0 %}
-                <div class="flex items-center mb-6 quantity-row">
-                    <span class="mr-6 font-bold text-gray-700">Cantidad:</span>
-                    <div class="flex items-center border rounded-full overflow-hidden shadow-sm">
-                        <button type="button" onclick="changeQuantity({{ producto.id }}, -1)" class="bg-gray-200 text-gray-700 w-10 h-10 flex items-center justify-center hover:bg-gray-300 transition-colors duration-200" {% if stock_inicial <= 0 %}disabled{% endif %}>-</button>
-                        <input 
-                            type="number" 
-                            name="quantity" 
-                            id="quantity-{{ producto.id }}" 
-                            value="{% if stock_inicial > 0 %}1{% else %}0{% endif %}" 
-                            min="{% if stock_inicial > 0 %}1{% else %}0{% endif %}"
-                            max="{{ stock_inicial }}"
-                            class="w-16 text-center bg-white text-gray-800 focus:outline-none"
-                            onchange="validateQuantity({{ producto.id }})"
-                            {% if stock_inicial <= 0 %}disabled{% endif %}
-                        >
-                        <button type="button" onclick="changeQuantity({{ producto.id }}, 1)" class="bg-gray-200 text-gray-700 w-10 h-10 flex items-center justify-center hover:bg-gray-300 transition-colors duration-200" {% if stock_inicial <= 0 %}disabled{% endif %}>+</button>
+                <div class="actions-row md:block">
+                    <div class="flex items-center mb-6 quantity-row">
+                        <span class="mr-6 font-bold text-gray-700">Cantidad:</span>
+                        <div class="flex items-center border rounded-full overflow-hidden shadow-sm">
+                            <button type="button" onclick="changeQuantity({{ producto.id }}, -1)" class="bg-gray-200 text-gray-700 w-10 h-10 flex items-center justify-center hover:bg-gray-300 transition-colors duration-200" {% if stock_inicial <= 0 %}disabled{% endif %}>-</button>
+                            <input 
+                                type="number" 
+                                name="quantity" 
+                                id="quantity-{{ producto.id }}" 
+                                value="{% if stock_inicial > 0 %}1{% else %}0{% endif %}" 
+                                min="{% if stock_inicial > 0 %}1{% else %}0{% endif %}"
+                                max="{{ stock_inicial }}"
+                                class="w-16 text-center bg-white text-gray-800 focus:outline-none"
+                                onchange="validateQuantity({{ producto.id }})"
+                                {% if stock_inicial <= 0 %}disabled{% endif %}
+                            >
+                            <button type="button" onclick="changeQuantity({{ producto.id }}, 1)" class="bg-gray-200 text-gray-700 w-10 h-10 flex items-center justify-center hover:bg-gray-300 transition-colors duration-200" {% if stock_inicial <= 0 %}disabled{% endif %}>+</button>
+                        </div>
                     </div>
-                </div>
 
-                <button type="submit" class="text-white font-bold rounded-full shadow-lg transition-transform duration-200 hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed add-to-cart-main flex items-center justify-center" style="background-color: var(--brand-accent);" {% if stock_inicial <= 0 %}disabled{% endif %}>
-                    <i class="fas fa-shopping-cart mr-3"></i>
-                    Añadir al Carrito
-                </button>
+                    <button type="submit" class="text-white font-bold rounded-full shadow-lg transition-transform duration-200 hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed add-to-cart-main flex items-center justify-center" style="background-color: var(--brand-accent);" {% if stock_inicial <= 0 %}disabled{% endif %}>
+                        <i class="fas fa-shopping-cart mr-3"></i>
+                        Añadir al Carrito
+                    </button>
+                </div>
                 {% endwith %}
             </form>
         </div>
