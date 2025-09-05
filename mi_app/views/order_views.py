@@ -14,7 +14,7 @@ from django.contrib import messages
 from urllib.parse import quote
 
 # Se añaden todos los modelos necesarios
-from ..models import Producto, ColorVariante, PedidoWhatsApp, DetallePedidoWhatsApp, ConfiguracionSitio, Direccion, ReservaStock
+from ..models import Producto, ColorVariante, PedidoWhatsApp, DetallePedidoWhatsApp, ConfiguracionSitio, Direccion, ReservaStock, Carrito, CarritoItem
 
 def _clean_expired_cart_items(request):
     cart = request.session.get('cart', {})
@@ -46,6 +46,11 @@ def _clean_expired_cart_items(request):
         request.session.modified = True
 
     return expired_items_names, cart
+
+
+def _get_or_create_carrito(user):
+    carrito, _ = Carrito.objects.get_or_create(user=user)
+    return carrito
 
 
 def add_to_cart(request):
@@ -117,6 +122,25 @@ def add_to_cart(request):
         }
         cart[str(variant_id)] = cart_item_data
 
+        # Persistir carrito si está autenticado
+        if request.user.is_authenticated:
+            carrito = _get_or_create_carrito(request.user)
+            item, created = CarritoItem.objects.get_or_create(
+                carrito=carrito,
+                variante=variant,
+                defaults={
+                    'quantity': 0,
+                    'price': effective_price,
+                    'original_price': original_price,
+                    'image_url': image_url,
+                }
+            )
+            item.quantity = new_qty
+            item.price = effective_price
+            item.original_price = original_price
+            item.image_url = image_url
+            item.save()
+
     # crear/actualizar reserva por 24h
         expires_at = timezone.now() + timedelta(hours=24)
         reserva, _ = ReservaStock.objects.get_or_create(
@@ -126,10 +150,17 @@ def add_to_cart(request):
         )
         reserva.quantity = new_qty
         reserva.expires_at = expires_at
+        if request.user.is_authenticated:
+            reserva.user = request.user
         reserva.save()
 
         request.session['cart'] = cart
-        cart_count = sum(item['quantity'] for item in cart.values())
+        # calcular cart_count: si autenticado, usar carrito persistente
+        if request.user.is_authenticated:
+            carrito = Carrito.objects.filter(user=request.user).first()
+            cart_count = carrito.total_items if carrito else 0
+        else:
+            cart_count = sum(item['quantity'] for item in cart.values())
         # devolver stock efectivo restante
         active_reservations_all = ReservaStock.objects.filter(variante=variant, expires_at__gt=timezone.now())
         reserved_total = sum(r.quantity for r in active_reservations_all)
@@ -138,12 +169,38 @@ def add_to_cart(request):
     return JsonResponse({'success': False, 'error': 'Solicitud no válida.'}, status=400)
 
 def cart_count_view(request):
-    cart = request.session.get('cart', {})
-    cart_count = sum(item['quantity'] for item in cart.values())
-    return JsonResponse({"cart_count": cart_count})
+    if request.user.is_authenticated:
+        carrito = Carrito.objects.filter(user=request.user).first()
+        count = carrito.total_items if carrito else 0
+        return JsonResponse({"cart_count": count})
+    else:
+        cart = request.session.get('cart', {})
+        cart_count = sum(item['quantity'] for item in cart.values())
+        return JsonResponse({"cart_count": cart_count})
 
 def ver_carrito(request):
-    expired_items, cart = _clean_expired_cart_items(request)
+    # Si está autenticado, sincronizar desde Carrito persistente a la sesión para reusar la plantilla
+    if request.user.is_authenticated:
+        carrito = Carrito.objects.filter(user=request.user).first()
+        cart = {}
+        if carrito:
+            for ci in carrito.items.select_related('variante', 'variante__producto').all():
+                product = ci.variante.producto
+                cart[str(ci.variante.pk)] = {
+                    'id': str(ci.variante.pk),
+                    'product_id': product.pk,
+                    'name': product.nombre,
+                    'price': str(ci.price),
+                    'original_price': str(ci.original_price) if ci.original_price else None,
+                    'color': ci.variante.codigo or ci.variante.color,
+                    'image_url': ci.image_url,
+                    'quantity': ci.quantity,
+                    'added_at': timezone.now().isoformat()
+                }
+        request.session['cart'] = cart
+        expired_items = []
+    else:
+        expired_items, cart = _clean_expired_cart_items(request)
     if expired_items:
         messages.warning(request, f"Algunos productos han sido eliminados de tu carrito porque su reserva de 24 horas ha caducado: {', '.join(expired_items)}.")
 
@@ -216,7 +273,7 @@ def procesar_pago(request):
         cart = request.session.get('cart', {})
         if not cart:
             return redirect('ver_carrito')
-
+        # Pre-chequeo de stock
         for item_id, item_data in cart.items():
             variante = get_object_or_404(ColorVariante, pk=item_id)
             if variante.stock < item_data['quantity']:
@@ -238,7 +295,7 @@ def procesar_pago(request):
             ciudad_envio=request.POST.get('ciudad'),
             direccion_envio=request.POST.get('direccion'),
         )
-
+        # Descontar stock, limpiar reservas y crear detalle por cada item
         for item_id, item_data in cart.items():
             variante = get_object_or_404(ColorVariante, pk=item_id)
             # doble verificación contra reservas de otros antes de descontar
@@ -255,7 +312,9 @@ def procesar_pago(request):
             variante.stock -= item_data['quantity']
             variante.save()
 
-            # eliminar reserva de esta sesión para esta variante
+            # eliminar reservas del usuario (todas las sesiones) y de la sesión actual
+            if request.user.is_authenticated:
+                ReservaStock.objects.filter(variante=variante, user=request.user).delete()
             if request.session.session_key:
                 ReservaStock.objects.filter(variante=variante, session_key=request.session.session_key).delete()
 
@@ -268,6 +327,9 @@ def procesar_pago(request):
                 imagen_url=item_data['image_url']
             )
 
+        # Limpiar carrito persistente si está autenticado
+        if request.user.is_authenticated:
+            CarritoItem.objects.filter(carrito__user=request.user).delete()
         request.session['cart'] = {}
         return redirect('compra_exitosa', pedido_id=pedido.id)
 
@@ -381,6 +443,21 @@ def actualizar_cantidad_carrito(request):
                 cart[variant_id]['quantity'] = new_quantity
                 request.session['cart'] = cart
 
+                # Si autenticado, reflejar en CarritoItem
+                if request.user.is_authenticated:
+                    carrito = _get_or_create_carrito(request.user)
+                    item, _ = CarritoItem.objects.get_or_create(
+                        carrito=carrito,
+                        variante=variant,
+                        defaults={
+                            'price': Decimal(str(cart[variant_id]['price'])),
+                            'original_price': Decimal(str(cart[variant_id]['original_price'])) if cart[variant_id]['original_price'] else None,
+                            'image_url': cart[variant_id]['image_url'],
+                        }
+                    )
+                    item.quantity = new_quantity
+                    item.save()
+
                 # actualizar/crear reserva y extender vencimiento
                 expires_at = timezone.now() + timedelta(hours=24)
                 reserva, _ = ReservaStock.objects.get_or_create(
@@ -390,6 +467,8 @@ def actualizar_cantidad_carrito(request):
                 )
                 reserva.quantity = new_quantity
                 reserva.expires_at = expires_at
+                if request.user.is_authenticated:
+                    reserva.user = request.user
                 reserva.save()
                 
                 item = cart[variant_id]
@@ -397,12 +476,18 @@ def actualizar_cantidad_carrito(request):
                 cart_total = sum(float(i['price']) * i['quantity'] for i in cart.values())
                 cart_item_count = sum(i['quantity'] for i in cart.values())
 
+                # calcular disponibilidad actual (stock - todas las reservas)
+                active_reservations_all = ReservaStock.objects.filter(variante=variant, expires_at__gt=timezone.now())
+                reserved_total = sum(r.quantity for r in active_reservations_all)
+                current_available = max(variant.stock - reserved_total, 0)
+
                 return JsonResponse({
                     'success': True,
                     'item_quantity': new_quantity,
                     'item_subtotal': item_subtotal,
                     'cart_total': cart_total,
-                    'cart_item_count': cart_item_count
+                    'cart_item_count': cart_item_count,
+                    'current_available': current_available
                 })
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
@@ -419,6 +504,13 @@ def eliminar_del_carrito(request, item_id):
         # eliminar reserva asociada de esta sesión
         try:
             variante = ColorVariante.objects.get(pk=item_id_str)
+            # Si autenticado, borrar item del Carrito persistente
+            if request.user.is_authenticated:
+                try:
+                    carrito = Carrito.objects.get(user=request.user)
+                    CarritoItem.objects.filter(carrito=carrito, variante=variante).delete()
+                except Carrito.DoesNotExist:
+                    pass
             if request.session.session_key:
                 ReservaStock.objects.filter(variante=variante, session_key=request.session.session_key).delete()
         except ColorVariante.DoesNotExist:

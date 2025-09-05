@@ -2,7 +2,7 @@
 import json
 import os
 from pathlib import Path
-from .models import Categoria, ConfiguracionSitio, Pagina, ConfiguracionRuleta, ConfiguracionChatbot, Banner, Producto
+from .models import Categoria, ConfiguracionSitio, Pagina, ConfiguracionRuleta, ConfiguracionChatbot, Banner, Producto, Carrito
 from django.urls import reverse
 from django.utils import timezone
 
@@ -28,9 +28,19 @@ def common_context(request):
         chatbot_config = None
 
     # Creamos el diccionario de contexto base.
+    # Calcular cart_count: usar carrito persistente si el usuario está autenticado
+    if getattr(request, 'user', None) and request.user.is_authenticated:
+        try:
+            carrito = Carrito.objects.filter(user=request.user).first()
+            cart_count = carrito.total_items if carrito else 0
+        except Exception:
+            cart_count = 0
+    else:
+        cart_count = sum(item.get('quantity', 0) for item in request.session.get('cart', {}).values())
+
     context = {
         'categorias_menu': Categoria.objects.filter(parent__isnull=True).prefetch_related('children'),
-        'cart_count': sum(item.get('quantity', 0) for item in request.session.get('cart', {}).values()),
+        'cart_count': cart_count,
         'configuracion_sitio': configuracion_sitio,
         'paginas_informativas': Pagina.objects.filter(publicada=True),
         'configuracion_ruleta': config_ruleta,

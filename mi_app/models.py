@@ -184,6 +184,7 @@ class DetallePedidoWhatsApp(models.Model):
 class ReservaStock(models.Model):
     """Reserva de stock por sesión para bloquear unidades por 24h."""
     variante = models.ForeignKey(ColorVariante, on_delete=models.CASCADE, related_name='reservas')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name='reservas_stock')
     session_key = models.CharField(max_length=40, db_index=True)
     quantity = models.PositiveIntegerField(default=0)
     reserved_at = models.DateTimeField(auto_now_add=True)
@@ -194,6 +195,35 @@ class ReservaStock(models.Model):
 
     def __str__(self):
         return f"Reserva {self.quantity}x {self.variante} (sesión {self.session_key})"
+
+
+class Carrito(models.Model):
+    """Carrito persistente por usuario (sincroniza dispositivos)."""
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='carrito')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Carrito de {self.user}"
+
+    @property
+    def total_items(self):
+        return sum(i.quantity for i in self.items.all())
+
+
+class CarritoItem(models.Model):
+    carrito = models.ForeignKey(Carrito, on_delete=models.CASCADE, related_name='items')
+    variante = models.ForeignKey(ColorVariante, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    original_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    image_url = models.CharField(max_length=255, blank=True, default='')
+
+    class Meta:
+        unique_together = ('carrito', 'variante')
+
+    @property
+    def subtotal(self):
+        return self.quantity * self.price
 
 
 class ConfiguracionSitio(SingletonModel):

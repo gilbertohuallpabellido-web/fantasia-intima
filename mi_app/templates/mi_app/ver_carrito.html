@@ -208,6 +208,15 @@
                 document.getElementById(`subtotal-${variantId}`).innerText = `S/${data.item_subtotal.toFixed(2)}`;
                 document.getElementById('total-price-display').innerText = `S/${data.cart_total.toFixed(2)}`;
                 document.getElementById('cart-count-badge').textContent = data.cart_item_count;
+                // Si viene current_available, podemos deshabilitar el botón + al llegar a límite
+                if (typeof data.current_available !== 'undefined') {
+                    const plusBtn = quantityInput.parentElement.querySelector('button:last-of-type');
+                    if (plusBtn) {
+                        plusBtn.disabled = data.item_quantity >= data.current_available;
+                        plusBtn.classList.toggle('opacity-50', plusBtn.disabled);
+                        plusBtn.classList.toggle('cursor-not-allowed', plusBtn.disabled);
+                    }
+                }
             } else {
                 showErrorModal(data.error || 'No se pudo actualizar la cantidad.');
                 quantityInput.value = data.current_stock || quantityInput.value;
