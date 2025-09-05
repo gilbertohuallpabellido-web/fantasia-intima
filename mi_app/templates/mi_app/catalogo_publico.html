@@ -668,12 +668,12 @@ document.addEventListener('DOMContentLoaded', function(){
             const html = await response.text();
             productListContainer.innerHTML = html;
             if(productListContainer.querySelector('html')){ const parser = new DOMParser(); const doc = parser.parseFromString(html,'text/html'); const extracted = doc.querySelector('#product-list-section'); if(extracted){ productListContainer.innerHTML = extracted.innerHTML; } }
-            const heading = document.getElementById('products-heading'); if (heading) heading.focus();
+            const heading = document.getElementById('products-heading'); if (heading && !window.__FI_SEARCH_TYPING) heading.focus();
             (function(){
                 const pill = document.getElementById('matched-counter-pill');
                 if(!pill) return; const count = productListContainer.querySelectorAll('.product-card').length; const numEl = pill.querySelector('.counter-number'); if(numEl) numEl.textContent = count; pill.setAttribute('data-matched-count', count); if(window.updateUrgencyPill){ window.updateUrgencyPill(count); } pill.classList.remove('bump'); void pill.offsetWidth; pill.classList.add('bump');
             })();
-            if(window.innerWidth < 640){ setTimeout(()=>{ const section = document.querySelector('#product-list-section'); if(section){ section.scrollIntoView({behavior:'smooth', block:'start'}); } }, 50); }
+            if(window.innerWidth < 640 && !window.__FI_SEARCH_TYPING){ setTimeout(()=>{ const section = document.querySelector('#product-list-section'); if(section){ section.scrollIntoView({behavior:'smooth', block:'start'}); } }, 50); }
                 // Actualizar contador móvil si existe
                 const pillMobile = document.getElementById('matched-counter-pill-mobile');
                 if(pillMobile){ const count = productListContainer.querySelectorAll('.product-card').length; const numEl = pillMobile.querySelector('.counter-number'); if(numEl) numEl.textContent = count; pillMobile.setAttribute('data-matched-count', count); if(window.updateUrgencyPill){ window.updateUrgencyPill(count); } pillMobile.classList.remove('bump'); void pillMobile.offsetWidth; pillMobile.classList.add('bump'); }

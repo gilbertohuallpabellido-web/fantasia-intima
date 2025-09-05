@@ -12,6 +12,8 @@ import random
 import string
 from django.db.models.signals import post_save, pre_delete, pre_save, post_delete
 from django.dispatch import receiver
+import unicodedata
+import re
 # === INICIO DE LA MEJORA: Importamos la herramienta de Cloudinary ===
 from cloudinary.models import CloudinaryField
 import cloudinary.api
@@ -79,6 +81,9 @@ class Producto(models.Model):
     es_oferta = models.BooleanField(default=False, help_text="Márcalo para incluir este producto en el filtro 'Solo ofertas' aunque no tenga precio_oferta menor. Si hay precio_oferta menor que precio, se mostrará el % de descuento.")
     imagen_principal = models.ImageField(upload_to='productos/', blank=True, null=True)
     es_nueva_coleccion = models.BooleanField(default=False, verbose_name="¿Es de la Nueva Colección?")
+    # Campos normalizados para búsqueda (sin tildes y en minúsculas)
+    nombre_norm = models.CharField(max_length=255, default='', db_index=True)
+    descripcion_norm = models.TextField(blank=True, default='')
     # Campo eliminado: en_grupo_banner (ya no se usa grupo de productos del banner)
     
     @property
@@ -100,6 +105,23 @@ class Producto(models.Model):
 
     def __str__(self):
         return self.nombre
+
+    @staticmethod
+    def _normalize_text(text):
+        if not text:
+            return ''
+        # Quitar tildes/diacríticos y pasar a minúsculas
+        norm = unicodedata.normalize('NFKD', str(text))
+        norm = norm.encode('ascii', 'ignore').decode('ascii').lower()
+        # Colapsar espacios
+        norm = re.sub(r"\s+", " ", norm).strip()
+        return norm
+
+    def save(self, *args, **kwargs):
+        # Actualizar campos normalizados antes de guardar
+        self.nombre_norm = self._normalize_text(self.nombre)
+        self.descripcion_norm = self._normalize_text(self.descripcion)
+        super().save(*args, **kwargs)
 
 
 class ColorVariante(models.Model):

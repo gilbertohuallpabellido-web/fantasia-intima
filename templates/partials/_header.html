@@ -57,10 +57,18 @@
             <!-- Barra de Búsqueda y Acciones de Usuario -->
             <div class="header-right flex items-center space-x-4 flex-shrink-0 justify-self-end">
                 <!-- Barra de búsqueda -->
-        <form action="{% url 'catalogo_publico' %}" method="get" class="block">
-                    <div class="relative -ml-8 md:ml-0">
-                        <input type="search" name="q" placeholder="Buscar..." value="{{ filtros_activos.q|default:'' }}" class="rounded-full py-1 md:py-2 pl-8 md:pl-10 pr-3 md:pr-4 w-36 sm:w-40 md:w-64 text-xs md:text-base border-gray-300 focus:ring-2 transition-all" style="--tw-ring-color: var(--brand-accent);">
+        <form action="{% url 'catalogo_publico' %}" method="get" class="block" role="search">
+                    <div class="relative -ml-8 md:ml-0" id="fi-searchbox">
+                        <input id="fi-search-input" type="search" name="q" placeholder="Buscar productos..." value="{{ filtros_activos.q|default:'' }}" autocomplete="off" class="rounded-full py-1 md:py-2 pl-8 md:pl-10 pr-3 md:pr-4 w-36 sm:w-40 md:w-64 text-xs md:text-base border-gray-300 focus:ring-2 transition-all" style="--tw-ring-color: var(--brand-accent);" aria-autocomplete="list" aria-controls="fi-search-suggest" aria-expanded="false">
                         <i class="fas fa-search absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs md:text-base"></i>
+
+                        <!-- Dropdown de sugerencias -->
+                        <div id="fi-search-suggest" class="absolute left-0 right-0 mt-1 bg-white border border-pink-200 rounded-lg shadow-lg z-50 hidden">
+                            <ul class="max-h-80 overflow-auto divide-y divide-pink-50" role="listbox"></ul>
+                            <div class="p-2 text-right">
+                                <a id="fi-search-viewall" href="#" class="text-[var(--brand-accent)] text-xs md:text-sm font-semibold hidden">Ver más</a>
+                            </div>
+                        </div>
                     </div>
                 </form>
 
@@ -210,6 +218,112 @@ document.addEventListener('DOMContentLoaded', function(){
     });
     // Cerrar al hacer click fuera
     document.addEventListener('click', function(e){ if(!nav.contains(e.target)){ nav.querySelectorAll('.header-subcat-list').forEach(ul=>ul.classList.add('hidden')); nav.querySelectorAll('.header-subcat-toggle').forEach(btn=>{ btn.setAttribute('aria-expanded','false'); const ic=btn.querySelector('i'); if(ic) ic.style.transform='rotate(0deg)'; }); }});
+});
+
+// Buscador con sugerencias en vivo
+document.addEventListener('DOMContentLoaded', function(){
+    const input = document.getElementById('fi-search-input');
+    const box = document.getElementById('fi-search-suggest');
+    const list = box ? box.querySelector('ul') : null;
+    const viewAll = document.getElementById('fi-search-viewall');
+    if(!input || !box || !list || !viewAll) return;
+
+    const minChars = 2;
+    let aborter = null;
+    let lastQ = '';
+    let debTimer = null;
+
+    function hide(){ box.classList.add('hidden'); input.setAttribute('aria-expanded','false'); }
+    function show(){ box.classList.remove('hidden'); input.setAttribute('aria-expanded','true'); }
+    function clearList(){ list.innerHTML=''; viewAll.classList.add('hidden'); viewAll.href = '#'; }
+
+    function itemTpl(it){
+        const img = it.image ? `<img src="${it.image}" alt="${it.name}" class="w-8 h-8 rounded object-cover flex-shrink-0">` : `<div class="w-8 h-8 rounded bg-pink-100 flex items-center justify-center text-pink-400"><i class='fas fa-image'></i></div>`;
+        return `<li role="option"><a href="${it.url}" class="flex items-center gap-3 p-2 hover:bg-pink-50">
+            ${img}
+            <div class="min-w-0">
+                <div class="text-sm font-medium text-gray-800 truncate">${it.name}</div>
+                <div class="text-xs text-gray-500">S/ ${it.price}</div>
+            </div>
+        </a></li>`;
+    }
+
+    function noResultsTpl(q){
+        return `<li class="p-3 text-sm text-gray-500">No hay coincidencias para "${q}"</li>`;
+    }
+
+    async function fetchSuggest(q){
+        const url = `{% url 'search_suggest' %}?q=${encodeURIComponent(q)}&limit=4`;
+        if(aborter){ aborter.abort(); }
+        aborter = new AbortController();
+        const res = await fetch(url, { headers: { 'X-Requested-With': 'fetch' }, signal: aborter.signal });
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        return res.json();
+    }
+
+    function schedule(){
+        clearTimeout(debTimer);
+        debTimer = setTimeout(async ()=>{
+            const q = input.value.trim();
+            if(q.length < minChars){ hide(); clearList(); lastQ = q; return; }
+            if(q === lastQ) return;
+            lastQ = q;
+            try{
+                const data = await fetchSuggest(q);
+                clearList();
+                if(data.total === 0){
+                    list.insertAdjacentHTML('beforeend', noResultsTpl(q));
+                    viewAll.classList.remove('hidden');
+                    viewAll.href = `{% url 'catalogo_publico' %}?q=${encodeURIComponent(q)}#product-list-section`;
+                    show();
+                    // Mantener foco al seguir escribiendo
+                    input.focus({ preventScroll: true });
+                    return;
+                }
+                // Renderizar máximo 4 resultados por UX
+                (data.results || []).slice(0,4).forEach(it=> list.insertAdjacentHTML('beforeend', itemTpl(it)) );
+                if(data.total > data.results.length){
+                    viewAll.classList.remove('hidden');
+                    viewAll.href = `{% url 'catalogo_publico' %}?q=${encodeURIComponent(q)}#product-list-section`;
+                }
+                show();
+                // Mantener foco mientras se escribe para no tener que re-clickear
+                input.focus({ preventScroll: true });
+            }catch(e){ /* opcional: log */ }
+        }, 180);
+    }
+
+    input.addEventListener('input', ()=>{ schedule(); /* asegurar foco continuo */ input.focus({ preventScroll: true }); });
+    // Evitar que el mousedown en una sugerencia robe el foco del input
+    list.addEventListener('mousedown', (e)=>{
+        const a = e.target.closest('a');
+        if(a){ e.preventDefault(); }
+    });
+    input.addEventListener('focus', ()=>{ if(list.children.length){ show(); } });
+    document.addEventListener('click', (e)=>{ if(!e.target.closest('#fi-searchbox')) hide(); });
+    input.form && input.form.addEventListener('submit', ()=> hide());
+
+        // Si estamos en la página de catálogo y no es modo banner, actualizamos la grilla en vivo
+        function isCatalog(){ return document.body && document.body.classList.contains('catalog-page'); }
+        function canLive(){ return isCatalog() && !window.BANNER_FILTERED; }
+    let liveTimer=null;
+    input.addEventListener('input', ()=>{
+            if(!canLive()) return;
+            clearTimeout(liveTimer);
+            liveTimer = setTimeout(()=>{
+                const params = new URLSearchParams(location.search);
+                const q = input.value.trim();
+                if(q){ params.set('q', q); } else { params.delete('q'); }
+        // No usar hash al tipear para evitar scroll/blurs
+        const url = `${location.pathname}?${params.toString()}`;
+                if(typeof updateProducts === 'function'){
+            history.replaceState({}, '', url);
+            // Señalizamos que la actualización viene del buscador para preservar el foco
+            window.__FI_SEARCH_TYPING = true;
+            Promise.resolve(updateProducts(url)).finally(()=>{ window.__FI_SEARCH_TYPING = false; });
+                }
+            }, 250);
+        });
 });
 </script>
 <style>

@@ -10,7 +10,7 @@ from .views.order_views import (
     crear_pedido_whatsapp, resumen_pedido_whatsapp,
     actualizar_cantidad_carrito, error_stock_view, compra_exitosa
 )
-from .views.catalog_views import pagina_informativa_view
+from .views.catalog_views import pagina_informativa_view, search_suggest
 
 urlpatterns = [
     # Rutas para el catálogo público y el carrito
@@ -58,6 +58,9 @@ urlpatterns = [
     
     # Ruta para páginas informativas
     path('paginas/<slug:slug>/', pagina_informativa_view, name='pagina_informativa'),
+
+    # API: sugerencias de búsqueda
+    path('api/search/suggest/', search_suggest, name='search_suggest'),
 
     # --- API para subcategorías dinámicas en el admin ---
     path('api/admin/get-subcategories/', get_subcategories_json, name='admin_get_subcategories'),

@@ -116,9 +116,14 @@ def catalogo_publico(request):
 
     q = request.GET.get("q", "").strip()
     if q:
-        productos_list = productos_list.filter(
-            Q(nombre__icontains=q) | Q(descripcion__icontains=q)
-        )
+        # Buscar sobre campos normalizados + fallback original
+        terms = [t.strip().lower() for t in q.split() if t.strip()]
+        q_obj = Q()
+        for t in terms:
+            q_obj |= Q(nombre_norm__contains=t) | Q(descripcion_norm__contains=t)
+        # Fallback por si faltan norm fields en algún registro
+        q_obj |= Q(nombre__icontains=q) | Q(descripcion__icontains=q)
+        productos_list = productos_list.filter(q_obj)
 
     try:
         pmin = request.GET.get("precio_min")

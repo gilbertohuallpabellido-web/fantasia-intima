@@ -20,7 +20,14 @@ Recibe una variable 'producto' desde donde se le incluye.
             </div>
 
             <!-- Etiqueta "Nueva Colección" (Superior Izquierda) -->
-                <!-- Etiqueta 'Nueva Colección' removida -->
+            {% if producto.es_nueva_coleccion %}
+            <div class="absolute top-2 left-2 z-10">
+                <span class="inline-flex items-center text-[10px] uppercase tracking-wider font-bold text-white px-2 py-1 rounded-full shadow"
+                      style="background: linear-gradient(145deg, var(--brand-accent), var(--brand-primary, #f9a8d4));">
+                    Nueva Colección
+                </span>
+            </div>
+            {% endif %}
 
             <!-- Etiqueta de Descuento (Inferior Derecha) -->
             <div class="absolute bottom-2 right-2 z-10">

@@ -1,4 +1,6 @@
 from django.shortcuts import render, get_object_or_404
+from django.http import JsonResponse
+from django.urls import reverse
 import logging
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q, DecimalField, F
@@ -42,9 +44,13 @@ def catalogo_publico(request):
     if not skip_other_filters:
         q = request.GET.get("q", "").strip()
         if q:
-            productos_list = productos_list.filter(
-                Q(nombre__icontains=q) | Q(descripcion__icontains=q)
-            )
+            terms = [t.strip().lower() for t in q.split() if t.strip()]
+            q_obj = Q()
+            for t in terms:
+                q_obj |= Q(nombre_norm__contains=t) | Q(descripcion_norm__contains=t)
+            # Fallback adicional
+            q_obj |= Q(nombre__icontains=q) | Q(descripcion__icontains=q)
+            productos_list = productos_list.filter(q_obj)
 
         try:
             pmin = request.GET.get("precio_min")
@@ -214,3 +220,52 @@ def pagina_informativa_view(request, slug):
         'pagina': pagina
     }
     return render(request, 'mi_app/pagina_informativa.html', context)
+
+
+def search_suggest(request):
+    """Devuelve sugerencias de productos para el buscador en vivo (JSON)."""
+    q = (request.GET.get('q') or '').strip()
+    try:
+        limit = int(request.GET.get('limit') or 5)
+    except ValueError:
+        limit = 5
+
+    data = {"query": q, "results": [], "total": 0}
+    if len(q) < 2:
+        return JsonResponse(data)
+
+    terms = [t.strip().lower() for t in q.split() if t.strip()]
+    qs = Producto.objects.select_related('categoria').only('id','nombre','precio','precio_oferta','imagen_principal','categoria')
+    q_obj = Q()
+    if terms:
+        for t in terms:
+            q_obj |= Q(nombre_norm__contains=t) | Q(descripcion_norm__contains=t)
+    # Fallback adicional siempre presente
+    q_obj |= Q(nombre__icontains=q) | Q(descripcion__icontains=q)
+    qs = qs.filter(q_obj).order_by('-id')
+    total = qs.count()
+    prods = list(qs[:limit])
+
+    results = []
+    for p in prods:
+        # Precio efectivo
+        precio = p.precio_oferta if (p.precio_oferta and p.precio_oferta < p.precio) else p.precio
+        # Imagen (principal o nada)
+        img = ''
+        try:
+            if p.imagen_principal and getattr(p.imagen_principal, 'url', ''):
+                img = p.imagen_principal.url
+        except Exception:
+            img = ''
+
+        results.append({
+            'id': p.id,
+            'name': p.nombre,
+            'price': str(precio),
+            'image': img,
+            'url': reverse('producto_detalle', args=[p.id]),
+        })
+
+    data['results'] = results
+    data['total'] = total
+    return JsonResponse(data)
