@@ -168,7 +168,7 @@
                         class="color-selector rounded-full cursor-pointer bg-cover bg-center shrink-0 variante-trigger {% if forloop.first %}selected{% endif %}"
                         data-product-id="{{ producto.id }}"
                         data-image-url="{{ variante.imagen.url }}"
-                        data-stock="{{ variante.stock }}"
+                        data-stock="{{ variante.stock_disponible }}"
                         data-variant-id="{{ variante.pk }}"
                         data-code="{{ variante.codigo|default:'N/A' }}"
                         {% if variante.imagen_textura %}
@@ -204,7 +204,7 @@
             
             <div id="stock-container-{{ producto.id }}" class="mb-6">
                 <p id="stock-message-{{ producto.id }}" class="text-sm" data-stock-message>
-                    {% with stock_inicial=producto.variantes.first.stock|default:0 %}
+                    {% with stock_inicial=initial_stock|default:0 %}
                         {% if stock_inicial <= 0 %}
                             <span class="font-bold text-red-600">Agotado</span>
                         {% elif stock_inicial == 1 %}
@@ -227,7 +227,7 @@
                 <input type="hidden" name="product_id" value="{{ producto.pk }}">
                 <input type="hidden" name="variant_id" id="variant_id-{{ producto.id }}" value="{% if producto.variantes.first %}{{ producto.variantes.first.pk }}{% endif %}">
                 
-                {% with stock_inicial=producto.variantes.first.stock|default:0 %}
+                {% with stock_inicial=initial_stock|default:0 %}
                 <div class="actions-row md:block">
                     <div class="flex items-center mb-6 quantity-row">
                         <span class="mr-6 font-bold text-gray-700">Cantidad:</span>
@@ -559,10 +559,33 @@ function setupImageZoom(productId) {
 
             const data = await response.json();
 
-            if (response.ok) {
+            if (response.ok && data.success) {
                 const cartCountBadge = document.getElementById('cart-count-badge');
-                if (cartCountBadge) {
-                    cartCountBadge.textContent = data.cart_item_count;
+                if (cartCountBadge && typeof data.cart_count !== 'undefined') {
+                    cartCountBadge.textContent = data.cart_count;
+                }
+                // Actualizar stock mostrado y max del input si viene current_available
+                if (typeof data.current_available !== 'undefined') {
+                    const stockSpan = document.getElementById('stock-{{ producto.id }}');
+                    const quantityInput = document.getElementById('quantity-{{ producto.id }}');
+                    const stockMsg = document.getElementById('stock-message-{{ producto.id }}');
+                    const available = parseInt(data.current_available);
+                    if (stockSpan) stockSpan.textContent = available;
+                    if (quantityInput) quantityInput.max = available;
+                    if (stockMsg) {
+                        if (available <= 0) {
+                            stockMsg.innerHTML = '<span class="font-bold text-red-600">Agotado</span>';
+                        } else if (available < 5) {
+                            stockMsg.innerHTML = `<span class="font-bold text-orange-500">¡Últimas <span id="stock-{{ producto.id }}">${available}</span> unidades!</span>`;
+                        } else {
+                            stockMsg.innerHTML = `
+                                <span class="text-gray-500">
+                                    Stock disponible: 
+                                    <span id="stock-{{ producto.id }}" class="font-bold text-gray-800">${available}</span> 
+                                    unidades
+                                </span>`;
+                        }
+                    }
                 }
                 showModal('add-to-cart-modal');
             } else {

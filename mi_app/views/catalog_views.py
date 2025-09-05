@@ -4,9 +4,10 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q, DecimalField, F
 from django.db.models.functions import Coalesce
 from decimal import Decimal, InvalidOperation
+from django.utils import timezone
 
 # Se añade el modelo Pagina a las importaciones
-from ..models import Producto, Categoria, Banner, Pagina
+from ..models import Producto, Categoria, Banner, Pagina, ColorVariante, ReservaStock
 
 def catalogo_publico(request):
     """
@@ -154,6 +155,9 @@ def producto_detalle(request, pk):
         ), 
         pk=pk
     )
+    # Calcular stock inicial usando la propiedad del modelo (no asignar al property)
+    initial_variant = producto.variantes.first()
+    initial_stock = initial_variant.stock_disponible if initial_variant else 0
     
     # === INICIO DE LA MEJORA: Lógica de relacionados más limpia y eficiente ===
     pks_excluidos = {producto.pk}
@@ -196,6 +200,7 @@ def producto_detalle(request, pk):
     context = {
         "producto": producto,
         "productos_relacionados": productos_relacionados,
+        "initial_stock": initial_stock,
     }
     return render(request, "mi_app/producto_detalle.html", context)
 

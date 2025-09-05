@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Sum
 import os
 from django.conf import settings
 import uuid
@@ -129,6 +130,12 @@ class ColorVariante(models.Model):
     def __str__(self):
         return f"{self.producto.nombre} - {self.codigo or self.color}"
 
+    @property
+    def stock_disponible(self):
+        """Stock disponible efectivo (stock físico menos reservas activas)."""
+        reserved = self.reservas.filter(expires_at__gt=timezone.now()).aggregate(total=Sum('quantity'))['total'] or 0
+        return max(self.stock - reserved, 0)
+
 
 class PedidoWhatsApp(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -172,6 +179,21 @@ class DetallePedidoWhatsApp(models.Model):
 
     def __str__(self):
         return f"{self.producto_nombre} ({self.cantidad})"
+
+
+class ReservaStock(models.Model):
+    """Reserva de stock por sesión para bloquear unidades por 24h."""
+    variante = models.ForeignKey(ColorVariante, on_delete=models.CASCADE, related_name='reservas')
+    session_key = models.CharField(max_length=40, db_index=True)
+    quantity = models.PositiveIntegerField(default=0)
+    reserved_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    def is_expired(self):
+        return timezone.now() >= self.expires_at
+
+    def __str__(self):
+        return f"Reserva {self.quantity}x {self.variante} (sesión {self.session_key})"
 
 
 class ConfiguracionSitio(SingletonModel):

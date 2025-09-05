@@ -14,7 +14,7 @@ from django.contrib import messages
 from urllib.parse import quote
 
 # Se añaden todos los modelos necesarios
-from ..models import Producto, ColorVariante, PedidoWhatsApp, DetallePedidoWhatsApp, ConfiguracionSitio, Direccion
+from ..models import Producto, ColorVariante, PedidoWhatsApp, DetallePedidoWhatsApp, ConfiguracionSitio, Direccion, ReservaStock
 
 def _clean_expired_cart_items(request):
     cart = request.session.get('cart', {})
@@ -33,6 +33,12 @@ def _clean_expired_cart_items(request):
             added_at = timezone.datetime.fromisoformat(added_at_str)
             if now - added_at > expiration_time:
                 expired_items_names.append(item_data['name'])
+                # liberar reserva si existiera
+                try:
+                    variante = ColorVariante.objects.get(pk=item_id)
+                    ReservaStock.objects.filter(variante=variante, session_key=request.session.session_key).delete()
+                except ColorVariante.DoesNotExist:
+                    pass
                 del cart[item_id]
 
     if expired_items_names:
@@ -63,6 +69,9 @@ def add_to_cart(request):
         if quantity <= 0:
             return JsonResponse({'success': False, 'error': 'Cantidad inválida'}, status=400)
 
+        # asegurar session_key
+        if not request.session.session_key:
+            request.session.create()
         cart = request.session.get('cart', {})
 
         effective_price = product.precio_oferta if product.precio_oferta is not None else product.precio
@@ -71,16 +80,26 @@ def add_to_cart(request):
         current_qty = cart.get(str(variant_id), {}).get('quantity', 0)
         new_qty = current_qty + quantity
         
-        if new_qty > variant.stock:
+        # calcular stock disponible considerando reservas de otras sesiones
+        active_reservations = ReservaStock.objects.filter(
+            variante=variant,
+            expires_at__gt=timezone.now()
+        ).exclude(session_key=request.session.session_key)
+        reserved_qty_others = sum(r.quantity for r in active_reservations)
+        available_effective = max(variant.stock - reserved_qty_others, 0)
+        if new_qty > available_effective:
             if current_qty > 0:
-                error_message = f"No puedes añadir más. Ya tienes {current_qty} en tu carrito y solo quedan {variant.stock} en stock."
+                error_message = (
+                    f"No puedes añadir más. Ya tienes {current_qty} en tu carrito y solo quedan {available_effective} disponibles."
+                )
             else:
-                error_message = f"La cantidad solicitada ({quantity}) supera el stock disponible ({variant.stock})."
-            
+                error_message = (
+                    f"La cantidad solicitada ({quantity}) supera el stock disponible ({available_effective})."
+                )
             return JsonResponse({
                 'success': False,
                 'error': error_message,
-                'available': variant.stock
+                'available': available_effective
             }, status=400)
 
         image_url = variant.imagen.url if variant.imagen else ''
@@ -98,9 +117,24 @@ def add_to_cart(request):
         }
         cart[str(variant_id)] = cart_item_data
 
+    # crear/actualizar reserva por 24h
+        expires_at = timezone.now() + timedelta(hours=24)
+        reserva, _ = ReservaStock.objects.get_or_create(
+            variante=variant,
+            session_key=request.session.session_key,
+            defaults={'quantity': 0, 'expires_at': expires_at}
+        )
+        reserva.quantity = new_qty
+        reserva.expires_at = expires_at
+        reserva.save()
+
         request.session['cart'] = cart
         cart_count = sum(item['quantity'] for item in cart.values())
-        return JsonResponse({'success': True, 'cart_count': cart_count})
+        # devolver stock efectivo restante
+        active_reservations_all = ReservaStock.objects.filter(variante=variant, expires_at__gt=timezone.now())
+        reserved_total = sum(r.quantity for r in active_reservations_all)
+        current_available = max(variant.stock - reserved_total, 0)
+        return JsonResponse({'success': True, 'cart_count': cart_count, 'current_available': current_available})
     return JsonResponse({'success': False, 'error': 'Solicitud no válida.'}, status=400)
 
 def cart_count_view(request):
@@ -207,8 +241,23 @@ def procesar_pago(request):
 
         for item_id, item_data in cart.items():
             variante = get_object_or_404(ColorVariante, pk=item_id)
+            # doble verificación contra reservas de otros antes de descontar
+            active_reservations = ReservaStock.objects.filter(
+                variante=variante,
+                expires_at__gt=timezone.now()
+            ).exclude(session_key=request.session.session_key)
+            reserved_qty_others = sum(r.quantity for r in active_reservations)
+            available_effective = max(variante.stock - reserved_qty_others, 0)
+            if item_data['quantity'] > available_effective:
+                messages.error(request, f"El stock de '{variante.producto.nombre}' cambió durante el pago. Solo quedan {available_effective}.")
+                return redirect('ver_carrito')
+
             variante.stock -= item_data['quantity']
             variante.save()
+
+            # eliminar reserva de esta sesión para esta variante
+            if request.session.session_key:
+                ReservaStock.objects.filter(variante=variante, session_key=request.session.session_key).delete()
 
             DetallePedidoWhatsApp.objects.create(
                 pedido=pedido,
@@ -309,16 +358,39 @@ def actualizar_cantidad_carrito(request):
             cart = request.session.get('cart', {})
             variant = get_object_or_404(ColorVariante, pk=variant_id)
 
-            if new_quantity > variant.stock:
+            # asegurar session_key
+            if not request.session.session_key:
+                request.session.create()
+
+            # considerar reservas de otros
+            active_reservations = ReservaStock.objects.filter(
+                variante=variant,
+                expires_at__gt=timezone.now()
+            ).exclude(session_key=request.session.session_key)
+            reserved_qty_others = sum(r.quantity for r in active_reservations)
+            available_effective = max(variant.stock - reserved_qty_others, 0)
+
+            if new_quantity > available_effective:
                 return JsonResponse({
                     'success': False, 
-                    'error': f'Solo quedan {variant.stock} unidades en stock.',
-                    'current_stock': variant.stock
+                    'error': f'Solo quedan {available_effective} unidades disponibles.',
+                    'current_stock': available_effective
                 }, status=400)
 
             if variant_id in cart:
                 cart[variant_id]['quantity'] = new_quantity
                 request.session['cart'] = cart
+
+                # actualizar/crear reserva y extender vencimiento
+                expires_at = timezone.now() + timedelta(hours=24)
+                reserva, _ = ReservaStock.objects.get_or_create(
+                    variante=variant,
+                    session_key=request.session.session_key,
+                    defaults={'quantity': 0, 'expires_at': expires_at}
+                )
+                reserva.quantity = new_quantity
+                reserva.expires_at = expires_at
+                reserva.save()
                 
                 item = cart[variant_id]
                 item_subtotal = float(item['price']) * item['quantity']
@@ -343,6 +415,14 @@ def eliminar_del_carrito(request, item_id):
     if item_id_str in cart:
         del cart[item_id_str]
         request.session['cart'] = cart
+
+        # eliminar reserva asociada de esta sesión
+        try:
+            variante = ColorVariante.objects.get(pk=item_id_str)
+            if request.session.session_key:
+                ReservaStock.objects.filter(variante=variante, session_key=request.session.session_key).delete()
+        except ColorVariante.DoesNotExist:
+            pass
 
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         cart_total = sum(float(i['price']) * i['quantity'] for i in cart.values())
