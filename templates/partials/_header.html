@@ -11,15 +11,15 @@
                 </a>
                 {% if ruleta_activa %}
                 <!-- Botón Ruleta (móvil al lado derecho del logo) -->
-                <button @click="openRoulette && openRoulette()" id="roulette-fab-mobile" :disabled="config && config.remaining_seconds <= 0" class="md:hidden premium-spin-btn relative w-10 h-10 rounded-full flex items-center justify-center text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-300/60" aria-label="Abrir Ruleta (Móvil)">
-                    <div class="roulette-inner text-[1.25rem] relative">
+                <button @click="openRoulette && openRoulette()" id="roulette-fab-mobile" :disabled="config && config.remaining_seconds <= 0" class="md:hidden premium-spin-btn relative w-8 h-8 rounded-full flex items-center justify-center text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-pink-300/60" aria-label="Abrir Ruleta (Móvil)">
+                    <div class="roulette-inner text-[0.75rem] relative">
                         <i class="fas fa-dice"></i>
-                        <span class="roulette-tooltip">Gira y gana</span>
+                        <span class="roulette-tooltip hidden md:inline text-[10px]">Gira y gana</span>
                     </div>
-                    <span class="fi-mini-countdown" x-show="config && config.remaining_seconds > 0" x-text="formatCountdownShort(config.remaining_seconds)" aria-live="polite"></span>
-                    <span class="spark spark-1"></span>
-                    <span class="spark spark-2"></span>
-                    <span class="spark spark-3"></span>
+                    <span class="fi-mini-countdown text-[9px] leading-none" x-show="config && config.remaining_seconds > 0" x-text="formatCountdownShort(config.remaining_seconds)" aria-live="polite"></span>
+                    <span class="hidden md:block spark spark-1"></span>
+                    <span class="hidden md:block spark spark-2"></span>
+                    <span class="hidden md:block spark spark-3"></span>
                 </button>
                 {% endif %}
             </div>
@@ -58,8 +58,8 @@
             <div class="header-right flex items-center space-x-4 flex-shrink-0 justify-self-end">
                 <!-- Barra de búsqueda -->
         <form action="{% url 'catalogo_publico' %}" method="get" class="block">
-                    <div class="relative">
-                        <input type="search" name="q" placeholder="Buscar..." value="{{ filtros_activos.q|default:'' }}" class="rounded-full py-1 md:py-2 pl-8 md:pl-10 pr-3 md:pr-4 w-28 sm:w-40 md:w-64 text-xs md:text-base border-gray-300 focus:ring-2 transition-all" style="--tw-ring-color: var(--brand-accent);">
+                    <div class="relative -ml-8 md:ml-0">
+                        <input type="search" name="q" placeholder="Buscar..." value="{{ filtros_activos.q|default:'' }}" class="rounded-full py-1 md:py-2 pl-8 md:pl-10 pr-3 md:pr-4 w-36 sm:w-40 md:w-64 text-xs md:text-base border-gray-300 focus:ring-2 transition-all" style="--tw-ring-color: var(--brand-accent);">
                         <i class="fas fa-search absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs md:text-base"></i>
                     </div>
                 </form>
