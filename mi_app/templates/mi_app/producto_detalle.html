@@ -434,7 +434,6 @@ function setupImageZoom(productId) {
         function resetZoom(){
             scale=1; currentX=0; currentY=0; zoomImage.style.transition='transform .25s ease';
             zoomImage.style.transform='scale(1) translate(0,0)';
-            document.body.classList.remove('disable-scroll');
             try { zoomContainer.style.touchAction='manipulation'; } catch(e){}
         }
 
@@ -445,7 +444,6 @@ function setupImageZoom(productId) {
                 if(scale===1){
                     scale=2; currentX=0; currentY=0; zoomImage.style.transition='transform .22s ease';
                     applyTransform();
-                    document.body.classList.add('disable-scroll');
                     try { zoomContainer.style.touchAction='none'; } catch(err){}
                 } else {
                     resetZoom();
@@ -475,10 +473,8 @@ function setupImageZoom(productId) {
                     newScale = clamp(newScale, 1, MAX_SCALE);
                     scale = newScale;
                     if(scale>1){
-                        document.body.classList.add('disable-scroll');
                         try { zoomContainer.style.touchAction='none'; } catch(err){}
                     } else {
-                        document.body.classList.remove('disable-scroll');
                         try { zoomContainer.style.touchAction='manipulation'; } catch(err){}
                     }
                     applyTransform();
