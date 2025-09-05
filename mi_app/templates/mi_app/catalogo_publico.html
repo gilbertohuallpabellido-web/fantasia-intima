@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load emoji_filters %}
 
 {% block body_class %}catalog-page{% endblock %}
 
@@ -190,9 +191,9 @@ document.addEventListener('click', function(e){
         aria-label="{{ b.titulo }}">
         <div class="hero-overlay absolute inset-0"></div>
         <div class="hero-content relative text-center p-4">
-            <h1 class="hero-title text-3xl sm:text-5xl md:text-6xl font-brand drop-shadow-lg leading-tight">{{ b.titulo }}</h1>
+            <h1 class="hero-title text-3xl sm:text-5xl md:text-6xl font-brand drop-shadow-lg leading-tight">{{ b.titulo|wrap_emojis }}</h1>
             {% if b.subtitulo %}
-                <p class="hero-sub mt-2 text-base sm:text-xl drop-shadow-md">{{ b.subtitulo }}</p>
+                <p class="hero-sub mt-2 text-base sm:text-xl drop-shadow-md">{{ b.subtitulo|wrap_emojis }}</p>
             {% endif %}
             <a 
                 href="{{ b.destino_url|default:'#product-list-section' }}" 
@@ -216,8 +217,8 @@ document.addEventListener('click', function(e){
     <section class="hero-animate hero-banner relative w-full flex items-center justify-center text-white">
         <div class="hero-overlay absolute inset-0 bg-black/30"></div>
         <div class="hero-content relative text-center p-4">
-            <h1 class="hero-title text-3xl sm:text-5xl md:text-6xl font-brand drop-shadow-lg leading-tight">Nueva Colección</h1>
-            <p class="hero-sub mt-2 text-lg sm:text-xl drop-shadow-md">Descubre la sensualidad en cada detalle</p>
+            <h1 class="hero-title text-3xl sm:text-5xl md:text-6xl font-brand drop-shadow-lg leading-tight">{{ "Nueva Colección"|wrap_emojis }}</h1>
+            <p class="hero-sub mt-2 text-lg sm:text-xl drop-shadow-md">{{ "Descubre la sensualidad en cada detalle"|wrap_emojis }}</p>
             <a 
                 href="?categoria=nueva_coleccion#product-list-section" 
                 class="js-category-link hero-cta mt-6 inline-block text-white font-bold py-3 px-8 rounded-full text-lg hover:bg-opacity-90 transform hover:scale-105 transition-all"
@@ -898,6 +899,8 @@ document.addEventListener('DOMContentLoaded', function(){
 .hero-overlay{background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,.35) 30%,rgba(0,0,0,.55));animation:fadeIn .9s ease both;}
 .hero-content{animation:riseIn .9s cubic-bezier(.22,.9,.3,1) .15s both;}
 .hero-title{background:linear-gradient(90deg,#fff,#ffe4f2 60%,#fff);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));animation:titleGlow 4.5s ease-in-out infinite;}
+/* Mantener color real de emojis cuando el texto usa background-clip */
+.hero-title .keep-emoji{background:none!important;-webkit-background-clip:initial!important;background-clip:initial!important;-webkit-text-fill-color:initial!important;color:initial!important;mix-blend-mode:normal;}
 .hero-sub{opacity:0;animation:fadeIn .9s ease .35s forwards;}
 .hero-cta{position:relative;overflow:hidden;}
 .hero-cta:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.35),rgba(255,255,255,0) 70%);opacity:0;transition:opacity .5s;}
