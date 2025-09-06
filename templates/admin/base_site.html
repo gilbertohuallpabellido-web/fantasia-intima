@@ -34,6 +34,7 @@
 
     {% block extrahead %}
     {{ block.super }}
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <script>
     document.addEventListener('DOMContentLoaded', function(){
         var btn = document.getElementById('compact-toggle');
@@ -52,6 +53,24 @@
             localStorage.setItem('admin_compact_mode', enabled ? '1' : '0');
             updateButton();
         });
+        
+        // Refuerzo: asegurar scroll horizontal en inlines tabulares
+        try {
+            var inlineTables = document.querySelectorAll('.tabular.inline-related table, .tabular-inline table, .inline-group > table, .inline-related > table');
+            inlineTables.forEach(function(tbl){
+                // Estilos directos por si algún CSS externo los anula
+                tbl.style.display = 'block';
+                tbl.style.overflowX = 'auto';
+                tbl.style.webkitOverflowScrolling = 'touch';
+                tbl.style.tableLayout = 'auto';
+                if (!tbl.style.minWidth) tbl.style.minWidth = '720px';
+                var parent = tbl.closest('fieldset.module') || tbl.parentElement;
+                if (parent) {
+                    parent.style.overflowX = 'auto';
+                    parent.style.webkitOverflowScrolling = 'touch';
+                }
+            });
+        } catch(e) { /* no-op */ }
     });
     </script>
     {% endblock %}

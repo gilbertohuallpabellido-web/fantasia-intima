@@ -45,6 +45,16 @@ def common_context(request):
         'paginas_informativas': Pagina.objects.filter(publicada=True),
         'configuracion_ruleta': config_ruleta,
         'chatbot_config': chatbot_config, # <-- Aquí está la nueva configuración
+        # Flags de promociones (fallbacks si no existe el registro aún)
+        'promo_flags_json': json.dumps({
+            'new': bool(getattr(configuracion_sitio, 'show_promo_new_collection', True)) if configuracion_sitio else True,
+            'offer': bool(getattr(configuracion_sitio, 'show_promo_offers', True)) if configuracion_sitio else True,
+            'whatsapp': bool(getattr(configuracion_sitio, 'show_promo_whatsapp', True)) if configuracion_sitio else True,
+        }),
+        'promo_cooldown_seconds': int(getattr(configuracion_sitio, 'promo_cooldown_seconds', 30)) if configuracion_sitio else 30,
+    # Config WhatsApp message (para plantilla de carrito)
+    'wa_prefix': (getattr(configuracion_sitio, 'whatsapp_message_prefix', '¡Hola {store_name}! ✨') if configuracion_sitio else '¡Hola {store_name}! ✨'),
+    'wa_template': (getattr(configuracion_sitio, 'whatsapp_message_template', '') if configuracion_sitio else ''),
     }
 
     # Sello de versión (para ver en producción qué build está activo)

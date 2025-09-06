@@ -631,7 +631,9 @@
     let shownTotal = 0;
     let lastShowTime = 0;
     let lastActivity = Date.now();
-    const promoConfig = { cooldownMs: 30000, maxShows: Infinity }; // 30s, ilimitado mientras permanezca
+    const _promoCooldownStr = '{{ promo_cooldown_seconds|default:30 }}';
+    const _promoCooldown = parseInt(_promoCooldownStr, 10);
+    const promoConfig = { cooldownMs: (isNaN(_promoCooldown)?30:_promoCooldown) * 1000, maxShows: Infinity };
     const initialCartCount = {{ cart_count|default:0 }};
         function buildCard(type, prod){
             if(type==='contact'){
@@ -775,16 +777,35 @@
             // Asegurar un solo popup (elimina anteriores no persistentes)
             try { document.querySelectorAll('.fi-promo-popup').forEach(p=>{ if(!p.dataset.persist) p.remove(); }); } catch(e){}
             let type; let prod=null;
+            const flags = (()=>{ try { return JSON.parse('{{ promo_flags_json|default:"{}"|escapejs }}'); } catch(e){ return {}; } })();
+            const allow = {
+                new: !!flags.new,
+                offer: !!flags.offer,
+                contact: !!flags.whatsapp
+            };
+            if(!(allow.new || allow.offer || allow.contact)){
+                if(DEBUG_PROMO) console.warn('[PROMO] Todos los tipos desactivados en admin');
+                return;
+            }
             if(forcedType==='contact'){
+                if(!allow.contact){ if(DEBUG_PROMO) console.log('[PROMO] WhatsApp desactivado, no se muestra'); return; }
                 type='contact';
             } else {
-                prod = pickRandomProduct();
-                if(!prod){
-                    // Fallback a contacto si no hay data de productos
+                // Filtrar data según flags activos
+                const poolAvail = [];
+                if(allow.new && data.new_collection) poolAvail.push('new');
+                if(allow.offer && data.offer) poolAvail.push('offer');
+                if(!poolAvail.length && allow.contact) poolAvail.push('contact');
+                let pick = poolAvail[Math.floor(Math.random()*poolAvail.length)] || null;
+                if(pick==='contact'){
                     type='contact';
-                    if(DEBUG_PROMO) console.warn('[PROMO] No hay producto disponible, usando contacto');
                 } else {
-                    type = prod === data.new_collection ? 'new' : (prod === data.offer ? 'offer' : 'offer');
+                    prod = pick==='new' ? data.new_collection : (pick==='offer' ? data.offer : null);
+                    if(!prod && allow.contact){ type='contact'; }
+                }
+                if(!prod && type!=='contact'){
+                    // Último recurso
+                    if(allow.contact){ type='contact'; }
                 }
             }
             // No marcamos kind como bloqueado; sólo stats ligeras
@@ -809,7 +830,13 @@
     function hide(el){ if(!el) return; const pos=el.dataset.pos; const base = pos==='center' ? 'translate(-50%,-50%)' : 'translate(0,0)'; el.style.transition='opacity .5s ease, transform .55s cubic-bezier(.55,.01,.58,.99)'; el.style.opacity='0'; el.style.transform=`${base} translateY(12px) scale(.85)`; setTimeout(()=>el.remove(),520); }
         // Secuencia (cada 30s): entry -> contact -> final, sólo los no mostrados previamente (persistencia LS)
         window.addEventListener('load', ()=>{
-            const baseSeq=[{k:'entry', forced:null},{k:'contact', forced:'contact'},{k:'final', forced:null}];
+            const baseSeq=(function(){
+                const seq=[{k:'entry', forced:null},{k:'final', forced:null}];
+                // Inserta WhatsApp intermedio solo si permitido
+                const flags = (()=>{ try { return JSON.parse('{{ promo_flags_json|default:"{}"|escapejs }}'); } catch(e){ return {}; } })();
+                if(!!flags.whatsapp){ seq.splice(1,0,{k:'contact', forced:'contact'}); }
+                return seq;
+            })();
             const LS_LAST_ABS='fiPromoLastShownAbs';
             const LS_IDX='fiPromoSeqIdx';
             const interval = promoConfig.cooldownMs; // 30000 ms

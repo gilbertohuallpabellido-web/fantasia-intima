@@ -275,6 +275,52 @@ class ConfiguracionSitio(SingletonModel):
     fuente_marca_nombre = models.CharField(max_length=100, default="'Parisienne', cursive")
     resetear_estilos = models.BooleanField(default=False, help_text="MARCA ESTA CASILLA Y GUARDA para restaurar todos los colores y fuentes a sus valores originales.")
 
+    # Promociones emergentes (popups): control desde admin
+    show_promo_new_collection = models.BooleanField(
+        default=True,
+        verbose_name="Mostrar 'Nueva Colección'",
+        help_text="Activa los popups de productos marcados como 'Nueva Colección'."
+    )
+    show_promo_offers = models.BooleanField(
+        default=True,
+        verbose_name="Mostrar 'Ofertas'",
+        help_text="Activa los popups de productos en oferta."
+    )
+    show_promo_whatsapp = models.BooleanField(
+        default=True,
+        verbose_name="Mostrar WhatsApp",
+        help_text="Activa el popup/pastilla para escribir por WhatsApp."
+    )
+    promo_cooldown_seconds = models.PositiveIntegerField(
+        default=30,
+        verbose_name="Intervalo entre popups (segundos)",
+        help_text="Cada cuántos segundos aparece un popup de promoción mientras el usuario navega."
+    )
+
+    # Mensajería de WhatsApp (carrito)
+    whatsapp_message_prefix = models.CharField(
+        max_length=120,
+        default="¡Hola {store_name}! ✨",
+        help_text="Prefijo del mensaje. Puedes usar {store_name} para el nombre de la tienda."
+    )
+    whatsapp_message_template = models.TextField(
+        default=(
+            "{prefix}\n\n"
+            "He generado un pedido desde la web.\n\n"
+            "*📋 Código de Pedido:* {order_code}\n"
+            "*🔗 Ver Resumen Seguro:* {order_url}\n\n"
+            "-----------------------------------\n"
+            "*Resumen para referencia:*\n\n"
+            "{items}"
+            "*Total del Pedido: {total}*\n"
+            "🚚 _(Este total no incluye el costo de envío)_\n\n"
+            "¡Quedo a la espera de su confirmación para coordinar el pago y envío! 😊"
+        ),
+        help_text=(
+            "Plantilla del mensaje. Variables disponibles: {prefix}, {store_name}, {order_code}, {order_url}, {items}, {total}."
+        )
+    )
+
     def __str__(self):
         return "Configuración del Sitio"
 

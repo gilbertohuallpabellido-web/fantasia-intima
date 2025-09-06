@@ -273,8 +273,9 @@ document.addEventListener('DOMContentLoaded', function(){
                 clearList();
                 if(data.total === 0){
                     list.insertAdjacentHTML('beforeend', noResultsTpl(q));
-                    viewAll.classList.remove('hidden');
-                    viewAll.href = `{% url 'catalogo_publico' %}?q=${encodeURIComponent(q)}#product-list-section`;
+                    // No mostrar "Ver más" cuando no hay resultados
+                    viewAll.classList.add('hidden');
+                    viewAll.href = '#';
                     show();
                     // Mantener foco al seguir escribiendo
                     input.focus({ preventScroll: true });

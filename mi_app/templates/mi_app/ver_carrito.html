@@ -313,12 +313,11 @@
             const orderUrl = data.order_url;
             const orderCode = data.order_code;
             
-            let message = `¡Hola Fantasía Íntima! ✨\n\n`;
-            message += `He generado un pedido desde la web.\n\n`;
-            message += `*📋 Código de Pedido:* ${orderCode}\n`;
-            message += `*🔗 Ver Resumen Seguro:* ${orderUrl}\n\n`;
-            message += `-----------------------------------\n`;
-            message += `*Resumen para referencia:*\n\n`;
+            // Construcción de mensaje usando plantilla configurable
+            const storeName = "{{ configuracion_sitio.nombre_tienda|default:'Fantasía Íntima'|escapejs }}";
+            const prefixRaw = "{{ wa_prefix|default:'¡Hola {store_name}! ✨'|escapejs }}";
+            const prefix = (typeof prefixRaw === 'string' ? prefixRaw : String(prefixRaw)).replace('{store_name}', storeName);
+            let itemsBlock = '';
 
             const cartItems = document.querySelectorAll('.cart-item');
             cartItems.forEach(item => {
@@ -328,16 +327,39 @@
                 const price = parseFloat(item.dataset.price).toFixed(2);
                 const subtotal = (quantity * price).toFixed(2);
                 
-                message += `🛍️ *${name}*\n`;
-                message += `   - 🆔 SKU: ${sku}\n`;
-                message += `   - #️⃣ Cantidad: ${quantity}\n`;
-                message += `   - 💰 Precio: S/${price} (Subtotal: S/${subtotal})\n\n`;
+                itemsBlock += `🛍️ *${name}*\n`;
+                itemsBlock += `   - 🆔 SKU: ${sku}\n`;
+                itemsBlock += `   - #️⃣ Cantidad: ${quantity}\n`;
+                itemsBlock += `   - 💰 Precio: S/${price} (Subtotal: S/${subtotal})\n\n`;
             });
-
             const totalPrice = document.getElementById('total-price-display').innerText;
-            message += `*Total del Pedido: ${totalPrice}*\n`;
-            message += `🚚 _(Este total no incluye el costo de envío)_\n\n`;
-            message += "¡Quedo a la espera de su confirmación para coordinar el pago y envío! 😊";
+            const tplRaw = "{{ wa_template|default:''|escapejs }}";
+            const tpl = (typeof tplRaw === 'string' ? tplRaw : String(tplRaw));
+            const replacements = {
+                '{prefix}': prefix,
+                '{store_name}': storeName,
+                '{order_code}': orderCode,
+                '{order_url}': orderUrl,
+                '{items}': itemsBlock,
+                '{total}': totalPrice,
+            };
+            let message = tpl;
+            for (const [k, v] of Object.entries(replacements)){
+                message = message.split(k).join(v);
+            }
+            if(!message || message.trim() === ''){
+                // Fallback a la plantilla anterior si no hay configuración
+                message = `${prefix}\n\n` +
+                          `He generado un pedido desde la web.\n\n` +
+                          `*📋 Código de Pedido:* ${orderCode}\n` +
+                          `*🔗 Ver Resumen Seguro:* ${orderUrl}\n\n` +
+                          `-----------------------------------\n` +
+                          `*Resumen para referencia:*\n\n` +
+                          itemsBlock +
+                          `*Total del Pedido: ${totalPrice}*\n` +
+                          `🚚 _(Este total no incluye el costo de envío)_\n\n` +
+                          "¡Quedo a la espera de su confirmación para coordinar el pago y envío! 😊";
+            }
 
             const encodedMessage = encodeURIComponent(message);
             const whatsappUrl = `${whatsappLink}?text=${encodedMessage}`;

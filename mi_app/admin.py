@@ -233,6 +233,22 @@ class ConfiguracionSitioAdmin(SingletonModelAdmin):
         ('Redes Sociales y Contacto', {
             'fields': ('whatsapp_link', 'facebook_link', 'instagram_link', 'tiktok_link', 'numero_yape_plin')
         }),
+        ('Promociones emergentes', {
+            'fields': (
+                'show_promo_new_collection',
+                'show_promo_offers',
+                'show_promo_whatsapp',
+                'promo_cooldown_seconds',
+            ),
+            'description': 'Activa/desactiva cada tipo de promoción y define el intervalo de aparición.'
+        }),
+        ('WhatsApp (mensaje del carrito)', {
+            'fields': (
+                'whatsapp_message_prefix',
+                'whatsapp_message_template',
+            ),
+            'description': 'Personaliza el mensaje que se envía por WhatsApp desde el carrito. Usa {store_name}, {prefix}, {order_code}, {order_url}, {items}, {total}.'
+        }),
         # === INICIO DE LA MEJORA: Añadir sección para imágenes de pago ===
         ('Imágenes de Métodos de Pago', {
             'classes': ('collapse',),
