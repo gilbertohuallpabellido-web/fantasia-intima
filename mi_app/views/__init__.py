@@ -6,3 +6,4 @@ from .order_views import *
 from .ai_views import *
 from .pages_views import *
 from .roulette_views import * # <-- AÑADE ESTA LÍNEA
+from .healthy_views import *   # <-- AÑADES ESTA LÍNEA

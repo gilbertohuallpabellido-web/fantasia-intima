@@ -11,6 +11,7 @@ from .views.order_views import (
     actualizar_cantidad_carrito, error_stock_view, compra_exitosa
 )
 from .views.catalog_views import pagina_informativa_view, search_suggest
+from .views.healthy_views import health_check
 
 urlpatterns = [
     # Rutas para el catálogo público y el carrito
@@ -67,4 +68,7 @@ urlpatterns = [
 
     # Otras rutas
     path('chaining/', include('smart_selects.urls')),
+
+    # Healthcheck simple para monitoreo / uptime
+    path('health/', health_check, name='health_check'),
 ]
