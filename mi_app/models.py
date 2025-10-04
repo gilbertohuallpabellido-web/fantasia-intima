@@ -14,6 +14,7 @@ from django.db.models.signals import post_save, pre_delete, pre_save, post_delet
 from django.dispatch import receiver
 import unicodedata
 import re
+from django.core.validators import MinValueValidator, MaxValueValidator
 # === INICIO DE LA MEJORA: Importamos la herramienta de Cloudinary ===
 from cloudinary.models import CloudinaryField
 import cloudinary.api
@@ -295,6 +296,14 @@ class ConfiguracionSitio(SingletonModel):
         default=30,
         verbose_name="Intervalo entre popups (segundos)",
         help_text="Cada cuántos segundos aparece un popup de promoción mientras el usuario navega."
+    )
+
+    # UX de producto: factor de zoom para imágenes del detalle (desktop hover y móvil pinch/doble tap)
+    product_zoom_factor = models.FloatField(
+        default=2.0,
+        validators=[MinValueValidator(1.0), MaxValueValidator(5.0)],
+        verbose_name="Factor de zoom de producto",
+        help_text="Cuánto se amplía la imagen del producto al hacer hover (PC) o pinch/doble tap (móvil). Rango recomendado 1.0 a 5.0."
     )
 
     # Mensajería de WhatsApp (carrito)

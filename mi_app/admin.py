@@ -249,6 +249,10 @@ class ConfiguracionSitioAdmin(SingletonModelAdmin):
             ),
             'description': 'Personaliza el mensaje que se envía por WhatsApp desde el carrito. Usa {store_name}, {prefix}, {order_code}, {order_url}, {items}, {total}.'
         }),
+        ('Experiencia de Producto', {
+            'fields': ('product_zoom_factor',),
+            'description': 'Controla el nivel de zoom por defecto en la imagen del detalle de producto (PC y móvil).'
+        }),
         # === INICIO DE LA MEJORA: Añadir sección para imágenes de pago ===
         ('Imágenes de Métodos de Pago', {
             'classes': ('collapse',),

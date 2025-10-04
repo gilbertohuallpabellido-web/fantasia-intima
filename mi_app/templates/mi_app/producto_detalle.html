@@ -417,7 +417,7 @@ function setupImageZoom(productId) {
 
     // ================== 📱 CELULAR ==================
     if (isTouchDevice) {
-        const MAX_SCALE = 2;
+        const MAX_SCALE = parseFloat('{{ product_zoom_factor|default:2.0 }}') || 2;
         let scale = 1;
         let startX = 0, startY = 0;
         let currentX = 0, currentY = 0;
@@ -443,7 +443,7 @@ function setupImageZoom(productId) {
             const delta = now - lastTap;
             if(e.touches.length===1 && delta>0 && delta<300){
                 if(scale===1){
-                    scale=2; currentX=0; currentY=0; zoomImage.style.transition='transform .22s ease';
+                    scale=MAX_SCALE; currentX=0; currentY=0; zoomImage.style.transition='transform .22s ease';
                     applyTransform();
                     try { zoomContainer.style.touchAction='none'; } catch(err){}
                 } else {
@@ -519,7 +519,7 @@ function setupImageZoom(productId) {
         };
 
         const handleMouseEnter = () => {
-            zoomImage.style.transform = 'scale(2)';
+            zoomImage.style.transform = 'scale(' + (parseFloat('{{ product_zoom_factor|default:2.0 }}') || 2) + ')';
             zoomImage.style.cursor = 'zoom-out';
         };
 

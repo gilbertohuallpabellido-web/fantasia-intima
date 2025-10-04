@@ -45,6 +45,8 @@ def common_context(request):
         'paginas_informativas': Pagina.objects.filter(publicada=True),
         'configuracion_ruleta': config_ruleta,
         'chatbot_config': chatbot_config, # <-- Aquí está la nueva configuración
+        # Zoom de producto (configurable desde admin)
+        'product_zoom_factor': float(getattr(configuracion_sitio, 'product_zoom_factor', 2.0)) if configuracion_sitio else 2.0,
         # Flags de promociones (fallbacks si no existe el registro aún)
         'promo_flags_json': json.dumps({
             'new': bool(getattr(configuracion_sitio, 'show_promo_new_collection', True)) if configuracion_sitio else True,
