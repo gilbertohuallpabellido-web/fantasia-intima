@@ -579,6 +579,43 @@ document.addEventListener('click', function(e){
               </div>
             </template>
             {% include 'partials/_product_list_ajax.html' %}
+            <script>
+            // Fallback inicial: si el servidor no entregó el bloque vacío por algún edge case, lo añadimos
+            (function(){
+                function ensureInitialEmpty(){
+                    try {
+                        const section = document.getElementById('product-list-section');
+                        if(!section) return;
+                        const hasCards = section.querySelectorAll('.product-card').length>0;
+                        const hasEmpty = section.querySelector('#no-products-found');
+                        if(!hasCards && !hasEmpty){
+                            const grid = section.querySelector('#product-list');
+                            const wrap = document.createElement('div');
+                            wrap.id='no-products-found';
+                            wrap.className='col-span-full text-center py-16 animate-fade-in';
+                            wrap.setAttribute('data-empty','true');
+                            wrap.innerHTML = `
+                                <i class="fas fa-box-open text-5xl text-gray-400 mb-4"></i>
+                                <h3 class="text-2xl font-semibold text-gray-700">No se encontraron productos</h3>
+                                <p class="text-gray-500 mt-2">Intenta ajustar tus filtros o busca otro término.</p>
+                                <button type=\"button\" onclick=\"resetFiltersAndReload()\" class=\"mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2\" style=\"background-color: var(--brand-accent);\">
+                                    <i class=\"fas fa-undo\"></i> Limpiar filtros
+                                </button>`;
+                            if(grid){ grid.appendChild(wrap); } else { section.appendChild(wrap); }
+                            section.style.minHeight='340px';
+                            console.debug('[fallback-empty] Mensaje vacío inyectado (post-render)');
+                        }
+                    } catch(e){ console.debug('fallback empty error', e); }
+                }
+                if(document.readyState==='loading'){
+                    document.addEventListener('DOMContentLoaded', ensureInitialEmpty);
+                } else {
+                    ensureInitialEmpty();
+                }
+                // Segundo intento diferido por si algo reemplaza el DOM muy tarde
+                setTimeout(ensureInitialEmpty, 800);
+            })();
+            </script>
         </div>
     </main>
 
@@ -652,24 +689,88 @@ document.addEventListener('DOMContentLoaded', function(){
     let productListContainer;
     let skeleton;
 
+    // Control de carrera: abortar peticiones anteriores y descartar respuestas fuera de orden
+    let __seq = 0; // contador de secuencia local al closure
+    if(!window.__PRODUCTS_FETCH_STATE){
+        window.__PRODUCTS_FETCH_STATE = { controller:null, lastSeq:0 };
+    }
+
+    // Observador para mantener siempre un mensaje vacío visible si no hay tarjetas
+    if(!window.__PRODUCTS_EMPTY_OBSERVER){
+        window.__PRODUCTS_EMPTY_OBSERVER = new MutationObserver(()=>{
+            try {
+                if(!productListContainer) return;
+                const hasCards = productListContainer.querySelectorAll('.product-card').length>0;
+                const emptyMsg = productListContainer.querySelector('#no-products-found');
+                if(!hasCards && !emptyMsg){
+                    injectEmptyMessage();
+                }
+                // Asegurar una altura mínima para que no "colapse" visualmente
+                if(!hasCards){ productListContainer.style.minHeight = '340px'; } else { productListContainer.style.minHeight=''; }
+            } catch(e){ console.debug('empty observer error', e); }
+        });
+        document.addEventListener('DOMContentLoaded',()=>{
+            const target = document.getElementById('product-list-section');
+            if(target){ window.__PRODUCTS_EMPTY_OBSERVER.observe(target, { childList:true, subtree:true }); }
+        });
+    }
+
+    function injectEmptyMessage(){
+        const wrapper = document.createElement('div');
+        wrapper.id = 'no-products-found';
+        wrapper.className = 'col-span-full text-center py-16 animate-fade-in';
+        wrapper.setAttribute('data-empty','true');
+        wrapper.innerHTML = `
+            <i class="fas fa-box-open text-5xl text-gray-400 mb-4"></i>
+            <h3 class="text-2xl font-semibold text-gray-700">No se encontraron productos</h3>
+            <p class="text-gray-500 mt-2">Intenta ajustar tus filtros o busca otro término.</p>
+            <button type="button" onclick="resetFiltersAndReload()" class="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2" style="background-color: var(--brand-accent);">
+                <i class="fas fa-undo"></i> Limpiar filtros
+            </button>`;
+        const grid = productListContainer.querySelector('#product-list');
+        if(grid){ grid.appendChild(wrapper); }
+        else { productListContainer.appendChild(wrapper); }
+    }
+
     async function updateProducts(url, formButton = null) {
         if(window.BANNER_FILTERED){
             console.debug('updateProducts abortado: modo banner filtrado activo');
             return;
         }
+        const seq = ++__seq;
+        window.__PRODUCTS_FETCH_STATE.lastSeq = seq;
+        // Abort previo
+        if(window.__PRODUCTS_FETCH_STATE.controller){
+            try { window.__PRODUCTS_FETCH_STATE.controller.abort(); } catch(_){}
+        }
+        const controller = new AbortController();
+        window.__PRODUCTS_FETCH_STATE.controller = controller;
         if (!productListContainer) productListContainer = document.getElementById('product-list-section');
         const tpl = document.getElementById('list-skeleton');
         if(tpl){
           productListContainer.setAttribute('aria-busy','true');
           productListContainer.innerHTML = tpl.innerHTML;
+          // Reservar altura para evitar salto brusco y futura "desaparición" percibida
+          productListContainer.style.minHeight = '340px';
         }
         if (formButton) { formButton.disabled = true; formButton.querySelector('.btn-text').classList.add('hidden'); formButton.querySelector('.btn-loader').classList.remove('hidden'); }
         try {
-            const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, signal: controller.signal });
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const html = await response.text();
+            // Descartar si llegó fuera de orden
+            if(seq !== window.__PRODUCTS_FETCH_STATE.lastSeq){ console.debug('Respuesta descartada (fuera de orden)', seq); return; }
             productListContainer.innerHTML = html;
             if(productListContainer.querySelector('html')){ const parser = new DOMParser(); const doc = parser.parseFromString(html,'text/html'); const extracted = doc.querySelector('#product-list-section'); if(extracted){ productListContainer.innerHTML = extracted.innerHTML; } }
+            // REFUERZO: si no hay tarjetas y el mensaje vacío no está presente, lo reinyectamos
+            (function ensureEmptyMessage(){
+                const cards = productListContainer.querySelectorAll('.product-card');
+                const emptyMsg = productListContainer.querySelector('#no-products-found');
+                if(cards.length === 0 && !emptyMsg){
+                    injectEmptyMessage();
+                }
+                if(cards.length===0){ productListContainer.style.minHeight='340px'; } else { productListContainer.style.minHeight=''; }
+            })();
             const heading = document.getElementById('products-heading'); if (heading && !window.__FI_SEARCH_TYPING) heading.focus();
             (function(){
                 const pill = document.getElementById('matched-counter-pill');
@@ -687,8 +788,11 @@ document.addEventListener('DOMContentLoaded', function(){
             // Refuerzo: re-sincronizar resaltado tras carga (por si wrapper no se montó aún)
             try { const p=new URL(url, window.location.origin); const slug=p.searchParams.get('categoria')||''; if(window.setActiveCategory) window.setActiveCategory(slug); } catch(e){}
         } catch (error) {
-            console.error('Error al actualizar los productos:', error);
-            productListContainer.innerHTML = '<p class="text-center text-red-500 py-10">Hubo un error al cargar los productos.</p>';
+            if(error.name === 'AbortError'){ console.debug('Fetch abortado (nueva petición)'); }
+            else {
+                console.error('Error al actualizar los productos:', error);
+                productListContainer.innerHTML = '<p class="text-center text-red-500 py-10">Hubo un error al cargar los productos.</p>';
+            }
         } finally {
             if (formButton) { formButton.disabled = false; formButton.querySelector('.btn-text').classList.remove('hidden'); formButton.querySelector('.btn-loader').classList.add('hidden'); }
             productListContainer.setAttribute('aria-busy','false');

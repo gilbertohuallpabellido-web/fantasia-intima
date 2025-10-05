@@ -36,8 +36,8 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         filterButtons: document.querySelectorAll('.filter-btn'),
         productList: document.getElementById('product-list'),
-        noProductsFoundMsg: document.getElementById('no-products-found'),
-        noProductsInitialMsg: document.getElementById('no-products-initial'),
+    // Eliminamos control directo del mensaje vacío aquí para no interferir con lógica del catálogo
+    noProductsFoundMsg: document.getElementById('no-products-found'),
         searchBar: document.getElementById('search-bar'),
         mobileSearchBar: document.getElementById('mobile-search-bar'),
         sortBySelect: document.getElementById('sort-by'),
@@ -198,12 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        if (dom.noProductsFoundMsg) {
-            dom.noProductsFoundMsg.style.display = (visibleProductsCount === 0 && currentProductCards.length > 0) ? 'block' : 'none';
-        }
-        if (dom.noProductsInitialMsg) {
-            dom.noProductsInitialMsg.style.display = (currentProductCards.length === 0) ? 'block' : 'none';
-        }
+        // Ya no manipulamos la visibilidad del mensaje vacío aquí: el servidor + fallback se encargan
     };
 
     const updateCartCount = async () => {

@@ -165,43 +165,50 @@ def producto_detalle(request, pk):
     initial_variant = producto.variantes.first()
     initial_stock = initial_variant.stock_disponible if initial_variant else 0
     
-    # === INICIO DE LA MEJORA: Lógica de relacionados más limpia y eficiente ===
-    pks_excluidos = {producto.pk}
-    productos_relacionados = []
+    # === INICIO NUEVA LÓGICA DE RELACIONADOS (cross-selling + jerarquía) ===
+    # Prioridad añadida según nueva indicación:
+    # 0. Si hay categorias_relacionadas definidas (en la categoría o su padre) => usar SOLO productos de esas categorías (hasta 4).
+    #    Si encuentra alguno, NO sigue a las demás reglas.
+    # Luego reglas jerárquicas anteriores (1..fallback):
+    # 1. Misma subcategoría (hermanos) (si la categoría tiene padre) sin rellenar con otros.
+    # 2. Si no hay hermanos, usar categoría padre.
+    # 3. Si categoría es raíz: otros productos de la misma categoría raíz.
+    # 4. Fallback global solo si sigue vacío.
+
     max_relacionados = 4
+    productos_relacionados = []
+    categoria_actual = producto.categoria
 
-    def obtener_relacionados(queryset):
-        """Función auxiliar para añadir productos sin duplicados."""
-        nuevos = list(queryset.exclude(pk__in=pks_excluidos).order_by("?")[:max_relacionados - len(productos_relacionados)])
-        if nuevos:
-            productos_relacionados.extend(nuevos)
-            pks_excluidos.update(p.pk for p in nuevos)
+    if categoria_actual:
+        # Paso 0: categorias_relacionadas explícitas (incluyendo descendientes de cada una)
+        related_cats_pks = set()
+        for cat in categoria_actual.categorias_relacionadas.all():
+            related_cats_pks.update(cat.get_descendants(include_self=True).values_list('pk', flat=True))
+        if categoria_actual.parent:
+            for cat in categoria_actual.parent.categorias_relacionadas.all():
+                related_cats_pks.update(cat.get_descendants(include_self=True).values_list('pk', flat=True))
+        if related_cats_pks:
+            qs = Producto.objects.filter(categoria__pk__in=related_cats_pks).exclude(pk=producto.pk)
+            productos_relacionados = list(qs.order_by('?')[:max_relacionados])
 
-    if producto.categoria:
-        # 1. Prioridad: Categorías explícitamente relacionadas
-        related_categories_pks = set()
-        for cat in producto.categoria.categorias_relacionadas.all():
-            related_categories_pks.update(cat.get_descendants(include_self=True).values_list('pk', flat=True))
-        if producto.categoria.parent:
-             for cat in producto.categoria.parent.categorias_relacionadas.all():
-                related_categories_pks.update(cat.get_descendants(include_self=True).values_list('pk', flat=True))
-        
-        if related_categories_pks:
-            obtener_relacionados(Producto.objects.filter(categoria__pk__in=related_categories_pks))
+        # Solo aplicar jerarquía si aún vacío
+        if not productos_relacionados:
+            es_subcategoria = categoria_actual.parent is not None
+            if es_subcategoria:
+                hermanos_qs = Producto.objects.filter(categoria=categoria_actual).exclude(pk=producto.pk)
+                productos_relacionados = list(hermanos_qs.order_by('?')[:max_relacionados])
+                if not productos_relacionados:
+                    padre = categoria_actual.parent
+                    if padre:
+                        padre_qs = Producto.objects.filter(categoria=padre).exclude(pk=producto.pk)
+                        productos_relacionados = list(padre_qs.order_by('?')[:max_relacionados])
+            else:
+                raiz_qs = Producto.objects.filter(categoria=categoria_actual).exclude(pk=producto.pk)
+                productos_relacionados = list(raiz_qs.order_by('?')[:max_relacionados])
 
-        # 2. Si no se llenó, buscar en la misma categoría
-        if len(productos_relacionados) < max_relacionados:
-            obtener_relacionados(Producto.objects.filter(categoria=producto.categoria))
-
-        # 3. Si aún no se llenó, buscar en la categoría padre
-        if len(productos_relacionados) < max_relacionados and producto.categoria.parent:
-            obtener_relacionados(Producto.objects.filter(categoria=producto.categoria.parent))
-    
-    # 4. Fallback final: Si no hay NADA, mostrar productos aleatorios
     if not productos_relacionados:
-         productos_relacionados = list(Producto.objects.exclude(pk__in=pks_excluidos).order_by("?")[:max_relacionados])
-
-    # === FIN DE LA MEJORA ===
+        productos_relacionados = list(Producto.objects.exclude(pk=producto.pk).order_by('?')[:max_relacionados])
+    # === FIN NUEVA LÓGICA DE RELACIONADOS ===
 
     context = {
         "producto": producto,

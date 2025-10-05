@@ -80,10 +80,13 @@ La vista 'catalogo_publico' pasa el contexto necesario ('productos', 'page_obj',
     </div>
     {% endwith %}
     {% empty %}
-        <div id="no-products-found" class="col-span-full text-center py-16">
+        <div id="no-products-found" class="col-span-full text-center py-16 animate-fade-in" data-empty="true">
             <i class="fas fa-box-open text-5xl text-gray-400 mb-4"></i>
             <h3 class="text-2xl font-semibold text-gray-700">No se encontraron productos</h3>
             <p class="text-gray-500 mt-2">Intenta ajustar tus filtros o busca otro término.</p>
+            <button type="button" onclick="resetFiltersAndReload()" class="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2" style="background-color: var(--brand-accent);">
+                <i class="fas fa-undo"></i> Limpiar filtros
+            </button>
         </div>
     {% endfor %}
 </div>
@@ -145,9 +148,35 @@ La vista 'catalogo_publico' pasa el contexto necesario ('productos', 'page_obj',
 })();
 </script>
 <style>
+@keyframes fadeInSmooth { from { opacity:0; transform:translateY(6px);} to { opacity:1; transform:translateY(0);} }
+.animate-fade-in { animation: fadeInSmooth .35s ease; }
 /* Forzar 5 columnas en laptop (>=1024px) por si la clase de utilidades no estuviera disponible */
 @media (min-width: 1024px){
     #product-list{ grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }
 /* Mantener proporción original de las fotos (sin forzar cuadrado) */
 </style>
+<script>
+function resetFiltersAndReload(){
+    // Objetivo: volver al estado "Todos" vía AJAX (sin recarga completa)
+    try {
+        const basePath = window.location.pathname.replace(/#.*$/,'');
+        // Quitar cualquier query string dejando sólo la ruta base + ancla
+        history.pushState({}, '', basePath + '#product-list-section');
+        // Permitir AJAX aunque viniéramos de un banner
+        window.BANNER_FILTERED = false;
+        // Reset visual de categoría activa
+        if(typeof setActiveCategory === 'function') setActiveCategory('');
+        // Llamar a updateProducts sin filtros (basePath solicita la misma vista sin query)
+        if(typeof updateProducts === 'function'){
+            updateProducts(basePath);
+        } else {
+            // Fallback si por alguna razón no existe la función global
+            window.location.href = basePath + '#product-list-section';
+        }
+    } catch(e){
+        console.error('resetFiltersAndReload error', e);
+        window.location.href = window.location.pathname;
+    }
+}
+</script>
