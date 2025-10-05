@@ -191,19 +191,28 @@ def producto_detalle(request, pk):
             qs = Producto.objects.filter(categoria__pk__in=related_cats_pks).exclude(pk=producto.pk)
             productos_relacionados = list(qs.order_by('?')[:max_relacionados])
 
-        # Solo aplicar jerarquía si aún vacío
         if not productos_relacionados:
             es_subcategoria = categoria_actual.parent is not None
             if es_subcategoria:
+                # 1) Hermanos (misma subcategoría = misma categoría exacta del producto)
                 hermanos_qs = Producto.objects.filter(categoria=categoria_actual).exclude(pk=producto.pk)
-                productos_relacionados = list(hermanos_qs.order_by('?')[:max_relacionados])
-                if not productos_relacionados:
+                hermanos_list = list(hermanos_qs.order_by('?')[:max_relacionados])
+                if hermanos_list:
+                    productos_relacionados = hermanos_list  # Si hay al menos uno, NO rellenamos con otras categorías
+                else:
+                    # 2) No hay ningún otro producto en esta subcategoría: usar productos del padre (todas sus subcategorías descendientes excepto esta)
                     padre = categoria_actual.parent
                     if padre:
-                        padre_qs = Producto.objects.filter(categoria=padre).exclude(pk=producto.pk)
-                        productos_relacionados = list(padre_qs.order_by('?')[:max_relacionados])
+                        # Tomamos descendientes (todas las subcats del padre) excluyendo el producto actual
+                        padre_desc_qs = Producto.objects.filter(
+                            categoria__in=padre.get_descendants(include_self=True)
+                        ).exclude(pk=producto.pk)
+                        productos_relacionados = list(padre_desc_qs.order_by('?')[:max_relacionados])
             else:
-                raiz_qs = Producto.objects.filter(categoria=categoria_actual).exclude(pk=producto.pk)
+                # Categoría raíz: otros productos dentro de esta misma raíz (descendientes incluidos)
+                raiz_qs = Producto.objects.filter(
+                    categoria__in=categoria_actual.get_descendants(include_self=True)
+                ).exclude(pk=producto.pk)
                 productos_relacionados = list(raiz_qs.order_by('?')[:max_relacionados])
 
     if not productos_relacionados:
