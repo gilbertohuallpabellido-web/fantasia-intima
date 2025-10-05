@@ -298,8 +298,17 @@
     }
     
     function buildWalletFields(method) {
-        const paymentNumber = "{{ configuracion_sitio.numero_yape_plin|default:'Número no configurado' }}";
+        const numeroYape = "{{ configuracion_sitio.numero_yape|default:'' }}".trim();
+        const numeroPlin = "{{ configuracion_sitio.numero_plin|default:'' }}".trim();
+        const legacy = "{{ configuracion_sitio.numero_yape_plin|default:'Número no configurado' }}".trim();
+        let paymentNumber = legacy;
+        if(method === 'yape' && numeroYape){ paymentNumber = numeroYape; }
+        else if(method === 'plin' && numeroPlin){ paymentNumber = numeroPlin; }
+        else if((method === 'yape' || method === 'plin') && !numeroYape && !numeroPlin){ paymentNumber = legacy; }
         const label = method.charAt(0).toUpperCase() + method.slice(1);
+        let extraInfo = '';
+        if(method==='yape' && numeroPlin){ extraInfo = `<p class=\"text-xs text-gray-500 mt-2\">También aceptamos Plin: <strong>${numeroPlin}</strong></p>`; }
+        if(method==='plin' && numeroYape){ extraInfo = `<p class=\"text-xs text-gray-500 mt-2\">También aceptamos Yape: <strong>${numeroYape}</strong></p>`; }
         return `
             <div class="text-center p-4 bg-gray-100 rounded-xl">
                 <p class="text-sm font-medium text-gray-700">Realiza el pago a través de ${label} al siguiente número:</p>
@@ -309,6 +318,7 @@
                         <i class="fas fa-copy mr-1"></i> Copiar
                     </button>
                 </div>
+                ${extraInfo}
             </div>`;
     }
 

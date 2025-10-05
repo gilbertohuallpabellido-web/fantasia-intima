@@ -110,7 +110,9 @@ document.addEventListener('DOMContentLoaded', function() {
             products: [],
             paymentMethods: {
                 types: ["Yape", "Plin", "Tarjeta de crédito/débito"],
-                yapePlinNumber: "{{ site_config.numero_yape_plin|default:'No especificado' }}"
+                yapeNumber: "{{ site_config.numero_yape|default:'' }}",
+                plinNumber: "{{ site_config.numero_plin|default:'' }}",
+                legacyNumber: "{{ site_config.numero_yape_plin|default:'No especificado' }}"
             },
             contactInfo: { 
                 whatsapp: "{{ site_config.whatsapp_link|default:'No especificado' }}" 

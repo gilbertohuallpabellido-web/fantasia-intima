@@ -8,7 +8,11 @@
     <!-- Ajustes: bottom offset para no quedar bajo la barra del sistema, max-height y overflow para que haga scroll si es necesario -->
     <div id="social-list" class="absolute left-0 flex flex-col space-y-3 transition-transform transform origin-bottom-right bg-transparent glass-panel p-0 rounded-3xl" style="bottom: 90px; max-height: calc(100vh - 160px); overflow-y: auto;">
         {% if configuracion_sitio and configuracion_sitio.whatsapp_link %}
+    {% if configuracion_sitio.whatsapp_prefill_resolved %}
+    <a href="{{ configuracion_sitio.whatsapp_link }}?text={{ configuracion_sitio.whatsapp_prefill_resolved|urlencode }}" class="social-icon bg-green-500 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-green-600 transition-all" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+        {% else %}
         <a href="{{ configuracion_sitio.whatsapp_link }}" class="social-icon bg-green-500 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-green-600 transition-all" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+        {% endif %}
             <i class="fab fa-whatsapp text-3xl"></i>
         </a>
         {% endif %}

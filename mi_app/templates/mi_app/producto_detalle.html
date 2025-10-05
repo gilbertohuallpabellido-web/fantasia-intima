@@ -417,7 +417,7 @@ function setupImageZoom(productId) {
 
     // ================== 📱 CELULAR ==================
     if (isTouchDevice) {
-        const MAX_SCALE = parseFloat('{{ product_zoom_factor|default:2.0 }}') || 2;
+        const MAX_SCALE = parseFloat('{{ product_zoom_factor|default:"2.0" }}') || 2;
         let scale = 1;
         let startX = 0, startY = 0;
         let currentX = 0, currentY = 0;
@@ -519,7 +519,7 @@ function setupImageZoom(productId) {
         };
 
         const handleMouseEnter = () => {
-            zoomImage.style.transform = 'scale(' + (parseFloat('{{ product_zoom_factor|default:2.0 }}') || 2) + ')';
+            zoomImage.style.transform = 'scale(' + (parseFloat('{{ product_zoom_factor|default:"2.0" }}') || 2) + ')';
             zoomImage.style.cursor = 'zoom-out';
         };
 

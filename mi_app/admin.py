@@ -7,7 +7,8 @@ from mptt.admin import DraggableMPTTAdmin
 from .models import (
     Producto, ColorVariante, PedidoWhatsApp, DetallePedidoWhatsApp, 
     ConfiguracionSitio, Categoria, Banner, Pagina, ApiKey, Direccion,
-    ConfiguracionRuleta, PremioRuleta, Cupon, TiradaRuleta, ConfiguracionChatbot
+    ConfiguracionRuleta, PremioRuleta, Cupon, TiradaRuleta, ConfiguracionChatbot,
+    GeminiApiKey, ChatGPTApiKey
 )
 from solo.admin import SingletonModelAdmin
 
@@ -231,7 +232,17 @@ class ConfiguracionSitioAdmin(SingletonModelAdmin):
             'fields': ('nombre_tienda', 'logo')
         }),
         ('Redes Sociales y Contacto', {
-            'fields': ('whatsapp_link', 'facebook_link', 'instagram_link', 'tiktok_link', 'numero_yape_plin')
+            'fields': ('whatsapp_link', 'whatsapp_prefill_message', 'facebook_link', 'instagram_link', 'tiktok_link', 'numero_yape_plin', 'numero_yape', 'numero_plin'),
+            'description': '"numero_yape_plin" (legacy) se mantiene para compatibilidad. Usa los campos separados para definir números distintos.'
+        }),
+        ('WhatsApp Prefills Avanzados', {
+            'classes': ('collapse',),
+            'fields': (
+                'whatsapp_prefill_promo',
+                'whatsapp_prefill_chatbot',
+                'whatsapp_roulette_win_message',
+            ),
+            'description': 'Textos configurables para distintos contextos de WhatsApp. Placeholders: {store_name}, {prize_name} (sólo ruleta).'
         }),
         ('Promociones emergentes', {
             'fields': (
@@ -374,14 +385,14 @@ class PaginaAdmin(admin.ModelAdmin):
     search_fields = ('titulo', 'contenido')
     prepopulated_fields = {'slug': ('titulo',)}
 
-# --- Admin para las Claves de API de Gemini ---
+# --- Admin para las Claves de API (multi proveedor) ---
 @admin.register(ApiKey)
 class ApiKeyAdmin(admin.ModelAdmin):
-    list_display = ('__str__', 'activa', 'notas', 'fecha_creacion')
-    list_filter = ('activa',)
-    search_fields = ('notas',)
+    list_display = ('__str__', 'provider', 'activa', 'fecha_creacion')
+    list_filter = ('provider', 'activa')
+    search_fields = ('notas', 'key')
     list_editable = ('activa',)
-    fields = ('key', 'activa', 'notas')
+    fields = ('provider', 'key', 'activa', 'notas')
     
 # --- Admin para Direcciones ---
 @admin.register(Direccion)
@@ -429,14 +440,17 @@ class TiradaRuletaAdmin(admin.ModelAdmin):
     search_fields = ('usuario__username',)
     readonly_fields = ('usuario', 'ultima_tirada')
 
-# === INICIO DE LA MEJORA: Registro del Centro de Control del Chatbot ===
 @admin.register(ConfiguracionChatbot)
 class ConfiguracionChatbotAdmin(SingletonModelAdmin):
-    list_display = ('__str__', 'activo')
-    
+    list_display = ('__str__', 'activo', 'chat_provider')
+    readonly_fields = ('chat_provider',)
     fieldsets = (
         (None, {
-            'fields': ('activo',)
+            'fields': ('activo', 'use_gemini', 'use_chatgpt', 'chat_provider')
+        }),
+        ('Modelos y Parámetros', {
+            'fields': ('gemini_model_name', 'openai_model_name', 'temperature'),
+            'classes': ('collapse',),
         }),
         ('Personalidad y Reglas de Fanty (Cerebro del Bot)', {
             'classes': ('collapse',),
@@ -451,4 +465,78 @@ class ConfiguracionChatbotAdmin(SingletonModelAdmin):
             """
         }),
     )
-# === FIN DE LA MEJORA ===
+
+@admin.register(GeminiApiKey)
+class GeminiApiKeyAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'activa', 'fecha_creacion')
+    list_filter = ('activa',)
+    search_fields = ('key', 'notas')
+    list_editable = ('activa',)
+    fields = ('key', 'activa', 'notas')
+    actions = ['validar_claves']
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(provider='gemini')
+    def validar_claves(self, request, queryset):
+        import requests, json
+        ok, fail = 0, 0
+        payload = {"contents": [{"role":"user","parts":[{"text":"ping"}]}]}
+        modelos = ["gemini-1.5-flash", "gemini-pro"]
+        for obj in queryset:
+            exito = False
+            for model in modelos:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={obj.key}"
+                try:
+                    r = requests.post(url, json=payload, timeout=8)
+                    if r.status_code == 200:
+                        exito = True
+                        break
+                    elif r.status_code == 404:
+                        continue
+                    else:
+                        break
+                except Exception:
+                    break
+            if exito:
+                ok += 1
+                obj.notas = (obj.notas or '') + '\n[OK] Validada'
+            else:
+                fail += 1
+                obj.notas = (obj.notas or '') + '\n[FAIL] Requiere revisión'
+            obj.save(update_fields=['notas'])
+        self.message_user(request, f"Claves validadas: {ok} OK, {fail} fallidas")
+    validar_claves.short_description = "Validar claves seleccionadas (ping)"
+
+@admin.register(ChatGPTApiKey)
+class ChatGPTApiKeyAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'activa', 'fecha_creacion')
+    list_filter = ('activa',)
+    search_fields = ('key', 'notas')
+    list_editable = ('activa',)
+    fields = ('key', 'activa', 'notas')
+    actions = ['validar_claves']
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(provider='chatgpt')
+    def validar_claves(self, request, queryset):
+        import requests, json
+        url = "https://api.openai.com/v1/chat/completions"
+        body = {"model": "gpt-4o-mini", "messages": [{"role":"user","content":"ping"}], "max_tokens": 5}
+        ok, quota, fail = 0, 0, 0
+        for obj in queryset:
+            headers = {"Authorization": f"Bearer {obj.key}", "Content-Type": "application/json"}
+            try:
+                r = requests.post(url, headers=headers, data=json.dumps(body), timeout=8)
+                if r.status_code == 200:
+                    ok += 1
+                    obj.notas = (obj.notas or '') + '\n[OK] Validada'
+                elif r.status_code == 429:
+                    quota += 1
+                    obj.notas = (obj.notas or '') + '\n[QUOTA] Sin créditos ahora'
+                else:
+                    fail += 1
+                    obj.notas = (obj.notas or '') + f"\n[FAIL {r.status_code}]"
+            except Exception as e:
+                fail += 1
+                obj.notas = (obj.notas or '') + f"\n[ERROR] {str(e)[:30]}"
+            obj.save(update_fields=['notas'])
+        self.message_user(request, f"Resultado: {ok} OK, {quota} sin cuota, {fail} fallidas")
+    validar_claves.short_description = "Validar claves seleccionadas (ping)"

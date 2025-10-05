@@ -37,6 +37,7 @@ urlpatterns = [
 
     # Ruta para el asistente de IA
     path('get-ai-response/', views.get_ai_response, name='get_ai_response'),
+    path('ai/status/', views.ai_status, name='ai_status'),
 
     # --- INICIO DE LA MEJORA: URL para la Ruleta de la Suerte ---
     path('roulette/spin/', views.spin_roulette, name='spin_roulette'),

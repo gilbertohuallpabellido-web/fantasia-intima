@@ -8,6 +8,39 @@
 
 {% block content %}
 
+{% if banners_activos and banners_activos|length > 0 %}
+    {% with b=banners_activos.0 %}
+    <section 
+        class="hero-animate hero-banner relative w-full flex items-center justify-center text-white bg-gray-400"
+        style="background-image: url('{{ b.imagen_url }}'); background-size: cover; background-position: center;"
+        role="img"
+        aria-label="{{ b.titulo }}">
+        <div class="hero-overlay absolute inset-0"></div>
+        <div class="hero-content relative text-center p-4">
+            <h1 class="hero-title text-3xl sm:text-5xl md:text-6xl font-brand drop-shadow-lg leading-tight">{{ b.titulo|wrap_emojis }}</h1>
+            {% if b.subtitulo %}
+                <p class="hero-sub mt-2 text-base sm:text-xl drop-shadow-md">{{ b.subtitulo|wrap_emojis }}</p>
+            {% endif %}
+            <a 
+                href="{{ b.destino_url|default:'#product-list-section' }}" 
+                class="banner-cta hero-cta mt-6 inline-block text-white font-bold py-3 px-8 rounded-full text-lg hover:bg-opacity-90 transform hover:scale-105 transition-all"
+                style="background-color: var(--brand-accent);">
+                {{ b.texto_boton }}
+            </a>
+            {% if b.fecha_fin %}
+                <div class="mt-4 hero-countdown-wrapper">
+                        <div class="countdown-badge inline-flex items-center gap-3" aria-live="polite">
+                            <span class="countdown-label text-xs uppercase tracking-wide" style="background-color: var(--brand-accent); color: #fff; padding:4px 8px; border-radius:6px;">Tiempo restante</span>
+                            <div class="countdown text-xl font-extrabold px-3 py-1 rounded-lg" style="background-color: #fff; color: var(--brand-accent);" data-fecha-fin="{{ b.fecha_fin|date:'c' }}"></div>
+                        </div>
+                        <p class="countdown-message mt-2 text-sm font-semibold" style="display:none; color: #fff;">Apresúrate, la oferta termina pronto.</p>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+    {% endwith %}
+{% endif %}
+
 <script>
     // Flag del servidor que indica que la vista fue cargada desde un banner
     // Flag inicial enviado por el servidor: incluye productos=, solo_ofertas=1 o categoria=nueva_coleccion
@@ -188,38 +221,7 @@ document.addEventListener('click', function(e){
  =======================================================================
 -->
 {# Hero dinámico: se muestra el primer banner activo; si no hay, hero por defecto. #}
-{% if banners_activos and banners_activos|length > 0 %}
-    {% with b=banners_activos.0 %}
-    <section 
-        class="hero-animate hero-banner relative w-full flex items-center justify-center text-white bg-gray-400"
-        style="background-image: url('{{ b.imagen_url }}'); background-size: cover; background-position: center;"
-        role="img"
-        aria-label="{{ b.titulo }}">
-        <div class="hero-overlay absolute inset-0"></div>
-        <div class="hero-content relative text-center p-4">
-            <h1 class="hero-title text-3xl sm:text-5xl md:text-6xl font-brand drop-shadow-lg leading-tight">{{ b.titulo|wrap_emojis }}</h1>
-            {% if b.subtitulo %}
-                <p class="hero-sub mt-2 text-base sm:text-xl drop-shadow-md">{{ b.subtitulo|wrap_emojis }}</p>
-            {% endif %}
-            <a 
-                href="{{ b.destino_url|default:'#product-list-section' }}" 
-                class="banner-cta hero-cta mt-6 inline-block text-white font-bold py-3 px-8 rounded-full text-lg hover:bg-opacity-90 transform hover:scale-105 transition-all"
-                style="background-color: var(--brand-accent);">
-                {{ b.texto_boton }}
-            </a>
-            {% if b.fecha_fin %}
-                <div class="mt-4 hero-countdown-wrapper">
-                        <div class="countdown-badge inline-flex items-center gap-3" aria-live="polite">
-                            <span class="countdown-label text-xs uppercase tracking-wide" style="background-color: var(--brand-accent); color: #fff; padding:4px 8px; border-radius:6px;">Tiempo restante</span>
-                            <div class="countdown text-xl font-extrabold px-3 py-1 rounded-lg" style="background-color: #fff; color: var(--brand-accent);" data-fecha-fin="{{ b.fecha_fin|date:'c' }}"></div>
-                        </div>
-                        <p class="countdown-message mt-2 text-sm font-semibold" style="display:none; color: #fff;">Apresúrate, la oferta termina pronto.</p>
-                </div>
-            {% endif %}
-        </div>
-    </section>
-    {% endwith %}
-{% endif %}
+{# Hero de banners eliminado en catálogo para evitar duplicación. Si se requiere reintroducir, restaurar el bloque eliminado aquí. #}
     <!-- Barra de chips categorías (solo móvil) -->
     <script>
     // Parallax móvil del hero (restaurado)

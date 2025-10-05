@@ -253,10 +253,36 @@ class ConfiguracionSitio(SingletonModel):
     nombre_tienda = models.CharField(max_length=100, default="Fantasía Íntima")
     logo = models.ImageField(upload_to='configuracion/', blank=True, null=True)
     whatsapp_link = models.URLField(default="https://wa.me/51932187068")
+    whatsapp_prefill_message = models.CharField(
+        max_length=200,
+        blank=True,
+        default='Hola {store_name}, quiero más información.',
+        help_text="Mensaje inicial para el enlace flotante de WhatsApp (icono de redes). Usa {store_name}. Deja vacío para no incluir mensaje."
+    )
+    whatsapp_prefill_promo = models.CharField(
+        max_length=200,
+        blank=True,
+        default='Hola {store_name}, vi la promoción y quiero saber más.',
+        help_text="Prefill para el popup / pill de promoción que abre WhatsApp. Usa {store_name}."
+    )
+    whatsapp_prefill_chatbot = models.CharField(
+        max_length=200,
+        blank=True,
+        default='Hola {store_name}, el asistente no pudo responder mi duda.',
+        help_text="Prefill usado cuando el chatbot ofrece ir a WhatsApp (fallback). Usa {store_name}."
+    )
+    whatsapp_roulette_win_message = models.TextField(
+        blank=True,
+        # Formato ajustado: sin el nombre de la tienda después de Hola y con comillas simples para el premio.
+        default='¡Hola! Acabo de ganar \'{prize_name}\' en la ruleta. Mi código de cupón para validar es: {coupon_code}',
+        help_text="Plantilla mensaje reclamo ruleta. Placeholders: {store_name}, {prize_name}, {coupon_code}."
+    )
     facebook_link = models.URLField(default="https://web.facebook.com/fantasiaintimaa/")
     instagram_link = models.URLField(default="https://www.instagram.com/fantasia_intima_lenceria")
     tiktok_link = models.URLField(default="https://www.tiktok.com/@fantasa.ntima")
     numero_yape_plin = models.CharField(max_length=15, default="987 654 321")
+    numero_yape = models.CharField(max_length=15, blank=True, default="", help_text="Número exclusivo para pagos vía Yape.")
+    numero_plin = models.CharField(max_length=15, blank=True, default="", help_text="Número exclusivo para pagos vía Plin.")
 
     # === INICIO DE LA MEJORA: Imágenes de pago dinámicas ===
     imagen_yape = models.ImageField(upload_to='configuracion/pagos/', blank=True, null=True, help_text="Logo de Yape que se mostrará en el checkout.")
@@ -332,6 +358,32 @@ class ConfiguracionSitio(SingletonModel):
 
     def __str__(self):
         return "Configuración del Sitio"
+
+    @property
+    def whatsapp_prefill_resolved(self):
+        if not self.whatsapp_prefill_message:
+            return ''
+        return self.whatsapp_prefill_message.replace('{store_name}', self.nombre_tienda)
+
+    @property
+    def whatsapp_prefill_promo_resolved(self):
+        if not self.whatsapp_prefill_promo:
+            return ''
+        return self.whatsapp_prefill_promo.replace('{store_name}', self.nombre_tienda)
+
+    @property
+    def whatsapp_prefill_chatbot_resolved(self):
+        if not self.whatsapp_prefill_chatbot:
+            return ''
+        return self.whatsapp_prefill_chatbot.replace('{store_name}', self.nombre_tienda)
+
+    @property
+    def whatsapp_roulette_win_message_template(self):
+        # Reemplazamos {store_name} solo si se utiliza; se deja {prize_name} y {coupon_code} para el JS.
+        base = (self.whatsapp_roulette_win_message or '')
+        if '{store_name}' in base:
+            base = base.replace('{store_name}', self.nombre_tienda)
+        return base
 
     class Meta:
         verbose_name = "Configuración del Sitio"
@@ -431,18 +483,34 @@ class Direccion(models.Model):
         super().save(*args, **kwargs)
 
 class ApiKey(models.Model):
-# ... (código existente sin cambios)
+    """Clave de API para un proveedor de IA.
+
+    Ahora soporta múltiples proveedores (Gemini / ChatGPT). Las claves existentes se
+    consideran de Gemini por defecto mediante migración.
+    """
+    PROVIDER_CHOICES = (
+        ("gemini", "Gemini"),
+        ("chatgpt", "ChatGPT"),
+    )
+    provider = models.CharField(
+        max_length=20,
+        choices=PROVIDER_CHOICES,
+        default="gemini",
+        help_text="Proveedor al que pertenece esta clave."
+    )
     key = models.CharField(max_length=255, unique=True, verbose_name="Clave de API")
     activa = models.BooleanField(default=True, help_text="Desmarca esta casilla para desactivar la clave temporalmente.")
     notas = models.TextField(blank=True, help_text="Notas internas (ej: 'Clave de cuenta personal', 'Clave de prueba').")
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = "Clave de API de Gemini"
-        verbose_name_plural = "Claves de API de Gemini"
+        verbose_name = "Clave de API de IA"
+        verbose_name_plural = "Claves de API de IA"
+        ordering = ["-fecha_creacion"]
 
     def __str__(self):
-        return f"{self.key[:8]}...{self.key[-4:]}"
+        prov = self.provider.capitalize()
+        return f"{prov}: {self.key[:8]}...{self.key[-4:]}"
 
 class ConfiguracionRuleta(SingletonModel):
 # ... (código existente sin cambios)
@@ -542,13 +610,58 @@ class TiradaRuleta(models.Model):
         return f"Última tirada de {self.usuario.username}: {self.ultima_tirada.strftime('%Y-%m-%d %H:%M')}"
 
 class ConfiguracionChatbot(SingletonModel):
-# ... (código existente sin cambios)
+    # ... (extensión con nuevos campos multi-proveedor)
+    """Singleton con configuración global del chatbot.
+
+    Nuevos campos:
+    - chat_provider: proveedor activo (Gemini / ChatGPT)
+    - gemini_model_name / openai_model_name: modelos específicos
+    - temperature: parámetro unificado (si un proveedor no lo soporta, se ignora)
     """
-    Un modelo Singleton para almacenar la configuración global del chatbot.
-    """
+    PROVIDER_CHOICES = (
+        ("gemini", "Gemini"),
+        ("chatgpt", "ChatGPT"),
+    )
     activo = models.BooleanField(
-        default=False, 
+        default=False,
         help_text="Marca esta casilla para activar el chatbot 'Fanty' en todo el sitio web."
+    )
+    # Mantener compatibilidad: chat_provider queda pero se añaden toggles claros
+    chat_provider = models.CharField(
+        max_length=20,
+        choices=PROVIDER_CHOICES,
+        default="gemini",
+        help_text="(Legacy) Proveedor activo. Si usas los toggles de abajo, este valor se sincroniza automáticamente."
+    )
+    use_gemini = models.BooleanField(
+        default=True,
+        help_text="Activa Gemini como proveedor. Si marcas este y ChatGPT, se prioriza el último guardado que esté marcado solo."
+    )
+    use_chatgpt = models.BooleanField(
+        default=False,
+        help_text="Activa ChatGPT como proveedor. Solo uno debe estar activo."
+    )
+    gemini_model_name = models.CharField(
+        max_length=100,
+        default="gemini-1.5-flash-latest",
+        help_text="Nombre del modelo Gemini (variable de entorno GEMINI_MODEL tiene prioridad si está definida).",
+        blank=True
+    )
+    last_valid_gemini_model = models.CharField(
+        max_length=120,
+        blank=True,
+        default="",
+        help_text="(Auto) Último modelo Gemini que respondió correctamente. Tiene prioridad mientras exista."
+    )
+    openai_model_name = models.CharField(
+        max_length=100,
+        default="gpt-4o-mini",
+        help_text="Nombre del modelo de OpenAI (variable de entorno OPENAI_MODEL tiene prioridad si está definida).",
+        blank=True
+    )
+    temperature = models.FloatField(
+        default=0.75,
+        help_text="Temperatura creativa (0-1). Aplica a ambos proveedores."
     )
     instrucciones_sistema = models.TextField(
         help_text="El 'cerebro' de Fanty. Define su personalidad, reglas y comportamiento. Edita con cuidado.",
@@ -579,6 +692,43 @@ Ejemplo: "Para darte la mejor recomendación, ¿qué buscas? [BOTONES: Algo atre
 
     class Meta:
         verbose_name = "Configuración del Chatbot"
+
+    def save(self, *args, **kwargs):
+        # Forzar exclusividad lógica: si ambos están marcados, priorizar el último explícito según orden simple
+        if self.use_gemini and not self.use_chatgpt:
+            self.chat_provider = 'gemini'
+        elif self.use_chatgpt and not self.use_gemini:
+            self.chat_provider = 'chatgpt'
+        elif self.use_chatgpt and self.use_gemini:
+            # Si ambos, forzar a ChatGPT (arbitrario) y desactivar gemini para evitar confusión
+            self.chat_provider = 'chatgpt'
+            self.use_gemini = False
+        else:
+            # Si ninguno queda activo, fallback seguro a gemini
+            self.use_gemini = True
+            self.chat_provider = 'gemini'
+        super().save(*args, **kwargs)
+
+# === Proxies para separar claves por proveedor en el admin ===
+class GeminiApiKey(ApiKey):
+    class Meta:
+        proxy = True
+        verbose_name = "Clave Gemini"
+        verbose_name_plural = "Claves Gemini"
+
+    def save(self, *args, **kwargs):
+        self.provider = 'gemini'
+        return super().save(*args, **kwargs)
+
+class ChatGPTApiKey(ApiKey):
+    class Meta:
+        proxy = True
+        verbose_name = "Clave ChatGPT"
+        verbose_name_plural = "Claves ChatGPT"
+
+    def save(self, *args, **kwargs):
+        self.provider = 'chatgpt'
+        return super().save(*args, **kwargs)
 
 class Profile(models.Model):
     user = models.OneToOneField('auth.User', on_delete=models.CASCADE)

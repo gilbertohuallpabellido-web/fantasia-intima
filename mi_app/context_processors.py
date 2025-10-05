@@ -57,6 +57,10 @@ def common_context(request):
     # Config WhatsApp message (para plantilla de carrito)
     'wa_prefix': (getattr(configuracion_sitio, 'whatsapp_message_prefix', '¡Hola {store_name}! ✨') if configuracion_sitio else '¡Hola {store_name}! ✨'),
     'wa_template': (getattr(configuracion_sitio, 'whatsapp_message_template', '') if configuracion_sitio else ''),
+    # Prefills adicionales
+    'wa_prefill_promo': (configuracion_sitio.whatsapp_prefill_promo_resolved if configuracion_sitio else ''),
+    'wa_prefill_chatbot': (configuracion_sitio.whatsapp_prefill_chatbot_resolved if configuracion_sitio else ''),
+    'wa_roulette_win_template': (configuracion_sitio.whatsapp_roulette_win_message_template if configuracion_sitio else ''),
     }
 
     # Sello de versión (para ver en producción qué build está activo)
