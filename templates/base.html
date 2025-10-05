@@ -335,7 +335,8 @@
         .fi-promo-popup .promo-title{ font-size:.75rem !important; margin-bottom:.25rem !important; }
         .fi-promo-popup .promo-price{ font-size:.6rem !important; margin-bottom:.4rem !important; }
         .fi-promo-popup .promo-badge{ font-size:.42rem !important; padding:.22rem .45rem .24rem !important; }
-        .fi-promo-popup .promo-cta{ display:none !important; }
+    /* Ajuste: antes se ocultaba totalmente el CTA en móvil; ahora lo mostramos para mejorar conversión */
+    /* .fi-promo-popup .promo-cta{ display:none !important; }  <-- eliminado */
         .fi-promo-popup .fi-promo-close, .fi-promo-popup button[data-close]{ width:26px !important; height:26px !important; font-size:.7rem !important; top:.25rem !important; right:.3rem !important; }
     .fi-promo-popup .promo-title{ -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; display:-webkit-box; overflow:hidden; }
         /* Modo super-compacto: reduce aún más altura global */
@@ -343,6 +344,7 @@
         .fi-promo-popup.super-compact .promo-title{ font-size:.7rem !important; margin-bottom:.18rem !important; }
         .fi-promo-popup.super-compact .promo-price{ font-size:.55rem !important; margin-bottom:.3rem !important; }
         .fi-promo-popup.super-compact .promo-badge{ margin-bottom:.25rem !important; }
+    /* En modo super-compact SÍ se oculta el CTA para ahorrar espacio extremo */
     .fi-promo-popup.super-compact .promo-cta{ display:none !important; }
         .fi-promo-popup.super-compact .promo-cta i{ font-size:.5rem !important; }
         .fi-promo-popup.super-compact .promo-card{ gap:.38rem; }
